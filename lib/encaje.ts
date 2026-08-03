@@ -4,6 +4,7 @@
 import type { Convocatoria } from "./tipos";
 import { estadoPlazo } from "./plazos";
 import { esOrganoDeMiZona, resolverCP } from "./territorio";
+import { aQuienVa } from "./resumen";
 
 export interface ResultadoEstructural {
   resultado: "pasa" | "no" | "duda";
@@ -60,6 +61,8 @@ export function evaluarEstructural(
     const listaMayus = conv.beneficiarios.map((b) => b.toUpperCase());
     const admiteActividad = listaMayus.some((b) => BENEF_ACTIVIDAD.some((p) => b.includes(p)));
     const admiteParticular = listaMayus.some((b) => BENEF_SIN_ACTIVIDAD.some((p) => b.includes(p)));
+    // El motivo se cuenta en cristiano, no con la jerga de la BDNS.
+    const paraQuien = aQuienVa(conv.beneficiarios) ?? conv.beneficiarios.join("; ").toLowerCase();
     const soyActividad = tipo === "autonomo" || tipo === "pyme";
     if (soyActividad && !admiteActividad) {
       return {
@@ -67,7 +70,7 @@ export function evaluarEstructural(
         motivos: [
           {
             regla: "beneficiario",
-            detalle: `Va dirigida a: ${conv.beneficiarios.join("; ")} — no incluye pymes/autónomos.`,
+            detalle: `Esta ayuda es solo para ${paraQuien}. Tú la pedirías como ${tipo === "pyme" ? "empresa" : "autónomo"}, y ese perfil no entra.`,
           },
         ],
       };
@@ -78,7 +81,7 @@ export function evaluarEstructural(
         motivos: [
           {
             regla: "beneficiario",
-            detalle: `Va dirigida a: ${conv.beneficiarios.join("; ")} — no incluye particulares.`,
+            detalle: `Esta ayuda es solo para ${paraQuien}. Tú la pedirías como particular, y ese perfil no entra.`,
           },
         ],
       };
@@ -95,7 +98,7 @@ export function evaluarEstructural(
         motivos: [
           {
             regla: "territorio",
-            detalle: `Es una ayuda de ${conv.nivel3 ?? conv.nivel2} y tu zona es ${zona.municipio} (${zona.provincia}).`,
+            detalle: `La convoca ${conv.nivel3 ?? conv.nivel2} y solo la pueden pedir los de allí. Tú estás en ${zona.municipio} (${zona.provincia}).`,
           },
         ],
       };

@@ -11,6 +11,48 @@ function diasEntre(desde: Date, hastaIso: string): number {
   return Math.round((aFecha(hastaIso).getTime() - medianoche.getTime()) / DIA_MS);
 }
 
+const MESES = [
+  "ene",
+  "feb",
+  "mar",
+  "abr",
+  "may",
+  "jun",
+  "jul",
+  "ago",
+  "sep",
+  "oct",
+  "nov",
+  "dic",
+];
+
+function dia(iso: string, conAnio: boolean): string {
+  const [a, m, d] = iso.split("-");
+  const texto = `${Number(d)} ${MESES[Number(m) - 1]}`;
+  return conAnio ? `${texto} ${a}` : texto;
+}
+
+/**
+ * El plazo en fechas de calendario, que es lo que de verdad hace falta
+ * saber. El año solo aparece cuando no es el corriente, para no ensuciar.
+ */
+export function formatoRango(
+  inicio: string | null | undefined,
+  fin: string | null | undefined,
+  hoy: Date = new Date(),
+): string {
+  if (!inicio && !fin) return "sin fechas";
+  const anioActual = String(hoy.getFullYear());
+  const otroAnio = [inicio, fin].some((f) => f && f.slice(0, 4) !== anioActual);
+
+  if (inicio && fin) {
+    if (inicio === fin) return `solo el ${dia(fin, otroAnio)}`;
+    return `${dia(inicio, otroAnio)} — ${dia(fin, otroAnio)}`;
+  }
+  if (fin) return `hasta el ${dia(fin, otroAnio)}`;
+  return `desde el ${dia(inicio!, otroAnio)}`;
+}
+
 /**
  * Semáforo de plazos de una convocatoria. Fechas ISO YYYY-MM-DD.
  * El día de fin es inclusive (se puede presentar ese día).

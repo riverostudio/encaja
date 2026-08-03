@@ -24,6 +24,18 @@ export interface Convocatoria {
   fondos: string[];
   detalleAt?: string | null;
   detalleJson?: string | null;
+  /** Resumen en cristiano escrito por la IA (JSON de ResumenIA), si ya se pidió. */
+  resumenIa?: string | null;
+  resumenAt?: string | null;
+}
+
+/** Lo que la IA escribe sobre una convocatoria, en lenguaje llano. */
+export interface ResumenIA {
+  titular: string;
+  que: string;
+  consigues: string;
+  aQuien: string;
+  ojo?: string;
 }
 
 export type EstadoPlazo =

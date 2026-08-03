@@ -4,9 +4,36 @@ export interface PlazoUi {
   dias: number | null;
 }
 
+export interface ResumenLlanoUi {
+  que: string;
+  consigues: string;
+}
+
+export interface ResumenIaUi {
+  titular: string;
+  que: string;
+  consigues: string;
+  aQuien: string;
+  ojo?: string;
+}
+
+export type VeredictoUi = "encaja" | "no_encaja" | "duda" | "pendiente";
+
+export const SELLO: Record<VeredictoUi, { texto: string; color: string } | null> = {
+  encaja: { texto: "Encajas", color: "var(--bosque)" },
+  no_encaja: { texto: "No encajas", color: "var(--senal)" },
+  duda: { texto: "Con dudas", color: "var(--ocre)" },
+  pendiente: null,
+};
+
 export interface ConvUi {
   codigoBdns: string;
   titulo: string;
+  /** El plazo en fechas de calendario, ya formateado por el servidor. */
+  rangoFechas: string;
+  llano: ResumenLlanoUi;
+  resumen?: ResumenIaUi | null;
+  veredicto?: VeredictoUi | null;
   tituloCoof?: string | null;
   nivel1: string;
   nivel2: string;
@@ -47,40 +74,37 @@ export interface MotivoUi {
  * El plazo como cifra editorial: un número grande y una palabra pequeña.
  * El color es la única señal cromática de toda la interfaz.
  */
-export function plazoVisual(p: PlazoUi): {
-  cifra: string;
-  pie: string;
-  color: string;
-  grande: boolean;
-} {
+/** El color y la cuenta atrás que acompañan al rango de fechas. */
+export function plazoVisual(p: PlazoUi): { pie: string; color: string } {
   switch (p.estado) {
     case "urgente":
       return p.dias === 0
-        ? { cifra: "hoy", pie: "último día", color: "var(--senal)", grande: false }
-        : {
-            cifra: String(p.dias),
-            pie: p.dias === 1 ? "día" : "días",
-            color: "var(--senal)",
-            grande: true,
-          };
+        ? { pie: "hoy es el último día", color: "var(--senal)" }
+        : { pie: `cierra en ${p.dias} ${p.dias === 1 ? "día" : "días"}`, color: "var(--senal)" };
     case "aviso":
-      return { cifra: String(p.dias), pie: "días", color: "var(--ocre)", grande: true };
+      return { pie: `cierra en ${p.dias} días`, color: "var(--ocre)" };
     case "abierta":
       return p.dias != null
-        ? { cifra: String(p.dias), pie: "días", color: "var(--bosque)", grande: true }
-        : { cifra: "·", pie: "abierta", color: "var(--bosque)", grande: false };
+        ? { pie: `abierta · quedan ${p.dias} días`, color: "var(--bosque)" }
+        : { pie: "abierta", color: "var(--bosque)" };
     case "proxima":
-      return {
-        cifra: String(p.dias),
-        pie: "para abrir",
-        color: "var(--grafito)",
-        grande: true,
-      };
+      return { pie: `abre dentro de ${p.dias} días`, color: "var(--grafito)" };
     case "cerrada":
-      return { cifra: "—", pie: "cerrada", color: "var(--niebla)", grande: false };
+      return { pie: "plazo cerrado", color: "var(--niebla)" };
     default:
-      return { cifra: "—", pie: "ver bases", color: "var(--niebla)", grande: false };
+      return { pie: "plazo sin publicar", color: "var(--niebla)" };
   }
+}
+
+/** 23.559.000 → "23,6 M€" · espejo de lib/resumen para el navegador. */
+export function importeCortoUi(n?: number | null): string | null {
+  if (!n || n <= 0) return null;
+  if (n >= 1_000_000) {
+    const millones = n / 1_000_000;
+    const texto = millones >= 10 ? millones.toFixed(1) : millones.toFixed(2);
+    return `${texto.replace(/[.,]?0+$/, "").replace(".", ",")} M€`;
+  }
+  return `${new Intl.NumberFormat("es-ES", { useGrouping: "always" }).format(Math.round(n))} €`;
 }
 
 /** Frase de plazo para cabeceras del cajón y del expediente. */

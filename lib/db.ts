@@ -83,9 +83,25 @@ CREATE TABLE IF NOT EXISTS ajustes (
 );
 `;
 
+// Columnas añadidas después de la primera versión. CREATE TABLE IF NOT EXISTS
+// no las agrega a una base que ya existe, así que se comprueban una a una.
+const COLUMNAS_NUEVAS: { tabla: string; columna: string; tipo: string }[] = [
+  { tabla: "convocatorias", columna: "resumen_ia", tipo: "TEXT" },
+  { tabla: "convocatorias", columna: "resumen_at", tipo: "TEXT" },
+];
+
+function migrarColumnas(db: Database.Database): void {
+  for (const c of COLUMNAS_NUEVAS) {
+    const existentes = db.prepare(`PRAGMA table_info(${c.tabla})`).all() as { name: string }[];
+    if (!existentes.some((e) => e.name === c.columna)) {
+      db.exec(`ALTER TABLE ${c.tabla} ADD COLUMN ${c.columna} ${c.tipo}`);
+    }
+  }
+}
+
 /**
  * Abre (creando si hace falta) la base de datos y aplica el esquema.
- * La migración es idempotente: solo CREATE IF NOT EXISTS.
+ * La migración es idempotente: CREATE IF NOT EXISTS + columnas comprobadas.
  */
 export function abrirDb(ruta?: string): Database.Database {
   const destino = ruta ?? path.join(process.cwd(), "data", "radar.db");
@@ -95,5 +111,6 @@ export function abrirDb(ruta?: string): Database.Database {
   const db = new Database(destino);
   db.pragma("journal_mode = WAL");
   db.exec(ESQUEMA);
+  migrarColumnas(db);
   return db;
 }

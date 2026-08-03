@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getRepo, errorJson } from "@/lib/servidor";
 import { detalle } from "@/lib/bdns";
-import { estadoPlazo } from "@/lib/plazos";
+import { estadoPlazo, formatoRango } from "@/lib/plazos";
 import { urlFichaBdns } from "@/lib/expediente";
+import { resumirEstructural } from "@/lib/resumen";
+import type { ResumenIA } from "@/lib/tipos";
 
 export const dynamic = "force-dynamic";
 
@@ -22,8 +24,21 @@ export async function GET(
     }
     const evaluacion = repo.getEvaluacion(codigo, 1);
     const expediente = repo.getExpediente(codigo);
+    let resumen: ResumenIA | null = null;
+    try {
+      resumen = conv.resumenIa ? (JSON.parse(conv.resumenIa) as ResumenIA) : null;
+    } catch {
+      resumen = null;
+    }
+
     return NextResponse.json({
-      conv: { ...conv, plazo: estadoPlazo(conv.fechaInicioSol, conv.fechaFinSol) },
+      conv: {
+        ...conv,
+        plazo: estadoPlazo(conv.fechaInicioSol, conv.fechaFinSol),
+        rangoFechas: formatoRango(conv.fechaInicioSol, conv.fechaFinSol),
+        llano: resumirEstructural(conv),
+        resumen,
+      },
       urlFicha: urlFichaBdns(codigo),
       evaluacion,
       expediente,

@@ -33,6 +33,8 @@ interface FilaDb {
   fondos: string;
   detalle_json: string | null;
   detalle_at: string | null;
+  resumen_ia: string | null;
+  resumen_at: string | null;
 }
 
 function aConvocatoria(f: FilaDb): Convocatoria {
@@ -59,6 +61,8 @@ function aConvocatoria(f: FilaDb): Convocatoria {
     fondos: JSON.parse(f.fondos),
     detalleAt: f.detalle_at,
     detalleJson: f.detalle_json,
+    resumenIa: f.resumen_ia,
+    resumenAt: f.resumen_at,
   };
 }
 
@@ -200,6 +204,14 @@ export function crearRepo(db: Database.Database) {
         .prepare(`SELECT count(*) n FROM convocatorias WHERE detalle_at IS NULL`)
         .get() as { n: number };
       return r.n;
+    },
+
+    guardarResumen(codigo: string, resumenJson: string): void {
+      db.prepare(`UPDATE convocatorias SET resumen_ia=?, resumen_at=? WHERE codigo_bdns=?`).run(
+        resumenJson,
+        ahora(),
+        codigo,
+      );
     },
 
     setHecho(perfilId: number, clave: string, valor: string, fuente: string): void {

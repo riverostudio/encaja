@@ -1,7 +1,27 @@
 // Extracción de requisitos de las bases reguladoras + motor de entrevista.
 // Los prompts piden SIEMPRE el literal de las bases: el dictamen nunca se
 // apoya en texto que no pueda enseñarse.
-import type { Requisito, Veredicto } from "./tipos";
+import type { Requisito, ResumenIA, Veredicto } from "./tipos";
+
+export const PROMPT_RESUMEN = `Eres quien traduce el BOE a lenguaje de la calle.
+Te doy el título oficial y los datos de una convocatoria de ayuda pública española.
+Explícasela a alguien SIN formación jurídica ni económica: un autónomo con prisa.
+
+Devuelve SOLO un JSON:
+{
+ "titular": "de qué va, en menos de 9 palabras, sin jerga",
+ "que": "1-2 frases: qué es esto y para qué sirve el dinero",
+ "consigues": "1 frase: qué te llevas exactamente (dinero que no se devuelve, préstamo, aval, menos impuestos…) y de cuánto se habla",
+ "aQuien": "1 frase: a quién va dirigida, en cristiano",
+ "ojo": "opcional, 1 frase: la trampa o el requisito que más gente incumple"
+}
+
+Reglas:
+- Prohibido copiar la jerga del título. Nada de "concurrencia competitiva",
+  "bases reguladoras" ni "en el marco del programa operativo".
+- Tutea. Frases cortas. Cero adjetivos de folleto.
+- No inventes cifras ni plazos: si no te los doy, no los menciones.
+- Si el presupuesto es la bolsa total del programa, dilo así, no como si fuera para uno.`;
 
 export const PROMPT_EXTRACCION = `Eres un técnico experto en subvenciones públicas españolas.
 Lee las bases reguladoras adjuntas y extrae TODOS los requisitos que un
@@ -75,6 +95,19 @@ export function parsearRequisitos(jsonTexto: string): Requisito[] {
     });
   }
   return salida;
+}
+
+/** Valida el resumen de la IA. Si le falta lo esencial, se descarta entero. */
+export function parsearResumen(jsonTexto: string): ResumenIA | null {
+  const d = extraerJson(jsonTexto) as Partial<ResumenIA> | null;
+  if (!d?.titular || !d.que || !d.consigues) return null;
+  return {
+    titular: String(d.titular).trim(),
+    que: String(d.que).trim(),
+    consigues: String(d.consigues).trim(),
+    aQuien: d.aQuien ? String(d.aQuien).trim() : "",
+    ojo: d.ojo ? String(d.ojo).trim() : undefined,
+  };
 }
 
 export function parsearVeredictos(jsonTexto: string): Veredicto[] {

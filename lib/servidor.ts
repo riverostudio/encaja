@@ -3,9 +3,10 @@
 import path from "node:path";
 import { abrirDb } from "./db";
 import { crearRepo, type Repo } from "./repo";
-import { estadoPlazo } from "./plazos";
+import { estadoPlazo, formatoRango } from "./plazos";
 import { resolverCP, esOrganoDeMiZona } from "./territorio";
-import type { Convocatoria, Plazo } from "./tipos";
+import { resumirEstructural, type ResumenLlano } from "./resumen";
+import type { Convocatoria, DictamenValor, Plazo, ResumenIA } from "./tipos";
 
 let repoGlobal: Repo | null = null;
 
@@ -22,7 +23,26 @@ export function errorJson(e: unknown): { error: string } {
   return { error: e instanceof Error ? e.message : String(e) };
 }
 
-export type ConvocatoriaConPlazo = Convocatoria & { plazo: Plazo };
+export type ConvocatoriaConPlazo = Convocatoria & {
+  plazo: Plazo;
+  /** El plazo en fechas de calendario: "15 sep — 30 sep". */
+  rangoFechas: string;
+  /** Traducción instantánea desde los datos oficiales (siempre presente). */
+  llano: ResumenLlano;
+  /** Traducción escrita por la IA, si ya se generó para esta convocatoria. */
+  resumen: ResumenIA | null;
+  /** Veredicto de encaje ya emitido para el perfil, si lo hay. */
+  veredicto: DictamenValor | null;
+};
+
+function leerResumen(json?: string | null): ResumenIA | null {
+  if (!json) return null;
+  try {
+    return JSON.parse(json) as ResumenIA;
+  } catch {
+    return null;
+  }
+}
 
 export interface FiltrosRadar {
   texto?: string;
@@ -58,6 +78,10 @@ export function buscarRadar(repo: Repo, f: FiltrosRadar): ConvocatoriaConPlazo[]
   const conPlazo: ConvocatoriaConPlazo[] = filas.map((c) => ({
     ...c,
     plazo: estadoPlazo(c.fechaInicioSol, c.fechaFinSol),
+    rangoFechas: formatoRango(c.fechaInicioSol, c.fechaFinSol),
+    llano: resumirEstructural(c),
+    resumen: leerResumen(c.resumenIa),
+    veredicto: repo.getEvaluacion(c.codigoBdns, 1)?.dictamen ?? null,
   }));
 
   let filtradas = conPlazo;

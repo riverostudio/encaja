@@ -449,6 +449,83 @@ select.campo {
   }
 }
 
+/* ————————————————— CUESTIONARIO A PANTALLA COMPLETA ————————————————— */
+.escenario {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  background: var(--fondo);
+  overflow-y: auto;
+  animation: telon-sube 0.45s var(--curva);
+}
+
+@keyframes telon-sube {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+}
+
+.escenario-barra {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--fondo-velo);
+  backdrop-filter: blur(8px);
+}
+
+/* botón de respuesta grande */
+.opcion {
+  font-family: var(--fuente-display);
+  font-size: 19px;
+  padding: 14px 30px;
+  border-radius: 8px;
+  border: 1px solid var(--linea-fuerte);
+  background: var(--lienzo);
+  color: var(--tinta);
+  cursor: pointer;
+  transition:
+    transform 0.25s var(--curva),
+    border-color 0.25s var(--curva),
+    background-color 0.25s var(--curva),
+    box-shadow 0.25s var(--curva);
+}
+
+.opcion:hover {
+  transform: translateY(-2px);
+  border-color: var(--tinta);
+  box-shadow: var(--sombra-alta);
+}
+
+.opcion:active {
+  transform: translateY(0);
+}
+
+/* sello circular del veredicto */
+.sello-veredicto {
+  display: grid;
+  place-items: center;
+  width: 62px;
+  height: 62px;
+  flex: none;
+  border: 2px solid currentColor;
+  border-radius: 50%;
+  font-family: var(--fuente-display);
+  font-size: 27px;
+  line-height: 1;
+  animation: sello 0.6s var(--curva) backwards;
+  animation-delay: 0.1s;
+}
+
+@keyframes sello {
+  from {
+    opacity: 0;
+    transform: scale(0.6) rotate(-12deg);
+  }
+}
+
 /* ——— dato (etiqueta + valor) ——— */
 .dato {
   padding: 14px 0;

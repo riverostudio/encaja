@@ -1,11 +1,18 @@
 "use client";
 
-import { euros, nivelBonito, plazoVisual, tipoAyuda, type ConvUi } from "./tipos-ui";
+import {
+  importeCortoUi,
+  nivelBonito,
+  plazoVisual,
+  SELLO,
+  tipoAyuda,
+  type ConvUi,
+} from "./tipos-ui";
 
 /**
- * Tarjeta de ayuda. La cuenta atrás manda: cifra grande en serif,
- * teñida por urgencia, y ese mismo color despliega el filete superior
- * al pasar por encima.
+ * Tarjeta de ayuda en dos idiomas: arriba el título oficial tal cual lo
+ * publica el BOE, y debajo lo que significa de verdad. El plazo manda,
+ * y se enseña con fechas de calendario, no con un número suelto.
  */
 export default function TarjetaAyuda({
   conv,
@@ -17,45 +24,74 @@ export default function TarjetaAyuda({
   onAbrir: (codigo: string) => void;
 }) {
   const p = plazoVisual(conv.plazo);
-  const importe = euros(conv.presupuesto);
+  const bolsa = importeCortoUi(conv.presupuesto);
   const tipo = tipoAyuda(conv.instrumentos);
+  const sello = conv.veredicto ? SELLO[conv.veredicto] : null;
+
+  const titular = conv.resumen?.titular;
+  const consigues = conv.resumen?.consigues ?? conv.llano.consigues;
 
   return (
     <button
       className="tarjeta entra"
-      style={
-        {
-          "--acento": p.color,
-          "--i": Math.min(indice, 14),
-        } as React.CSSProperties
-      }
+      style={{ "--acento": p.color, "--i": Math.min(indice, 14) } as React.CSSProperties}
       onClick={() => onAbrir(conv.codigoBdns)}
     >
       <span className="flex items-start justify-between gap-4">
         <span className="block">
           <span
-            className={`display cifra block leading-[0.9] ${p.grande ? "text-[38px]" : "text-[24px]"}`}
+            className="display cifra block text-[19px] leading-tight"
             style={{ color: p.color }}
           >
-            {p.cifra}
+            {conv.rangoFechas}
           </span>
-          <span className="rotulo mt-2 block" style={{ color: p.color, opacity: 0.8 }}>
+          <span className="rotulo mt-1.5 block" style={{ color: p.color, opacity: 0.85 }}>
             {p.pie}
           </span>
         </span>
-        <span className="rotulo shrink-0 pt-1">{nivelBonito(conv.nivel1)}</span>
+        <span className="flex shrink-0 flex-col items-end gap-1.5 pt-0.5">
+          <span className="rotulo">{nivelBonito(conv.nivel1)}</span>
+          {sello && (
+            <span
+              className="rotulo rounded-full px-2 py-0.5"
+              style={{ color: sello.color, border: `1px solid ${sello.color}` }}
+            >
+              {sello.texto}
+            </span>
+          )}
+        </span>
       </span>
 
+      {/* ——— el título oficial, tal cual lo publican ——— */}
       {/* line-clamp impone display:-webkit-box; añadir `block` lo anularía */}
-      <span className="display mt-5 line-clamp-3 text-[17px] leading-snug">{conv.titulo}</span>
-
-      <span className="mt-2 line-clamp-1 text-[12.5px] text-[var(--grafito)]">
-        {conv.nivel3 ?? conv.nivel2}
+      <span className="display mt-5 line-clamp-2 text-[15.5px] leading-snug text-[var(--grafito)]">
+        {conv.titulo}
       </span>
 
-      <span className="mt-auto flex items-baseline justify-between gap-3 pt-5">
-        <span className="cifra text-[14px] font-medium">
-          {importe ?? <span className="text-[var(--niebla)]">importe sin publicar</span>}
+      {/* ——— y lo que significa ——— */}
+      <span className="mt-3 border-t border-[var(--linea)] pt-3">
+        {titular && (
+          <span className="display line-clamp-2 text-[17px] leading-snug text-[var(--tinta)]">
+            {titular}
+          </span>
+        )}
+        <span
+          className={`line-clamp-2 text-[13px] leading-relaxed text-[var(--grafito)] ${titular ? "mt-1.5" : ""}`}
+        >
+          {consigues}
+        </span>
+      </span>
+
+      <span className="mt-auto flex items-end justify-between gap-3 pt-4">
+        <span className="block">
+          {bolsa ? (
+            <>
+              <span className="cifra block text-[14px] font-medium">{bolsa}</span>
+              <span className="rotulo mt-0.5 block">bolsa de todo el programa</span>
+            </>
+          ) : (
+            <span className="text-[13px] text-[var(--niebla)]">importe sin publicar</span>
+          )}
         </span>
         <span className="flex items-baseline gap-2">
           {tipo && <span className="rotulo">{tipo}</span>}

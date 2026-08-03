@@ -1,7 +1,32 @@
 import { describe, it, expect } from "vitest";
-import { estadoPlazo } from "../lib/plazos";
+import { estadoPlazo, formatoRango } from "../lib/plazos";
 
 const HOY = new Date("2026-08-03T12:00:00");
+
+describe("formatoRango", () => {
+  it("con las dos fechas, del día al día", () => {
+    expect(formatoRango("2026-09-15", "2026-09-30", HOY)).toBe("15 sep — 30 sep");
+  });
+
+  it("solo fin o solo inicio", () => {
+    expect(formatoRango(null, "2026-10-29", HOY)).toBe("hasta el 29 oct");
+    expect(formatoRango("2026-07-01", null, HOY)).toBe("desde el 1 jul");
+  });
+
+  it("añade el año cuando no es el corriente", () => {
+    expect(formatoRango("2027-01-10", "2027-02-01", HOY)).toBe("10 ene 2027 — 1 feb 2027");
+    expect(formatoRango(null, "2027-02-01", HOY)).toBe("hasta el 1 feb 2027");
+  });
+
+  it("sin fechas lo dice, no inventa", () => {
+    expect(formatoRango(null, null, HOY)).toBe("sin fechas");
+    expect(formatoRango(undefined, undefined, HOY)).toBe("sin fechas");
+  });
+
+  it("mismo día de inicio y fin no se repite", () => {
+    expect(formatoRango("2026-09-15", "2026-09-15", HOY)).toBe("solo el 15 sep");
+  });
+});
 
 describe("estadoPlazo", () => {
   it("urgente cuando quedan ≤7 días", () => {

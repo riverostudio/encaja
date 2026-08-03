@@ -32,6 +32,29 @@ const TIPOS = [
   { clave: "", texto: "Todo tipo" },
   { clave: "SUBVENCIÓN", texto: "Fondo perdido" },
   { clave: "PRÉSTAMO", texto: "Préstamos" },
+  { clave: "FISCAL", texto: "Desgravaciones" },
+];
+
+// El filtro que más cambia el radar: no es lo mismo buscar para tu negocio
+// que buscar para ti como persona.
+const PARA_QUIEN = [
+  { clave: "", texto: "Para cualquiera" },
+  { clave: "PERSONAS FÍSICAS QUE NO DESARROLLAN", texto: "Para mí, como persona" },
+  { clave: "PYME", texto: "Para mi negocio" },
+];
+
+// Atajos a lo que de verdad busca la gente. Rellenan el buscador.
+const ATAJOS = [
+  { texto: "Alquiler y vivienda", busca: "alquiler" },
+  { texto: "Becas y estudios", busca: "beca" },
+  { texto: "Comedor y libros", busca: "comedor" },
+  { texto: "Luz, agua y gas", busca: "suministros" },
+  { texto: "Emergencia social", busca: "emergencia social" },
+  { texto: "Discapacidad y dependencia", busca: "discapacidad" },
+  { texto: "Familia e infancia", busca: "familia" },
+  { texto: "Desempleo", busca: "desempleo" },
+  { texto: "Transporte", busca: "transporte" },
+  { texto: "Rehabilitar la casa", busca: "rehabilitación" },
 ];
 
 export default function PaginaRadar() {
@@ -42,6 +65,7 @@ export default function PaginaRadar() {
   const [texto, setTexto] = useState("");
   const [estadoFiltro, setEstadoFiltro] = useState("");
   const [instrumento, setInstrumento] = useState("");
+  const [paraQuien, setParaQuien] = useState("");
   const [filas, setFilas] = useState<ConvUi[]>([]);
   const [visibles, setVisibles] = useState(POR_TANDA);
   const [cargando, setCargando] = useState(true);
@@ -57,6 +81,7 @@ export default function PaginaRadar() {
     if (texto) q.set("texto", texto);
     if (estadoFiltro) q.set("estado", estadoFiltro);
     if (instrumento) q.set("instrumento", instrumento);
+    if (paraQuien) q.set("beneficiario", paraQuien);
     if (region !== "") q.set("region", String(region));
     if (cp.length === 5) q.set("cp", cp);
     const r = await fetch(`/api/convocatorias?${q}`);
@@ -64,7 +89,7 @@ export default function PaginaRadar() {
     setFilas(d.filas ?? []);
     setVisibles(POR_TANDA);
     setCargando(false);
-  }, [texto, estadoFiltro, instrumento, region, cp]);
+  }, [texto, estadoFiltro, instrumento, paraQuien, region, cp]);
 
   const refrescarSync = useCallback(async () => {
     const d = (await (await fetch("/api/sync")).json()) as Omit<EstadoSync, "horas">;
@@ -208,8 +233,36 @@ export default function PaginaRadar() {
         </label>
       </div>
 
+      {/* ——— ¿para quién? el filtro que más cambia la lista ——— */}
+      <div className="mt-8 flex flex-wrap items-center gap-x-5 gap-y-2">
+        <span className="rotulo">Buscas</span>
+        {PARA_QUIEN.map((q) => (
+          <button
+            key={q.clave}
+            className={`filtro ${paraQuien === q.clave ? "filtro-activo" : ""}`}
+            onClick={() => setParaQuien(q.clave)}
+          >
+            {q.texto}
+          </button>
+        ))}
+      </div>
+
+      {/* ——— atajos a lo que la gente busca de verdad ——— */}
+      <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2">
+        <span className="rotulo">Atajos</span>
+        {ATAJOS.map((a) => (
+          <button
+            key={a.busca}
+            className={`filtro ${texto === a.busca ? "filtro-activo" : ""}`}
+            onClick={() => setTexto(texto === a.busca ? "" : a.busca)}
+          >
+            {a.texto}
+          </button>
+        ))}
+      </div>
+
       {/* ——— filtros ——— */}
-      <div className="mt-8 flex flex-wrap items-center gap-x-5 gap-y-3">
+      <div className="mt-5 flex flex-wrap items-center gap-x-5 gap-y-3">
         {ESTADOS.map((e) => (
           <button
             key={e.clave}
