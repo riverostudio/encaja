@@ -11,7 +11,7 @@ interface Hecho {
 
 const SUGERENCIAS: { clave: string; ayuda: string }[] = [
   { clave: "tipo_actividad", ayuda: "autonomo · pyme · particular" },
-  { clave: "cp", ayuda: "código postal (activa lo local)" },
+  { clave: "cp", ayuda: "código postal" },
   { clave: "municipio", ayuda: "tu municipio" },
   { clave: "cnae_letras", ayuda: "letras CNAE, ej: R,S" },
   { clave: "num_empleados", ayuda: "empleados en plantilla" },
@@ -52,84 +52,84 @@ export default function PaginaFicha() {
   const usadas = new Set(hechos.map((h) => h.clave));
 
   return (
-    <div className="max-w-3xl">
-      <h1 className="text-2xl font-bold">Mi ficha</h1>
-      <p className="mt-1 text-[14px] text-[var(--tinta2)]">
-        Todo lo que la app ya sabe de ti. Cada entrevista añade datos aquí, y cuantos más haya,
+    <div className="max-w-2xl">
+      <h1 className="display text-[32px] leading-tight">Mi ficha</h1>
+      <p className="nota mt-2 max-w-lg">
+        Todo lo que el radar ya sabe de ti. Cada entrevista añade datos aquí, y cuantos más haya
         menos te pregunta. Si borras uno, la próxima entrevista volverá a preguntarlo.
       </p>
 
-      <div className="tarjeta mt-5 p-4">
-        <div className="titulo-seccion mb-3">AÑADIR / CORREGIR UN DATO</div>
-        <form
-          className="flex flex-wrap gap-2"
-          onSubmit={(e) => {
-            e.preventDefault();
-            if (clave.trim()) void guardar(clave.trim(), valor.trim());
-          }}
-        >
+      <form
+        className="mt-10 flex flex-wrap items-end gap-4"
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (clave.trim()) void guardar(clave.trim(), valor.trim());
+        }}
+      >
+        <label className="block">
+          <span className="rotulo mb-1.5 block">Dato</span>
           <input
-            className="control mono flex-1"
+            className="campo cifra w-[200px]"
             list="claves"
-            placeholder="clave (ej: tipo_actividad)"
+            placeholder="tipo_actividad"
             value={clave}
             onChange={(e) => setClave(e.target.value)}
           />
-          <datalist id="claves">
-            {SUGERENCIAS.map((s) => (
-              <option key={s.clave} value={s.clave}>
-                {s.ayuda}
-              </option>
-            ))}
-          </datalist>
+        </label>
+        <datalist id="claves">
+          {SUGERENCIAS.map((s) => (
+            <option key={s.clave} value={s.clave}>
+              {s.ayuda}
+            </option>
+          ))}
+        </datalist>
+        <label className="block flex-1">
+          <span className="rotulo mb-1.5 block">Valor</span>
           <input
-            className="control flex-1"
-            placeholder="valor"
+            className="campo w-full"
+            placeholder="autonomo"
             value={valor}
             onChange={(e) => setValor(e.target.value)}
           />
-          <button className="boton boton-lima" type="submit">
-            GUARDAR
-          </button>
-        </form>
-        <div className="mt-3 flex flex-wrap gap-2">
+        </label>
+        <button className="btn" type="submit">
+          Guardar
+        </button>
+      </form>
+
+      {SUGERENCIAS.filter((s) => !usadas.has(s.clave)).length > 0 && (
+        <div className="mt-5 flex flex-wrap items-center gap-x-4 gap-y-2">
+          <span className="rotulo">Sugerencias</span>
           {SUGERENCIAS.filter((s) => !usadas.has(s.clave)).map((s) => (
             <button
               key={s.clave}
-              className="chip cursor-pointer hover:text-[var(--tinta)]"
+              className="filtro cifra"
               title={s.ayuda}
               onClick={() => setClave(s.clave)}
             >
-              + {s.clave}
+              {s.clave}
             </button>
           ))}
         </div>
-      </div>
+      )}
 
       {hechos.length === 0 ? (
-        <div className="mt-8 text-center text-[var(--tinta2)]">
-          <div className="text-3xl">🗂️</div>
-          <p className="mt-2">
-            Ficha vacía. Se irá rellenando sola con las entrevistas de «¿Encajo?».
-          </p>
-        </div>
+        <p className="filete mt-10 py-16 text-center text-[14px] text-[var(--niebla)]">
+          Ficha vacía. Se irá rellenando sola con las entrevistas.
+        </p>
       ) : (
-        <div className="mt-5 space-y-2">
+        <div className="mt-10">
           {hechos.map((h) => (
-            <div key={h.clave} className="tarjeta flex items-center gap-3 px-4 py-3">
-              <div className="min-w-0 flex-1">
-                <div className="mono text-[12px] tracking-wider text-[var(--cian)]">{h.clave}</div>
-                <div className="truncate text-[15px] font-semibold">{h.valor}</div>
-                <div className="text-[11px] text-[var(--tinta2)]">
-                  {h.fuente} · {h.updatedAt.slice(0, 10)}
-                </div>
-              </div>
+            <div key={h.clave} className="dato flex items-baseline gap-6">
+              <span className="rotulo cifra w-[170px] shrink-0">{h.clave}</span>
+              <span className="display flex-1 text-[17px]">{h.valor}</span>
+              <span className="text-[11.5px] text-[var(--niebla)]">{h.fuente}</span>
               <button
-                className="boton boton-fantasma"
-                title="Borrar (volverá a preguntarse)"
+                className="text-[12px] text-[var(--niebla)] transition-colors hover:text-[var(--senal)]"
+                title="Borrar: volverá a preguntarse"
                 onClick={() => void borrar(h.clave)}
               >
-                🗑
+                borrar
               </button>
             </div>
           ))}

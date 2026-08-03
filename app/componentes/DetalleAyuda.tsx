@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Entrevista from "./Entrevista";
-import { clasePlazo, euros, textoPlazo, type ConvUi } from "./tipos-ui";
+import { colorPlazo, euros, fraseP1azo, nivelBonito, type ConvUi } from "./tipos-ui";
 
 interface Detalle {
   conv: ConvUi;
@@ -25,12 +25,19 @@ export default function DetalleAyuda({
   const [entrevistando, setEntrevistando] = useState(false);
   const [creandoExp, setCreandoExp] = useState(false);
 
-  // El componente se monta con key={codigo}, así que no hay que resetear estado.
   useEffect(() => {
     fetch(`/api/convocatorias/${codigo}`)
       .then((r) => r.json())
       .then(setD);
   }, [codigo]);
+
+  useEffect(() => {
+    const alPulsar = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onCerrar();
+    };
+    window.addEventListener("keydown", alPulsar);
+    return () => window.removeEventListener("keydown", alPulsar);
+  }, [onCerrar]);
 
   async function alExpediente() {
     setCreandoExp(true);
@@ -46,113 +53,117 @@ export default function DetalleAyuda({
   return (
     <>
       <div className="telon" onClick={onCerrar} />
-      <aside className="cajon p-6">
-        <div className="flex items-start justify-between gap-3">
-          <span className="chip">{codigo}</span>
-          <button className="boton boton-fantasma" onClick={onCerrar}>
+      <aside className="cajon">
+        <div className="sticky top-0 flex items-center justify-between border-b border-[var(--linea)] bg-[var(--lienzo)] px-8 py-4">
+          <span className="rotulo cifra">BDNS {codigo}</span>
+          <button
+            className="text-[18px] leading-none text-[var(--niebla)] transition-colors hover:text-[var(--tinta)]"
+            onClick={onCerrar}
+          >
             ✕
           </button>
         </div>
 
         {!d ? (
-          <div className="mt-8 flex items-center gap-3 text-[var(--tinta2)]">
-            <div className="disco-radar girando" /> Cargando la ficha oficial…
+          <div className="flex items-center gap-2 px-8 py-10 text-[13px] text-[var(--niebla)]">
+            <span className="pulso" /> Cargando la ficha oficial…
           </div>
         ) : d.error ? (
-          <div className="aviso-legal mt-6 p-3 text-[var(--rojo)]">{d.error}</div>
+          <p className="px-8 py-10 text-[13px] text-[var(--senal)]">{d.error}</p>
         ) : (
-          <>
-            <div className={`${clasePlazo(d.conv.plazo)} mt-4 text-2xl`}>
-              {textoPlazo(d.conv.plazo)}
-            </div>
-            {(d.conv.fechaInicioSol || d.conv.fechaFinSol) && (
-              <div className="mono mt-1 text-[12px] text-[var(--tinta2)]">
-                Solicitudes: {d.conv.fechaInicioSol ?? "?"} → {d.conv.fechaFinSol ?? "?"}
-              </div>
-            )}
+          <div className="px-8 pb-16 pt-8">
+            <p
+              className="display text-[15px] italic"
+              style={{ color: colorPlazo(d.conv.plazo) }}
+            >
+              {fraseP1azo(d.conv.plazo)}
+            </p>
 
-            <h2 className="mt-3 text-lg font-bold leading-snug">{d.conv.titulo}</h2>
-            <div className="mt-1 text-[13px] text-[var(--tinta2)]">
-              {d.conv.nivel3 ?? d.conv.nivel2} · {d.conv.nivel2}
-            </div>
+            <h2 className="display mt-2 text-[22px] leading-[1.3]">{d.conv.titulo}</h2>
 
-            <div className="mt-4 grid grid-cols-2 gap-2 text-[13px]">
-              {euros(d.conv.presupuesto) && (
-                <Dato k="PRESUPUESTO" v={euros(d.conv.presupuesto)!} destacado />
+            <p className="mt-3 text-[13px] text-[var(--grafito)]">
+              {d.conv.nivel3 ?? d.conv.nivel2}
+              <span className="text-[var(--niebla)]"> · {nivelBonito(d.conv.nivel1)}</span>
+            </p>
+
+            <div className="mt-8">
+              {(d.conv.fechaInicioSol || d.conv.fechaFinSol) && (
+                <Dato etiqueta="Plazo de solicitud">
+                  <span className="cifra">
+                    {d.conv.fechaInicioSol ?? "?"} — {d.conv.fechaFinSol ?? "?"}
+                  </span>
+                </Dato>
               )}
-              {d.conv.finalidad && <Dato k="FINALIDAD" v={d.conv.finalidad} />}
+              {euros(d.conv.presupuesto) && (
+                <Dato etiqueta="Presupuesto">
+                  <span className="display cifra text-[22px]">{euros(d.conv.presupuesto)}</span>
+                </Dato>
+              )}
+              {d.conv.finalidad && <Dato etiqueta="Finalidad">{d.conv.finalidad}</Dato>}
               {d.conv.beneficiarios.length > 0 && (
-                <Dato k="BENEFICIARIOS" v={d.conv.beneficiarios.join(" · ")} ancho />
+                <Dato etiqueta="Quién puede pedirla">
+                  {d.conv.beneficiarios.join(" · ").toLowerCase()}
+                </Dato>
               )}
               {d.conv.instrumentos.length > 0 && (
-                <Dato k="TIPO DE AYUDA" v={d.conv.instrumentos.join(" · ")} ancho />
+                <Dato etiqueta="Tipo de ayuda">
+                  {d.conv.instrumentos.join(" · ").toLowerCase()}
+                </Dato>
               )}
-              {d.conv.fondos.length > 0 && <Dato k="FONDOS" v={d.conv.fondos.join(" · ")} ancho />}
+              {d.conv.fondos.length > 0 && (
+                <Dato etiqueta="Fondos">{d.conv.fondos.join(" · ")}</Dato>
+              )}
+              <Dato etiqueta="Fuentes oficiales">
+                <span className="flex flex-wrap gap-x-5 gap-y-1">
+                  <a className="enlace" href={d.urlFicha} target="_blank" rel="noreferrer">
+                    Ficha BDNS
+                  </a>
+                  {d.conv.urlBases && (
+                    <a className="enlace" href={d.conv.urlBases} target="_blank" rel="noreferrer">
+                      Bases reguladoras
+                    </a>
+                  )}
+                  {d.conv.sede && (
+                    <a className="enlace" href={d.conv.sede} target="_blank" rel="noreferrer">
+                      Sede electrónica
+                    </a>
+                  )}
+                </span>
+              </Dato>
             </div>
 
-            <div className="mt-4 flex flex-wrap gap-3 text-[13px]">
-              <a className="enlace" href={d.urlFicha} target="_blank" rel="noreferrer">
-                Ficha oficial BDNS ↗
-              </a>
-              {d.conv.urlBases && (
-                <a className="enlace" href={d.conv.urlBases} target="_blank" rel="noreferrer">
-                  Bases reguladoras ↗
-                </a>
-              )}
-              {d.conv.sede && (
-                <a className="enlace" href={d.conv.sede} target="_blank" rel="noreferrer">
-                  Sede electrónica ↗
-                </a>
-              )}
-            </div>
-
-            <div className="mt-6 flex gap-2">
+            <div className="mt-8 flex flex-wrap gap-3">
               {!entrevistando && (
-                <button className="boton boton-lima flex-1" onClick={() => setEntrevistando(true)}>
-                  🎯 ¿ENCAJO?
+                <button className="btn" onClick={() => setEntrevistando(true)}>
+                  ¿Encajo en esta ayuda?
                 </button>
               )}
               <button
-                className="boton boton-cian flex-1"
+                className="btn btn-linea"
                 onClick={() => void alExpediente()}
                 disabled={creandoExp}
               >
-                {d.expediente ? "📁 VER EXPEDIENTE" : creandoExp ? "…" : "📁 AL EXPEDIENTE"}
+                {d.expediente ? "Ver expediente" : creandoExp ? "Creando…" : "Abrir expediente"}
               </button>
             </div>
 
             {entrevistando && (
-              <div className="mt-5 border-t border-[var(--borde)] pt-5">
-                <div className="titulo-seccion mb-3">¿ENCAJO EN ESTA AYUDA?</div>
+              <div className="filete mt-10 pt-8">
                 <Entrevista codigo={codigo} />
               </div>
             )}
-          </>
+          </div>
         )}
       </aside>
     </>
   );
 }
 
-function Dato({
-  k,
-  v,
-  ancho,
-  destacado,
-}: {
-  k: string;
-  v: string;
-  ancho?: boolean;
-  destacado?: boolean;
-}) {
+function Dato({ etiqueta, children }: { etiqueta: string; children: React.ReactNode }) {
   return (
-    <div
-      className={`rounded-lg border border-[var(--borde)] p-2 ${ancho ? "col-span-2" : ""}`}
-    >
-      <div className="titulo-seccion text-[9px]">{k}</div>
-      <div className={destacado ? "mono mt-1 text-lg font-bold text-[var(--lima)]" : "mt-1"}>
-        {v}
-      </div>
+    <div className="dato">
+      <div className="rotulo mb-1.5">{etiqueta}</div>
+      <div className="text-[14px] leading-relaxed">{children}</div>
     </div>
   );
 }

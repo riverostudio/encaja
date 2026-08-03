@@ -15,12 +15,11 @@ interface RespuestaEncaje {
   error?: string;
 }
 
-const CARA: Record<string, string> = { encaja: "✅", no_encaja: "❌", duda: "🤔", pendiente: "⏳" };
-const TITULO: Record<string, string> = {
-  encaja: "ENCAJAS",
-  no_encaja: "NO ENCAJAS",
-  duda: "HAY DUDAS",
-  pendiente: "SIN TERMINAR",
+const VEREDICTO: Record<string, { texto: string; color: string }> = {
+  encaja: { texto: "Encajas", color: "var(--bosque)" },
+  no_encaja: { texto: "No encajas", color: "var(--senal)" },
+  duda: { texto: "Con dudas", color: "var(--ocre)" },
+  pendiente: { texto: "Sin terminar", color: "var(--grafito)" },
 };
 
 export default function Entrevista({ codigo }: { codigo: string }) {
@@ -69,116 +68,98 @@ export default function Entrevista({ codigo }: { codigo: string }) {
 
   if (error) {
     return (
-      <div className="aviso-legal p-3 text-[var(--rojo)]">
+      <p className="text-[13px] text-[var(--senal)]">
         {error.includes("SIN_CLAVE_GEMINI")
-          ? "Falta la clave de Gemini: pégala en Ajustes (⚙︎ arriba a la derecha)."
+          ? "Falta la clave de Gemini: pégala en Ajustes, arriba a la derecha."
           : error}
-      </div>
+      </p>
     );
   }
 
   if (!estado) {
     return (
-      <div className="flex items-center gap-3 p-2 text-[var(--tinta2)]">
-        <div className="disco-radar girando" /> Analizando la convocatoria…
-      </div>
+      <p className="flex items-center gap-2 text-[13px] text-[var(--niebla)]">
+        <span className="pulso" /> Analizando la convocatoria…
+      </p>
     );
   }
 
   if (estado.fase === "sin_ia" || estado.fase === "sin_bases") {
     return (
-      <div className="space-y-3">
-        <EstructuralResumen estado={estado} />
-        <div className="aviso-legal p-3">{estado.aviso}</div>
+      <div>
+        <Estructural estado={estado} />
+        <p className="nota mt-4">{estado.aviso}</p>
       </div>
     );
   }
 
   if (estado.fase === "dictamen" && estado.dictamen) {
+    const v = VEREDICTO[estado.dictamen];
     return (
-      <div className="space-y-3">
-        <div
-          className={`rounded-xl border p-4 text-center ${
-            estado.dictamen === "encaja"
-              ? "border-[var(--lima)] bg-[rgba(184,255,41,0.06)]"
-              : estado.dictamen === "no_encaja"
-                ? "border-[var(--rojo)] bg-[rgba(255,77,94,0.06)]"
-                : "border-[var(--ambar)] bg-[rgba(255,176,32,0.06)]"
-          }`}
-        >
-          <div className="text-3xl">{CARA[estado.dictamen]}</div>
-          <div className="mono mt-1 text-lg font-bold tracking-[0.15em]">
-            {TITULO[estado.dictamen]}
-          </div>
-        </div>
-        <ul className="space-y-2">
+      <div>
+        <p className="rotulo">Dictamen</p>
+        <p className="display mt-1 text-[30px] leading-none" style={{ color: v.color }}>
+          {v.texto}
+        </p>
+        <div className="mt-6">
           {(estado.motivos ?? []).map((m, i) => (
-            <li key={i} className="rounded-lg border border-[var(--borde)] p-3 text-[13px]">
-              <div>{m.detalle}</div>
+            <div key={i} className="dato">
+              <p className="text-[14px] leading-relaxed">{m.detalle}</p>
               {m.literal && (
-                <div className="mt-1 border-l-2 border-[var(--borde)] pl-2 text-[12px] italic text-[var(--tinta2)]">
-                  «{m.literal}»
-                </div>
+                <p className="display mt-2 border-l-2 border-[var(--linea-fuerte)] pl-3 text-[13.5px] italic leading-relaxed text-[var(--grafito)]">
+                  {m.literal}
+                </p>
               )}
-              <div className="mono mt-1 text-[10px] uppercase tracking-widest text-[var(--tinta2)]">
-                {m.origen === "bases" ? "según las bases" : "según los datos BDNS"}
-              </div>
-            </li>
+              <p className="rotulo mt-2">
+                {m.origen === "bases" ? "según las bases" : "según los datos oficiales"}
+              </p>
+            </div>
           ))}
-        </ul>
+        </div>
       </div>
     );
   }
 
   const p = estado.pregunta;
   return (
-    <div className="space-y-3">
-      <EstructuralResumen estado={estado} />
+    <div>
+      <Estructural estado={estado} />
 
       {estado.progreso && estado.progreso.total > 0 && (
-        <div>
-          <div className="mono mb-1 text-[11px] text-[var(--tinta2)]">
-            ENTREVISTA · {estado.progreso.respondidas}/{estado.progreso.total}
-          </div>
-          <div className="h-1.5 overflow-hidden rounded bg-[var(--panel2)]">
-            <div
-              className="h-full bg-[var(--cian)] transition-all"
-              style={{
-                width: `${(estado.progreso.respondidas / Math.max(1, estado.progreso.total)) * 100}%`,
-              }}
-            />
-          </div>
-        </div>
+        <p className="rotulo mt-5">
+          Pregunta {Math.min(estado.progreso.respondidas + 1, estado.progreso.total)} de{" "}
+          {estado.progreso.total}
+        </p>
       )}
 
       {cargando && (
-        <div className="flex items-center gap-3 p-2 text-[var(--tinta2)]">
-          <div className="disco-radar girando" /> Pensando…
-        </div>
+        <p className="mt-4 flex items-center gap-2 text-[13px] text-[var(--niebla)]">
+          <span className="pulso" /> Pensando…
+        </p>
       )}
 
       {!cargando && estado.fase === "entrevista" && p && (
-        <div className="rounded-xl border border-[var(--borde)] p-4">
-          <div className="text-[15px] font-semibold">{p.pregunta}</div>
-          <div className="mt-2 border-l-2 border-[var(--borde)] pl-2 text-[12px] italic text-[var(--tinta2)]">
-            «{p.literal}»
-          </div>
-          <div className="mt-3">
+        <div className="mt-3">
+          <p className="display text-[20px] leading-snug">{p.pregunta}</p>
+          <p className="display mt-3 border-l-2 border-[var(--linea-fuerte)] pl-3 text-[13px] italic leading-relaxed text-[var(--grafito)]">
+            {p.literal}
+          </p>
+          <div className="mt-5">
             {p.respuestas && p.respuestas.length > 0 ? (
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-3">
                 {p.respuestas.map((r) => (
                   <button
                     key={r}
-                    className="boton boton-cian"
+                    className="btn btn-linea"
                     onClick={() => void llamar({ accion: "responder", clave: p.clave!, valor: r })}
                   >
-                    {r.toUpperCase()}
+                    {r}
                   </button>
                 ))}
               </div>
             ) : (
               <form
-                className="flex gap-2"
+                className="flex items-end gap-3"
                 onSubmit={(e) => {
                   e.preventDefault();
                   if (texto.trim())
@@ -187,13 +168,13 @@ export default function Entrevista({ codigo }: { codigo: string }) {
               >
                 <input
                   autoFocus
-                  className="control flex-1"
+                  className="campo flex-1"
                   placeholder="Tu respuesta…"
                   value={texto}
                   onChange={(e) => setTexto(e.target.value)}
                 />
-                <button className="boton boton-cian" type="submit">
-                  →
+                <button className="btn" type="submit">
+                  Seguir
                 </button>
               </form>
             )}
@@ -202,28 +183,28 @@ export default function Entrevista({ codigo }: { codigo: string }) {
       )}
 
       {!cargando && estado.fase === "listo_para_dictamen" && (
-        <button className="boton boton-lima w-full" onClick={() => void llamar({ accion: "dictaminar" })}>
-          ⚖️ DICTAMINAR CON TODO LO RESPONDIDO
+        <button className="btn mt-4" onClick={() => void llamar({ accion: "dictaminar" })}>
+          Dictaminar
         </button>
       )}
 
       {(estado.requisitos?.length ?? 0) > 0 && (
-        <div>
-          <button
-            className="mono text-[11px] tracking-widest text-[var(--tinta2)] underline underline-offset-4"
-            onClick={() => setVerRequisitos(!verRequisitos)}
-          >
-            {verRequisitos ? "OCULTAR" : "VER"} LOS {estado.requisitos!.length} REQUISITOS DE LAS BASES
+        <div className="mt-8">
+          <button className="btn-texto" onClick={() => setVerRequisitos(!verRequisitos)}>
+            {verRequisitos ? "Ocultar" : "Ver"} los {estado.requisitos!.length} requisitos de las
+            bases
           </button>
           {verRequisitos && (
-            <ul className="mt-2 space-y-1 text-[12px] text-[var(--tinta2)]">
+            <div className="mt-3">
               {estado.requisitos!.map((r) => (
-                <li key={r.id} className="rounded border border-[var(--borde)] p-2">
-                  <span className="chip mr-2">{r.tipo.toUpperCase()}</span>
-                  {r.literal}
-                </li>
+                <div key={r.id} className="dato">
+                  <p className="rotulo mb-1">{r.tipo}</p>
+                  <p className="display text-[13.5px] italic leading-relaxed text-[var(--grafito)]">
+                    {r.literal}
+                  </p>
+                </div>
               ))}
-            </ul>
+            </div>
           )}
         </div>
       )}
@@ -231,19 +212,19 @@ export default function Entrevista({ codigo }: { codigo: string }) {
   );
 }
 
-function EstructuralResumen({ estado }: { estado: RespuestaEncaje }) {
+function Estructural({ estado }: { estado: RespuestaEncaje }) {
   const e = estado.estructural;
   if (!e) return null;
   return (
-    <div className="rounded-lg border border-[var(--borde)] p-3 text-[12px]">
-      <span className="mono mr-2 tracking-widest text-[var(--tinta2)]">FILTRO BDNS:</span>
+    <p className="text-[13px] text-[var(--grafito)]">
+      <span className="rotulo">Filtro oficial · </span>
       {e.resultado === "pasa" ? (
-        <span className="text-[var(--lima)]">pasa (beneficiario, territorio y plazo cuadran)</span>
-      ) : (
-        <span className="text-[var(--ambar)]">
-          {e.motivos.map((m) => m.detalle).join(" · ")}
+        <span style={{ color: "var(--bosque)" }}>
+          beneficiario, territorio y plazo cuadran contigo
         </span>
+      ) : (
+        <span style={{ color: "var(--ocre)" }}>{e.motivos.map((m) => m.detalle).join(" · ")}</span>
       )}
-    </div>
+    </p>
   );
 }

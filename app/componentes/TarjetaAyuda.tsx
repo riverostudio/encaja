@@ -1,14 +1,12 @@
 "use client";
 
-import { chipInstrumento, clasePlazo, euros, textoPlazo, type ConvUi } from "./tipos-ui";
+import { euros, nivelBonito, plazoVisual, tipoAyuda, type ConvUi } from "./tipos-ui";
 
-const NIVELES: Record<string, string> = {
-  ESTADO: "ESTATAL",
-  AUTONOMICA: "AUTONÓMICA",
-  LOCAL: "LOCAL",
-  OTROS: "OTROS",
-};
-
+/**
+ * Una ayuda como fila de un índice tipográfico: la cuenta atrás a la
+ * izquierda en cifra grande, el título en serif, y el importe alineado
+ * a la derecha. Sin cajas ni etiquetas de colores.
+ */
 export default function TarjetaAyuda({
   conv,
   onAbrir,
@@ -16,28 +14,41 @@ export default function TarjetaAyuda({
   conv: ConvUi;
   onAbrir: (codigo: string) => void;
 }) {
-  const chip = chipInstrumento(conv.instrumentos);
+  const p = plazoVisual(conv.plazo);
   const importe = euros(conv.presupuesto);
+  const tipo = tipoAyuda(conv.instrumentos);
+
   return (
-    <button
-      onClick={() => onAbrir(conv.codigoBdns)}
-      className={`tarjeta w-full p-4 text-left ${conv.plazo.estado === "urgente" ? "tarjeta-urgente" : ""}`}
-    >
-      <div className="flex items-start justify-between gap-3">
-        <span className="chip">{NIVELES[conv.nivel1] ?? conv.nivel1}</span>
-        <span className={`${clasePlazo(conv.plazo)} text-[12px]`}>{textoPlazo(conv.plazo)}</span>
-      </div>
-      <h3 className="mt-2 line-clamp-3 text-[15px] font-semibold leading-snug">{conv.titulo}</h3>
-      <div className="mt-2 text-[12px] text-[var(--tinta2)]">
-        {conv.nivel3 ?? conv.nivel2}
-        {conv.nivel3 && conv.nivel2 !== conv.nivel3 ? ` · ${conv.nivel2}` : ""}
-      </div>
-      <div className="mt-3 flex flex-wrap items-center gap-2">
-        {chip && <span className="chip text-[var(--lima)]">{chip}</span>}
-        {importe && <span className="chip">{importe}</span>}
-        {conv.mrr && <span className="chip">FONDOS UE</span>}
-        {!conv.detalleAt && <span className="chip latiendo">DETALLE PENDIENTE</span>}
-      </div>
+    <button className="fila" onClick={() => onAbrir(conv.codigoBdns)}>
+      <span className="block">
+        <span
+          className={`display cifra block leading-none ${p.grande ? "text-[30px]" : "text-[19px]"}`}
+          style={{ color: p.color }}
+        >
+          {p.cifra}
+        </span>
+        <span className="rotulo mt-1.5 block" style={{ color: p.color, opacity: 0.75 }}>
+          {p.pie}
+        </span>
+      </span>
+
+      <span className="block min-w-0">
+        <span className="display line-clamp-2 block text-[17px] leading-snug">{conv.titulo}</span>
+        <span className="mt-1.5 block text-[12.5px] text-[var(--grafito)]">
+          {conv.nivel3 ?? conv.nivel2}
+          <span className="text-[var(--niebla)]"> · {nivelBonito(conv.nivel1)}</span>
+          {tipo && <span className="text-[var(--niebla)]"> · {tipo}</span>}
+        </span>
+      </span>
+
+      <span className="hidden text-right sm:block">
+        {importe && (
+          <span className="cifra block text-[14px] font-medium tabular-nums">{importe}</span>
+        )}
+        {!conv.detalleAt && (
+          <span className="rotulo mt-1 block">sin detalle</span>
+        )}
+      </span>
     </button>
   );
 }

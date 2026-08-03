@@ -19,6 +19,20 @@ interface Ccaa {
 
 const SEIS_HORAS = 6 * 60 * 60 * 1000;
 
+const ESTADOS = [
+  { clave: "", texto: "Vigentes" },
+  { clave: "urgentes", texto: "Cierran ya" },
+  { clave: "abiertas", texto: "Abiertas" },
+  { clave: "proximas", texto: "Abren pronto" },
+  { clave: "todas", texto: "Todas" },
+];
+
+const TIPOS = [
+  { clave: "", texto: "Todo tipo" },
+  { clave: "SUBVENCIÓN", texto: "Fondo perdido" },
+  { clave: "PRÉSTAMO", texto: "Préstamos" },
+];
+
 export default function PaginaRadar() {
   const [ccaas, setCcaas] = useState<Ccaa[]>([]);
   const [region, setRegion] = useState<number | "">(54);
@@ -52,9 +66,7 @@ export default function PaginaRadar() {
     const d = (await (await fetch("/api/sync")).json()) as Omit<EstadoSync, "horas">;
     const conHoras: EstadoSync = {
       ...d,
-      horas: d.ultimo
-        ? Math.floor((Date.now() - new Date(d.ultimo).getTime()) / 3_600_000)
-        : null,
+      horas: d.ultimo ? Math.floor((Date.now() - new Date(d.ultimo).getTime()) / 3_600_000) : null,
     };
     setSync(conHoras);
     return conHoras;
@@ -78,8 +90,7 @@ export default function PaginaRadar() {
     [refrescarSync, cargarLista],
   );
 
-  // Arranque: ajustes guardados + auto-sync si hace >6h (elección de Victor:
-  // sin cron — se actualiza al entrar o con el botón).
+  // Arranque: ajustes guardados + auto-sync si hace más de 6 h.
   useEffect(() => {
     if (inicializado.current) return;
     inicializado.current = true;
@@ -96,7 +107,6 @@ export default function PaginaRadar() {
     })();
   }, [refrescarSync, sincronizar]);
 
-  // Recarga con debounce al cambiar filtros
   useEffect(() => {
     if (debounce.current) clearTimeout(debounce.current);
     debounce.current = setTimeout(() => void cargarLista(), 250);
@@ -105,7 +115,6 @@ export default function PaginaRadar() {
     };
   }, [cargarLista]);
 
-  // Resolver CP al vuelo (con CP incompleto no se enseña zona)
   useEffect(() => {
     if (cp.length !== 5) return;
     fetch(`/api/territorio?cp=${cp}`)
@@ -122,152 +131,139 @@ export default function PaginaRadar() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ccaa: nueva }),
       });
-      // Territorio recién elegido: sincroniza sus convocatorias si no las tenemos
       void sincronizar(nueva);
     }
   }
 
-  const horasDesdeSync = sync?.horas ?? null;
   const zonaVisible = cp.length === 5 ? zona : null;
+  const desactualizado = sync?.horas != null && sync.horas > 168;
 
   return (
     <div>
-      {/* ——— cabecera de mando ——— */}
-      <div className="flex flex-wrap items-end gap-3">
-        <div>
-          <div className="titulo-seccion mb-1">TERRITORIO</div>
+      {/* ——— buscador, protagonista ——— */}
+      <input
+        className="campo display w-full border-b-0 !text-[26px] leading-tight placeholder:text-[var(--niebla)]"
+        placeholder="Busca una ayuda…"
+        value={texto}
+        onChange={(e) => setTexto(e.target.value)}
+      />
+
+      {/* ——— territorio ——— */}
+      <div className="mt-7 flex flex-wrap items-end gap-x-10 gap-y-5">
+        <label className="block">
+          <span className="rotulo mb-1.5 block">Comunidad</span>
           <select
-            className="control"
+            className="campo min-w-[220px]"
             value={region}
             onChange={(e) => void cambiarRegion(e.target.value)}
           >
-            <option value="">🇪🇸 Toda España (lo sincronizado)</option>
+            <option value="">Toda España</option>
             {ccaas.map((c) => (
               <option key={c.id} value={c.id}>
                 {c.nombre}
               </option>
             ))}
           </select>
-        </div>
-        <div>
-          <div className="titulo-seccion mb-1">TU CÓDIGO POSTAL</div>
-          <input
-            className="control w-32"
-            placeholder="46183"
-            maxLength={5}
-            value={cp}
-            onChange={(e) => setCp(e.target.value.replace(/\D/g, ""))}
-          />
-          {zonaVisible && (
-            <span className="mono ml-2 text-[11px] text-[var(--cian)]">
-              → {zonaVisible.municipio} · {zonaVisible.provincia}
+        </label>
+
+        <label className="block">
+          <span className="rotulo mb-1.5 block">Código postal</span>
+          <span className="flex items-baseline gap-3">
+            <input
+              className="campo cifra w-[70px]"
+              placeholder="—"
+              maxLength={5}
+              value={cp}
+              onChange={(e) => setCp(e.target.value.replace(/\D/g, ""))}
+            />
+            <span className="text-[13px] text-[var(--grafito)]">
+              {zonaVisible
+                ? `${zonaVisible.municipio}, ${zonaVisible.provincia}`
+                : cp.length === 5
+                  ? "sin resultado"
+                  : "para ver lo de tu pueblo"}
             </span>
+          </span>
+        </label>
+      </div>
+
+      {/* ——— filtros de texto ——— */}
+      <div className="mt-8 flex flex-wrap items-center gap-x-5 gap-y-3">
+        {ESTADOS.map((e) => (
+          <button
+            key={e.clave}
+            className={`filtro ${estadoFiltro === e.clave ? "filtro-activo" : ""}`}
+            onClick={() => setEstadoFiltro(e.clave)}
+          >
+            {e.texto}
+          </button>
+        ))}
+        <span className="text-[var(--linea-fuerte)]">/</span>
+        {TIPOS.map((t) => (
+          <button
+            key={t.clave}
+            className={`filtro ${instrumento === t.clave ? "filtro-activo" : ""}`}
+            onClick={() => setInstrumento(t.clave)}
+          >
+            {t.texto}
+          </button>
+        ))}
+      </div>
+
+      {/* ——— estado del archivo ——— */}
+      <div className="mt-8 flex flex-wrap items-baseline justify-between gap-3">
+        <p className="text-[12.5px] text-[var(--niebla)]">
+          {cargando ? (
+            <span className="inline-flex items-center gap-2">
+              <span className="pulso" /> Consultando…
+            </span>
+          ) : (
+            <>
+              <span className="cifra text-[var(--grafito)]">{filas.length}</span> ayudas · las que
+              antes cierran, primero
+            </>
           )}
-        </div>
-        <div className="min-w-48 flex-1">
-          <div className="titulo-seccion mb-1">BUSCAR</div>
-          <input
-            className="control w-full"
-            placeholder="empleo, digitalización, eficiencia energética…"
-            value={texto}
-            onChange={(e) => setTexto(e.target.value)}
-          />
-        </div>
-      </div>
-
-      {/* ——— filtros rápidos ——— */}
-      <div className="mt-3 flex flex-wrap gap-2">
-        <Filtro activo={estadoFiltro === ""} onClick={() => setEstadoFiltro("")}>
-          VIGENTES
-        </Filtro>
-        <Filtro activo={estadoFiltro === "urgentes"} onClick={() => setEstadoFiltro("urgentes")}>
-          🔴 CIERRAN YA
-        </Filtro>
-        <Filtro activo={estadoFiltro === "abiertas"} onClick={() => setEstadoFiltro("abiertas")}>
-          ABIERTAS
-        </Filtro>
-        <Filtro activo={estadoFiltro === "proximas"} onClick={() => setEstadoFiltro("proximas")}>
-          ⏳ ABREN PRONTO
-        </Filtro>
-        <Filtro activo={estadoFiltro === "todas"} onClick={() => setEstadoFiltro("todas")}>
-          TODAS
-        </Filtro>
-        <span className="mx-1 self-center text-[var(--borde)]">│</span>
-        <Filtro activo={instrumento === ""} onClick={() => setInstrumento("")}>
-          TODO TIPO
-        </Filtro>
-        <Filtro
-          activo={instrumento === "SUBVENCIÓN"}
-          onClick={() => setInstrumento("SUBVENCIÓN")}
-        >
-          € FONDO PERDIDO
-        </Filtro>
-        <Filtro activo={instrumento === "PRÉSTAMO"} onClick={() => setInstrumento("PRÉSTAMO")}>
-          PRÉSTAMOS
-        </Filtro>
-      </div>
-
-      {/* ——— banner de sincronización ——— */}
-      <div className="tarjeta mt-4 flex flex-wrap items-center gap-3 px-4 py-3">
-        {sincronizando ? (
-          <>
-            <div className="disco-radar girando" />
-            <span className="mono text-[12px] tracking-widest text-[var(--cian)]">
-              SINCRONIZANDO CON LA BDNS…
+        </p>
+        <p className="text-[12.5px]">
+          {sincronizando ? (
+            <span className="inline-flex items-center gap-2 text-[var(--niebla)]">
+              <span className="pulso" /> Sincronizando con la BDNS…
             </span>
-          </>
-        ) : (
-          <>
-            <span
-              className={`mono text-[12px] ${
-                horasDesdeSync != null && horasDesdeSync > 168
-                  ? "text-[var(--rojo)]"
-                  : "text-[var(--tinta2)]"
-              }`}
-            >
-              {sync?.ultimo
-                ? `Última actualización: hace ${
-                    horasDesdeSync! < 1 ? "menos de 1 h" : `${horasDesdeSync} h`
-                  } · ${sync.total.toLocaleString("es-ES")} convocatorias en tu radar`
-                : "Aún sin datos: pulsa actualizar"}
-              {sync && sync.pendientesDetalle > 0
-                ? ` · ${sync.pendientesDetalle} detalles pendientes`
-                : ""}
-            </span>
-            <button
-              className="boton boton-fantasma mono ml-auto text-[11px] tracking-widest"
-              onClick={() => void sincronizar(region === "" ? 54 : region)}
-            >
-              ⟳ ACTUALIZAR AHORA
-            </button>
-          </>
-        )}
+          ) : (
+            <>
+              <span className={desactualizado ? "text-[var(--senal)]" : "text-[var(--niebla)]"}>
+                {sync?.ultimo
+                  ? `${sync.total.toLocaleString("es-ES")} en el archivo · actualizado ${
+                      sync.horas! < 1 ? "hace un momento" : `hace ${sync.horas} h`
+                    }`
+                  : "archivo vacío"}
+              </span>{" "}
+              <button
+                className="btn-texto ml-2"
+                onClick={() => void sincronizar(region === "" ? 54 : region)}
+              >
+                Actualizar
+              </button>
+            </>
+          )}
+        </p>
       </div>
 
-      {/* ——— resultados ——— */}
-      {cargando ? (
-        <div className="mt-10 flex items-center justify-center gap-3 text-[var(--tinta2)]">
-          <div className="disco-radar girando" /> Barriendo el radar…
-        </div>
-      ) : filas.length === 0 ? (
-        <div className="mt-10 text-center text-[var(--tinta2)]">
-          <div className="text-3xl">📡</div>
-          <p className="mt-2">
-            Nada en pantalla con estos filtros. Prueba a actualizar, cambiar de territorio o quitar
-            filtros.
+      {/* ——— índice ——— */}
+      {!cargando && filas.length === 0 ? (
+        <div className="filete mt-4 py-20 text-center">
+          <p className="display text-[19px]">Nada con estos filtros.</p>
+          <p className="nota mx-auto mt-2 max-w-sm">
+            Prueba a quitar el buscador, cambiar de comunidad o pulsar «Actualizar» para traer lo
+            último de la BDNS.
           </p>
         </div>
       ) : (
-        <>
-          <div className="mono mt-4 text-[11px] tracking-widest text-[var(--tinta2)]">
-            {filas.length} AYUDAS EN PANTALLA · ORDENADAS POR CIERRE DE PLAZO
-          </div>
-          <div className="mt-2 grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
-            {filas.map((c) => (
-              <TarjetaAyuda key={c.codigoBdns} conv={c} onAbrir={setAbierta} />
-            ))}
-          </div>
-        </>
+        <div className="mt-4">
+          {filas.map((c) => (
+            <TarjetaAyuda key={c.codigoBdns} conv={c} onAbrir={setAbierta} />
+          ))}
+        </div>
       )}
 
       {abierta && (
@@ -275,27 +271,6 @@ export default function PaginaRadar() {
       )}
       <CargadorCcaas onCargar={setCcaas} />
     </div>
-  );
-}
-
-function Filtro({
-  activo,
-  onClick,
-  children,
-}: {
-  activo: boolean;
-  onClick: () => void;
-  children: React.ReactNode;
-}) {
-  return (
-    <button
-      onClick={onClick}
-      className={`chip cursor-pointer transition ${
-        activo ? "border-[var(--lima)] text-[var(--lima)]" : "hover:text-[var(--tinta)]"
-      }`}
-    >
-      {children}
-    </button>
   );
 }
 
