@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getRepo, errorJson } from "@/lib/servidor";
-import { generar, hayClave } from "@/lib/gemini";
+import { generar, hayClave } from "@/lib/ia";
 import { PROMPT_RESUMEN, parsearResumen } from "@/lib/requisitos";
 import { importeCorto } from "@/lib/resumen";
 

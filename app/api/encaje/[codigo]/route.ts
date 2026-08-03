@@ -3,7 +3,7 @@ import { getRepo, errorJson } from "@/lib/servidor";
 import { descargarBases, detalle } from "@/lib/bdns";
 import { evaluarEstructural } from "@/lib/encaje";
 import { dictaminar } from "@/lib/dictamen";
-import { generar, hayClave, type Parte } from "@/lib/gemini";
+import { generar, hayClave, type Parte } from "@/lib/ia";
 import {
   PROMPT_EXTRACCION,
   PROMPT_VEREDICTO,

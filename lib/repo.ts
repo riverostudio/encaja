@@ -66,8 +66,18 @@ function aConvocatoria(f: FilaDb): Convocatoria {
   };
 }
 
+/** Minúsculas y sin acentos, para que «energetica» encuentre «energética». */
+function pelar(s: string): string {
+  return s
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .toLowerCase();
+}
+
 export function crearRepo(db: Database.Database) {
   const ahora = () => new Date().toISOString();
+  // SQLite no sabe de acentos: se le enseña.
+  db.function("pelar", { deterministic: true }, (s: unknown) => pelar(String(s ?? "")));
 
   const stUpsertLista = db.prepare(`
     INSERT INTO convocatorias (codigo_bdns, titulo, titulo_coof, nivel1, nivel2, nivel3, fecha_registro, mrr, region_sync)
@@ -163,10 +173,19 @@ export function crearRepo(db: Database.Database) {
       const cond: string[] = [];
       const params: Record<string, unknown> = {};
       if (filtros.texto) {
-        cond.push(
-          `(lower(titulo) LIKE @texto OR lower(nivel2) LIKE @texto OR lower(coalesce(nivel3,'')) LIKE @texto)`,
-        );
-        params.texto = `%${filtros.texto.toLowerCase()}%`;
+        // Búsqueda a conciencia: cada palabra debe aparecer en alguna parte de
+        // la ficha (título, título cooficial, órgano, finalidad o sectores).
+        const palabras = pelar(filtros.texto)
+          .split(/\s+/)
+          .filter((p) => p.length > 1);
+        palabras.forEach((palabra, i) => {
+          cond.push(
+            `pelar(titulo || ' ' || coalesce(titulo_coof,'') || ' ' || nivel2 || ' ' ||
+              coalesce(nivel3,'') || ' ' || coalesce(finalidad,'') || ' ' || sectores)
+             LIKE @palabra${i}`,
+          );
+          params[`palabra${i}`] = `%${palabra}%`;
+        });
       }
       if (filtros.nivel1) {
         cond.push(`nivel1=@nivel1`);

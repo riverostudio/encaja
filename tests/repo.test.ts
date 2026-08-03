@@ -71,6 +71,29 @@ describe("repo", () => {
     expect(repo.buscar({ texto: "ecoriba" })[0].codigoBdns).toBe("923287");
   });
 
+  it("la búsqueda ignora los acentos", () => {
+    repo.upsertLista([fila({ codigoBdns: "222", titulo: "Ayudas de eficiencia energética" })]);
+    expect(repo.buscar({ texto: "energetica" })[0].codigoBdns).toBe("222");
+    expect(repo.buscar({ texto: "ENERGÉTICA" })[0].codigoBdns).toBe("222");
+  });
+
+  it("exige TODAS las palabras, no cualquiera", () => {
+    repo.upsertLista([
+      fila({ codigoBdns: "301", titulo: "Ayudas para eficiencia energética en empresas" }),
+      fila({ codigoBdns: "302", titulo: "Ayudas para vivienda" }),
+    ]);
+    expect(repo.buscar({ texto: "eficiencia energetica" })).toHaveLength(1);
+    expect(repo.buscar({ texto: "eficiencia vivienda" })).toHaveLength(0);
+  });
+
+  it("busca también en el órgano y en la finalidad", () => {
+    repo.upsertDetalle(
+      fila({ codigoBdns: "401", titulo: "Convocatoria X", finalidad: "Fomento del Empleo" }),
+    );
+    expect(repo.buscar({ texto: "empleo" })[0].codigoBdns).toBe("401");
+    expect(repo.buscar({ texto: "riba-roja" }).length).toBeGreaterThan(0);
+  });
+
   it("evaluaciones y expedientes: ida y vuelta", () => {
     repo.upsertLista([fila()]);
     repo.guardarEvaluacion("923287", 1, { dictamen: "duda", requisitosJson: "[]" });

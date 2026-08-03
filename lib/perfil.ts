@@ -226,6 +226,81 @@ export function resumenPerfil(hechos: Map<string, string>): string {
   return `Buscas ${trozos.join(", ")}`;
 }
 
+export interface Atajo {
+  texto: string;
+  busca: string;
+}
+
+const ATAJOS_PERSONA: Atajo[] = [
+  { texto: "Alquiler y vivienda", busca: "alquiler" },
+  { texto: "Emergencia social", busca: "emergencia" },
+  { texto: "Luz, agua y gas", busca: "suministros" },
+];
+const ATAJOS_NEGOCIO: Atajo[] = [
+  { texto: "Digitalización", busca: "digitalización" },
+  { texto: "Contratar a alguien", busca: "contratación" },
+  { texto: "Ahorro de energía", busca: "eficiencia energética" },
+  { texto: "Innovación", busca: "innovación" },
+];
+
+/**
+ * Los atajos que le sirven a ESTA persona, no un cajón de sastre.
+ * Se ordenan por lo que más le puede tocar según su perfil.
+ */
+export function atajosParaPerfil(hechos: Map<string, string>): Atajo[] {
+  const perfil = hechos.get("perfil");
+  const atajos: Atajo[] = [];
+  const añadir = (a: Atajo) => {
+    if (!atajos.some((x) => x.busca === a.busca)) atajos.push(a);
+  };
+
+  if (perfil === "autonomo" || perfil === "empresa") {
+    ATAJOS_NEGOCIO.forEach(añadir);
+    if (hechos.get("situacion") === "desempleado") {
+      añadir({ texto: "Volver a empezar", busca: "emprendedores" });
+    }
+    return atajos.slice(0, 6);
+  }
+
+  // Persona: primero lo que le toca por su situación.
+  const situacion = hechos.get("situacion");
+  if (situacion === "desempleado") {
+    añadir({ texto: "Estando sin trabajo", busca: "desempleo" });
+    añadir({ texto: "Cursos y formación", busca: "formación" });
+  }
+  if (situacion === "estudiante") añadir({ texto: "Becas y estudios", busca: "beca" });
+  if (situacion === "jubilado") añadir({ texto: "Mayores", busca: "mayores" });
+
+  const ingresos = hechos.get("ingresos");
+  if (ingresos === "menos_12000" || ingresos === "12000_18000") {
+    ATAJOS_PERSONA.forEach(añadir);
+  }
+
+  const menores = hechos.get("menores_cargo");
+  if (menores && menores !== "no") {
+    añadir({ texto: "Comedor y libros", busca: "comedor" });
+    añadir({ texto: "Familia e infancia", busca: "familia" });
+  }
+
+  const circunstancias = (hechos.get("circunstancias") ?? "").split(",");
+  if (circunstancias.includes("discapacidad") || circunstancias.includes("dependencia")) {
+    añadir({ texto: "Discapacidad y dependencia", busca: "discapacidad" });
+  }
+  if (circunstancias.includes("familia_numerosa")) {
+    añadir({ texto: "Familia numerosa", busca: "familia numerosa" });
+  }
+  if (circunstancias.includes("victima_violencia")) {
+    añadir({ texto: "Violencia de género", busca: "violencia" });
+  }
+  if (circunstancias.includes("menor_30")) añadir({ texto: "Gente joven", busca: "jóvenes" });
+
+  // Relleno con lo que le sirve a casi todo el mundo.
+  añadir({ texto: "Becas y estudios", busca: "beca" });
+  añadir({ texto: "Alquiler y vivienda", busca: "alquiler" });
+  añadir({ texto: "Rehabilitar la casa", busca: "rehabilitación" });
+  return atajos.slice(0, 7);
+}
+
 /** Texto legible de una respuesta guardada, para la pantalla de repaso. */
 export function textoRespuesta(pregunta: PreguntaPerfil, valor: string): string {
   if (pregunta.tipo === "varias") {

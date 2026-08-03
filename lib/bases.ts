@@ -3,7 +3,7 @@
 import type { Repo } from "./repo";
 import type { Convocatoria, Requisito } from "./tipos";
 import { descargarBases } from "./bdns";
-import { generar, hayClave } from "./gemini";
+import { generar, hayClave } from "./ia";
 import { PROMPT_EXTRACCION, parsearRequisitos } from "./requisitos";
 
 export type MotivoSinBases = "sin_clave" | "sin_documento" | "ilegible";

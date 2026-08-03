@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getRepo, errorJson } from "@/lib/servidor";
 import {
+  atajosParaPerfil,
   beneficiarioDesdePerfil,
   hechosDerivados,
   preguntasAplicables,
@@ -32,6 +33,7 @@ function estado() {
     progreso: progresoPerfil(hechos),
     resumen: resumenPerfil(hechos),
     beneficiario: beneficiarioDesdePerfil(hechos),
+    atajos: atajosParaPerfil(hechos),
     zona: cp ? resolverCP(cp) : null,
     preguntas: preguntasAplicables(hechos).map((p) => ({
       clave: p.clave,

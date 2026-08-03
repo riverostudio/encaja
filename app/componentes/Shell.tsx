@@ -2,9 +2,10 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import Ajustes from "./Ajustes";
 import Tema from "./Tema";
+import Bienvenida, { type ProveedorUi } from "./Bienvenida";
 
 const PESTANAS = [
   { href: "/", etiqueta: "Radar" },
@@ -12,9 +13,35 @@ const PESTANAS = [
   { href: "/expedientes", etiqueta: "Expedientes" },
 ];
 
+interface EstadoIa {
+  configurada: boolean;
+  proveedores: ProveedorUi[];
+}
+
 export default function Shell({ children }: { children: ReactNode }) {
   const ruta = usePathname();
   const [ajustesAbierto, setAjustesAbierto] = useState(false);
+  const [ia, setIa] = useState<EstadoIa | null>(null);
+
+  useEffect(() => {
+    fetch("/api/ajustes")
+      .then((r) => r.json())
+      .then((d: EstadoIa) => setIa(d))
+      .catch(() => setIa({ configurada: true, proveedores: [] }));
+  }, []);
+
+  // Mientras no se sepa, nada: evita que la puerta parpadee al recargar.
+  if (!ia) return null;
+
+  // Sin clave no se entra: la app no podría hacer su trabajo.
+  if (!ia.configurada && ia.proveedores.length > 0) {
+    return (
+      <Bienvenida
+        proveedores={ia.proveedores}
+        onListo={() => setIa({ ...ia, configurada: true })}
+      />
+    );
+  }
 
   return (
     <div className="flex min-h-dvh flex-col">

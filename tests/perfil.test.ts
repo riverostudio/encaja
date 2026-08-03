@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
+  atajosParaPerfil,
   beneficiarioDesdePerfil,
   hechosDerivados,
   preguntasAplicables,
@@ -86,6 +87,57 @@ describe("resumenPerfil", () => {
 
   it("sin datos lo dice", () => {
     expect(resumenPerfil(h({}))).toBe("Sin perfil todavía");
+  });
+});
+
+describe("atajosParaPerfil", () => {
+  it("a un parado sin recursos le ofrece lo suyo, no genéricos", () => {
+    const a = atajosParaPerfil(
+      h({ perfil: "particular", situacion: "desempleado", ingresos: "menos_12000" }),
+    ).map((x) => x.busca);
+    expect(a[0]).toBe("desempleo");
+    expect(a).toContain("alquiler");
+    expect(a).toContain("emergencia");
+    expect(a).not.toContain("digitalización");
+  });
+
+  it("a un autónomo le ofrece cosas de negocio", () => {
+    const a = atajosParaPerfil(h({ perfil: "autonomo", situacion: "autonomo_activo" })).map(
+      (x) => x.busca,
+    );
+    expect(a).toContain("digitalización");
+    expect(a).toContain("contratación");
+    expect(a).not.toContain("comedor");
+  });
+
+  it("con hijos aparecen comedor y familia", () => {
+    const a = atajosParaPerfil(
+      h({ perfil: "particular", situacion: "cuenta_ajena", menores_cargo: "2" }),
+    ).map((x) => x.busca);
+    expect(a).toContain("comedor");
+    expect(a).toContain("familia");
+  });
+
+  it("las circunstancias reconocidas se traducen en atajos", () => {
+    const a = atajosParaPerfil(
+      h({ perfil: "particular", circunstancias: "discapacidad,familia_numerosa" }),
+    ).map((x) => x.busca);
+    expect(a).toContain("discapacidad");
+    expect(a).toContain("familia numerosa");
+  });
+
+  it("nunca se repiten ni se desbordan", () => {
+    const a = atajosParaPerfil(
+      h({
+        perfil: "particular",
+        situacion: "desempleado",
+        ingresos: "menos_12000",
+        menores_cargo: "3+",
+        circunstancias: "discapacidad,familia_numerosa,menor_30,victima_violencia",
+      }),
+    );
+    expect(a.length).toBeLessThanOrEqual(7);
+    expect(new Set(a.map((x) => x.busca)).size).toBe(a.length);
   });
 });
 

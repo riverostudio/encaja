@@ -10,16 +10,26 @@ import { useEffect, useState } from "react";
 export default function Esperando({
   mensajes,
   tarjetas = 6,
+  sabias,
 }: {
   mensajes: string[];
   tarjetas?: number;
+  /** Cosas que le pueden interesar mientras espera. */
+  sabias?: string[];
 }) {
   const [i, setI] = useState(0);
+  const [j, setJ] = useState(0);
 
   useEffect(() => {
     const t = setInterval(() => setI((n) => (n + 1) % mensajes.length), 2200);
     return () => clearInterval(t);
   }, [mensajes.length]);
+
+  useEffect(() => {
+    if (!sabias || sabias.length < 2) return;
+    const t = setInterval(() => setJ((n) => (n + 1) % sabias.length), 5200);
+    return () => clearInterval(t);
+  }, [sabias]);
 
   return (
     <div>
@@ -33,6 +43,18 @@ export default function Esperando({
           {mensajes[i]}
         </span>
       </p>
+
+      {sabias && sabias.length > 0 && (
+        <div
+          className="mt-5 rounded-lg border p-5"
+          style={{ borderColor: "var(--linea)", background: "var(--lienzo-alto)" }}
+        >
+          <p className="rotulo">Mientras tanto</p>
+          <p key={j} className="display mensaje-espera mt-1.5 text-[18px] leading-snug">
+            {sabias[j]}
+          </p>
+        </div>
+      )}
 
       <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {Array.from({ length: tarjetas }, (_, n) => (

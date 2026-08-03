@@ -68,6 +68,8 @@ export default function PaginaRadar() {
   const [instrumento, setInstrumento] = useState("");
   const [paraQuien, setParaQuien] = useState("");
   const [soloAplicables, setSoloAplicables] = useState(true);
+  const [filtrosAbiertos, setFiltrosAbiertos] = useState(false);
+  const [atajos, setAtajos] = useState(ATAJOS);
   const [perfil, setPerfil] = useState<{
     resumen: string;
     progreso: { completo: boolean; respondidas: number };
@@ -135,6 +137,7 @@ export default function PaginaRadar() {
         fetch("/api/perfil").then((r) => r.json()) as Promise<{
           beneficiario: string | null;
           resumen: string;
+          atajos: { texto: string; busca: string }[];
           progreso: { completo: boolean; respondidas: number };
         }>,
       ]);
@@ -143,6 +146,7 @@ export default function PaginaRadar() {
       // El perfil manda: el radar arranca filtrado a lo que le sirve a esta persona.
       if (datosPerfil.beneficiario) setParaQuien(datosPerfil.beneficiario);
       setPerfil(datosPerfil);
+      if (datosPerfil.atajos?.length) setAtajos(datosPerfil.atajos);
       // Solo se sincroniza si el archivo está vacío. A partir de ahí, manda
       // el botón: nada de re-descargar (ni de gastar IA) sin pedirlo.
       const s = await refrescarSync();
@@ -191,6 +195,30 @@ export default function PaginaRadar() {
       void sincronizar(nueva);
     }
   }
+
+  // Datos reales de tu radar para que la espera cuente algo útil.
+  const sabias = (() => {
+    const frases: string[] = [];
+    const urgentes = filas.filter((f) => f.plazo.estado === "urgente").length;
+    const locales = filas.filter((f) => f.nivel1 === "LOCAL").length;
+    const proximas = filas.filter((f) => f.plazo.estado === "proxima").length;
+    if (urgentes > 0) {
+      frases.push(
+        `${urgentes} de tus ayudas cierran esta semana. Son las primeras de la lista, en rojo.`,
+      );
+    }
+    if (proximas > 0) frases.push(`${proximas} todavía no han abierto: puedes ir preparándolas.`);
+    if (locales > 0 && zona) {
+      frases.push(`${locales} las convoca tu propio ayuntamiento o tu diputación en ${zona.municipio}.`);
+    }
+    frases.push(
+      "Por ley, toda ayuda pública de España pasa por la Base de Datos Nacional de Subvenciones antes de abrir plazo. Por eso no se escapa ninguna.",
+      "El importe que ves es la bolsa de todo el programa, no lo que te llevarías tú.",
+      "Cuando una te interese, pulsa «¿Encajo?»: leo las bases y te digo si cumples, citando el texto legal.",
+      "Lo que respondas se guarda en tu perfil, así que cada ayuda nueva te pregunta menos que la anterior.",
+    );
+    return frases;
+  })();
 
   const zonaVisible = cp.length === 5 ? zona : null;
   const desactualizado = sync?.horas != null && sync.horas > 168;
@@ -261,8 +289,8 @@ export default function PaginaRadar() {
                 : "Te falta terminar tu perfil"}
             </strong>
             <span className="mt-1 block text-[var(--grafito)]">
-              Contéstame ocho preguntas y el radar te enseña solo las ayudas que tú puedes pedir, en
-              vez de las {filas.length} de todo el mundo.
+              Contéstame ocho preguntas y el radar te enseña solo las ayudas que tú puedes pedir, y
+              con los atajos que te sirven a ti.
             </span>
           </span>
           <Link href="/ficha" className="btn shrink-0">
@@ -270,8 +298,9 @@ export default function PaginaRadar() {
           </Link>
         </div>
       )}
+
       {perfil?.progreso.completo && (
-        <p className="mt-8 text-[13px] text-[var(--grafito)]">
+        <p className="mt-7 text-[13px] text-[var(--grafito)]">
           {perfil.resumen}.{" "}
           <Link href="/ficha" className="enlace">
             Cambiar mi perfil
@@ -279,24 +308,10 @@ export default function PaginaRadar() {
         </p>
       )}
 
-      {/* ——— ¿para quién? el filtro que más cambia la lista ——— */}
-      <div className="mt-5 flex flex-wrap items-center gap-x-5 gap-y-2">
-        <span className="rotulo">Buscas</span>
-        {PARA_QUIEN.map((q) => (
-          <button
-            key={q.clave}
-            className={`filtro ${paraQuien === q.clave ? "filtro-activo" : ""}`}
-            onClick={() => setParaQuien(q.clave)}
-          >
-            {q.texto}
-          </button>
-        ))}
-      </div>
-
-      {/* ——— atajos a lo que la gente busca de verdad ——— */}
-      <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2">
-        <span className="rotulo">Atajos</span>
-        {ATAJOS.map((a) => (
+      {/* ——— atajos: los del perfil si lo hay, los generales si no ——— */}
+      <div className="mt-5 flex flex-wrap items-center gap-x-4 gap-y-2">
+        <span className="rotulo">{perfil?.progreso.completo ? "Para ti" : "Atajos"}</span>
+        {atajos.map((a) => (
           <button
             key={a.busca}
             className={`filtro ${texto === a.busca ? "filtro-activo" : ""}`}
@@ -305,41 +320,6 @@ export default function PaginaRadar() {
             {a.texto}
           </button>
         ))}
-      </div>
-
-      {/* ——— filtros ——— */}
-      <div className="mt-5 flex flex-wrap items-center gap-x-5 gap-y-3">
-        {ESTADOS.map((e) => (
-          <button
-            key={e.clave}
-            className={`filtro ${estadoFiltro === e.clave ? "filtro-activo" : ""}`}
-            onClick={() => setEstadoFiltro(e.clave)}
-          >
-            {e.texto}
-          </button>
-        ))}
-        <span className="text-[var(--linea-fuerte)]">/</span>
-        {TIPOS.map((t) => (
-          <button
-            key={t.clave}
-            className={`filtro ${instrumento === t.clave ? "filtro-activo" : ""}`}
-            onClick={() => setInstrumento(t.clave)}
-          >
-            {t.texto}
-          </button>
-        ))}
-        {perfil?.progreso.completo && (
-          <>
-            <span className="text-[var(--linea-fuerte)]">/</span>
-            <button
-              className={`filtro ${soloAplicables ? "filtro-activo" : ""}`}
-              onClick={() => setSoloAplicables(!soloAplicables)}
-              title="Esconde las que tu perfil descarta sin lugar a dudas"
-            >
-              {soloAplicables ? "Solo las que puedo pedir" : "Enseñándome todas"}
-            </button>
-          </>
-        )}
       </div>
 
       {/* ——— estado ——— */}
@@ -356,7 +336,10 @@ export default function PaginaRadar() {
             </>
           )}
         </p>
-        <p className="text-[12.5px]">
+        <p className="flex items-center gap-4 text-[12.5px]">
+          <button className="filtro" onClick={() => setFiltrosAbiertos(!filtrosAbiertos)}>
+            {filtrosAbiertos ? "Ocultar filtros" : "Filtros"}
+          </button>
           {sincronizando ? (
             <span className="inline-flex items-center gap-2 text-[var(--niebla)]">
               <span className="pulso" /> Sincronizando con la BDNS…
@@ -381,9 +364,65 @@ export default function PaginaRadar() {
         </p>
       </div>
 
+      {/* ——— filtros, plegados para no hacer ruido ——— */}
+      {filtrosAbiertos && (
+        <div
+          className="sube mt-4 rounded-lg border p-4"
+          style={{ borderColor: "var(--linea)", background: "var(--lienzo-alto)" }}
+        >
+          <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
+            <span className="rotulo w-[70px]">Plazo</span>
+            {ESTADOS.map((e) => (
+              <button
+                key={e.clave}
+                className={`filtro ${estadoFiltro === e.clave ? "filtro-activo" : ""}`}
+                onClick={() => setEstadoFiltro(e.clave)}
+              >
+                {e.texto}
+              </button>
+            ))}
+          </div>
+          <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-2">
+            <span className="rotulo w-[70px]">Tipo</span>
+            {TIPOS.map((t) => (
+              <button
+                key={t.clave}
+                className={`filtro ${instrumento === t.clave ? "filtro-activo" : ""}`}
+                onClick={() => setInstrumento(t.clave)}
+              >
+                {t.texto}
+              </button>
+            ))}
+          </div>
+          <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-2">
+            <span className="rotulo w-[70px]">Buscas</span>
+            {PARA_QUIEN.map((q) => (
+              <button
+                key={q.clave}
+                className={`filtro ${paraQuien === q.clave ? "filtro-activo" : ""}`}
+                onClick={() => setParaQuien(q.clave)}
+              >
+                {q.texto}
+              </button>
+            ))}
+            {perfil?.progreso.completo && (
+              <button
+                className={`filtro ${soloAplicables ? "filtro-activo" : ""}`}
+                onClick={() => setSoloAplicables(!soloAplicables)}
+              >
+                {soloAplicables ? "Solo las que puedo pedir" : "Enseñándome todas"}
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* ——— rejilla ——— */}
       {cargando || sincronizando ? (
-        <Esperando mensajes={sincronizando ? MENSAJES_SYNC : MENSAJES_RADAR} />
+        <Esperando
+          mensajes={sincronizando ? MENSAJES_SYNC : MENSAJES_RADAR}
+          sabias={sabias}
+        />
       ) : filas.length === 0 ? (
         <div className="filete mt-6 py-24 text-center">
           <p className="display text-[20px]">Nada con estos filtros.</p>
