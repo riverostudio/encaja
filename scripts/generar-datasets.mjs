@@ -1,0 +1,161 @@
+#!/usr/bin/env node
+// Genera datasets/cp-municipios.csv y datasets/ccaa.json a partir de fuentes
+// abiertas (CC-BY): ds-codigos-postales (inigoflores) + organización
+// administrativa INE (codeforspain). Los ids de región son los del árbol
+// /regiones de la BDNS (capturados el 3-ago-2026). Re-ejecutable:
+//   node scripts/generar-datasets.mjs
+
+import fs from "node:fs";
+import path from "node:path";
+
+const URL_CP =
+  "https://raw.githubusercontent.com/inigoflores/ds-codigos-postales/master/data/codigos_postales_municipios.csv";
+const URL_MUN =
+  "https://raw.githubusercontent.com/codeforspain/ds-organizacion-administrativa/master/data/municipios.csv";
+
+// provincia INE → [nombre, ccaa, idProvinciaBDNS|null, idCcaaBDNS]
+const PROVINCIAS = {
+  "01": ["Araba/Álava", "País Vasco", 14, 13],
+  "02": ["Albacete", "Castilla-La Mancha", 40, 39],
+  "03": ["Alicante", "Comunitat Valenciana", 55, 54],
+  "04": ["Almería", "Andalucía", 64, 63],
+  "05": ["Ávila", "Castilla y León", 30, 29],
+  "06": ["Badajoz", "Extremadura", 46, 45],
+  "07": ["Illes Balears", "Illes Balears", null, 58],
+  "08": ["Barcelona", "Cataluña", 50, 49],
+  "09": ["Burgos", "Castilla y León", 31, 29],
+  "10": ["Cáceres", "Extremadura", 47, 45],
+  "11": ["Cádiz", "Andalucía", 65, 63],
+  "12": ["Castellón", "Comunitat Valenciana", 56, 54],
+  "13": ["Ciudad Real", "Castilla-La Mancha", 41, 39],
+  "14": ["Córdoba", "Andalucía", 66, 63],
+  "15": ["A Coruña", "Galicia", 4, 3],
+  "16": ["Cuenca", "Castilla-La Mancha", 42, 39],
+  "17": ["Girona", "Cataluña", 51, 49],
+  "18": ["Granada", "Andalucía", 67, 63],
+  "19": ["Guadalajara", "Castilla-La Mancha", 43, 39],
+  "20": ["Gipuzkoa", "País Vasco", 15, 13],
+  "21": ["Huelva", "Andalucía", 68, 63],
+  "22": ["Huesca", "Aragón", 22, 21],
+  "23": ["Jaén", "Andalucía", 69, 63],
+  "24": ["León", "Castilla y León", 32, 29],
+  "25": ["Lleida", "Cataluña", 52, 49],
+  "26": ["La Rioja", "La Rioja", 20, 19],
+  "27": ["Lugo", "Galicia", 5, 3],
+  "28": ["Madrid", "Comunidad de Madrid", 27, 26],
+  "29": ["Málaga", "Andalucía", 70, 63],
+  "30": ["Murcia", "Región de Murcia", 73, 72],
+  "31": ["Navarra", "Comunidad Foral de Navarra", 18, 17],
+  "32": ["Ourense", "Galicia", 6, 3],
+  "33": ["Asturias", "Principado de Asturias", 9, 8],
+  "34": ["Palencia", "Castilla y León", 33, 29],
+  "35": ["Las Palmas", "Canarias", null, 79],
+  "36": ["Pontevedra", "Galicia", 7, 3],
+  "37": ["Salamanca", "Castilla y León", 34, 29],
+  "38": ["Santa Cruz de Tenerife", "Canarias", null, 79],
+  "39": ["Cantabria", "Cantabria", 11, 10],
+  "40": ["Segovia", "Castilla y León", 35, 29],
+  "41": ["Sevilla", "Andalucía", 71, 63],
+  "42": ["Soria", "Castilla y León", 36, 29],
+  "43": ["Tarragona", "Cataluña", 53, 49],
+  "44": ["Teruel", "Aragón", 23, 21],
+  "45": ["Toledo", "Castilla-La Mancha", 44, 39],
+  "46": ["Valencia", "Comunitat Valenciana", 57, 54],
+  "47": ["Valladolid", "Castilla y León", 37, 29],
+  "48": ["Bizkaia", "País Vasco", 16, 13],
+  "49": ["Zamora", "Castilla y León", 38, 29],
+  "50": ["Zaragoza", "Aragón", 24, 21],
+  "51": ["Ceuta", "Ceuta", 75, 74],
+  "52": ["Melilla", "Melilla", 77, 76],
+};
+
+const CCAA = [
+  { id: 63, nombre: "Andalucía" },
+  { id: 21, nombre: "Aragón" },
+  { id: 8, nombre: "Principado de Asturias" },
+  { id: 58, nombre: "Illes Balears" },
+  { id: 79, nombre: "Canarias" },
+  { id: 10, nombre: "Cantabria" },
+  { id: 29, nombre: "Castilla y León" },
+  { id: 39, nombre: "Castilla-La Mancha" },
+  { id: 49, nombre: "Cataluña" },
+  { id: 54, nombre: "Comunitat Valenciana" },
+  { id: 45, nombre: "Extremadura" },
+  { id: 3, nombre: "Galicia" },
+  { id: 26, nombre: "Comunidad de Madrid" },
+  { id: 72, nombre: "Región de Murcia" },
+  { id: 17, nombre: "Comunidad Foral de Navarra" },
+  { id: 13, nombre: "País Vasco" },
+  { id: 19, nombre: "La Rioja" },
+  { id: 74, nombre: "Ceuta" },
+  { id: 76, nombre: "Melilla" },
+];
+
+// "Eliana, l'" → "l'Eliana" · "Palmas de Gran Canaria, Las" → "Las Palmas de Gran Canaria"
+function arreglarArticulo(nombre) {
+  const m = nombre.match(/^(.+), (l'|s'|el|la|los|las|els|les|es|sa|ses|a|o|os|as|na)$/i);
+  if (!m) return nombre;
+  const articulo = m[2];
+  const union = articulo.endsWith("'") ? "" : " ";
+  return `${articulo}${union}${m[1]}`;
+}
+
+function parseCsv(texto) {
+  const filas = [];
+  for (const linea of texto.split(/\r?\n/)) {
+    if (!linea.trim()) continue;
+    const campos = [];
+    let actual = "";
+    let dentro = false;
+    for (let i = 0; i < linea.length; i++) {
+      const ch = linea[i];
+      if (dentro) {
+        if (ch === '"' && linea[i + 1] === '"') { actual += '"'; i++; }
+        else if (ch === '"') dentro = false;
+        else actual += ch;
+      } else if (ch === '"') dentro = true;
+      else if (ch === ",") { campos.push(actual); actual = ""; }
+      else actual += ch;
+    }
+    campos.push(actual);
+    filas.push(campos);
+  }
+  return filas;
+}
+
+async function descargar(url) {
+  const r = await fetch(url);
+  if (!r.ok) throw new Error(`HTTP ${r.status} en ${url}`);
+  return r.text();
+}
+
+const raiz = path.join(import.meta.dirname, "..");
+const dirDatasets = path.join(raiz, "datasets");
+fs.mkdirSync(dirDatasets, { recursive: true });
+
+console.log("Descargando fuentes abiertas…");
+const [csvCp, csvMun] = await Promise.all([descargar(URL_CP), descargar(URL_MUN)]);
+
+const nombrePorId = new Map();
+for (const f of parseCsv(csvMun).slice(1)) {
+  if (f.length >= 5) nombrePorId.set(f[0], arreglarArticulo(f[4]));
+}
+
+const salida = ["cp,municipio,provincia,ccaa"];
+let sinNombre = 0;
+for (const f of parseCsv(csvCp).slice(1)) {
+  const [cp, munIdCrudo] = f;
+  if (!cp || !munIdCrudo) continue;
+  const munId = munIdCrudo.padStart(5, "0");
+  const nombre = nombrePorId.get(munId);
+  const prov = PROVINCIAS[munId.slice(0, 2)];
+  if (!nombre || !prov) { sinNombre++; continue; }
+  const q = (s) => (s.includes(",") ? `"${s.replaceAll('"', '""')}"` : s);
+  salida.push([cp, q(nombre), q(prov[0]), q(prov[1])].join(","));
+}
+fs.writeFileSync(path.join(dirDatasets, "cp-municipios.csv"), salida.join("\n") + "\n");
+fs.writeFileSync(
+  path.join(dirDatasets, "regiones-bdns.json"),
+  JSON.stringify({ ccaa: CCAA, provinciasINE: PROVINCIAS }, null, 2),
+);
+console.log(`OK: ${salida.length - 1} códigos postales (${sinNombre} sin municipio vigente, descartados)`);
