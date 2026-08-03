@@ -9,6 +9,7 @@ interface EstadoSync {
   ultimo: string | null;
   total: number;
   pendientesDetalle: number;
+  horas: number | null;
 }
 
 interface Ccaa {
@@ -48,9 +49,15 @@ export default function PaginaRadar() {
   }, [texto, estadoFiltro, instrumento, region, cp]);
 
   const refrescarSync = useCallback(async () => {
-    const d = (await (await fetch("/api/sync")).json()) as EstadoSync;
-    setSync(d);
-    return d;
+    const d = (await (await fetch("/api/sync")).json()) as Omit<EstadoSync, "horas">;
+    const conHoras: EstadoSync = {
+      ...d,
+      horas: d.ultimo
+        ? Math.floor((Date.now() - new Date(d.ultimo).getTime()) / 3_600_000)
+        : null,
+    };
+    setSync(conHoras);
+    return conHoras;
   }, []);
 
   const sincronizar = useCallback(
@@ -98,12 +105,9 @@ export default function PaginaRadar() {
     };
   }, [cargarLista]);
 
-  // Resolver CP al vuelo
+  // Resolver CP al vuelo (con CP incompleto no se enseña zona)
   useEffect(() => {
-    if (cp.length !== 5) {
-      setZona(null);
-      return;
-    }
+    if (cp.length !== 5) return;
     fetch(`/api/territorio?cp=${cp}`)
       .then((r) => r.json())
       .then((d: { zona: { municipio: string; provincia: string } | null }) => setZona(d.zona));
@@ -123,9 +127,8 @@ export default function PaginaRadar() {
     }
   }
 
-  const horasDesdeSync = sync?.ultimo
-    ? Math.floor((Date.now() - new Date(sync.ultimo).getTime()) / 3_600_000)
-    : null;
+  const horasDesdeSync = sync?.horas ?? null;
+  const zonaVisible = cp.length === 5 ? zona : null;
 
   return (
     <div>
@@ -155,9 +158,9 @@ export default function PaginaRadar() {
             value={cp}
             onChange={(e) => setCp(e.target.value.replace(/\D/g, ""))}
           />
-          {zona && (
+          {zonaVisible && (
             <span className="mono ml-2 text-[11px] text-[var(--cian)]">
-              → {zona.municipio} · {zona.provincia}
+              → {zonaVisible.municipio} · {zonaVisible.provincia}
             </span>
           )}
         </div>
@@ -267,7 +270,9 @@ export default function PaginaRadar() {
         </>
       )}
 
-      {abierta && <DetalleAyuda codigo={abierta} onCerrar={() => setAbierta(null)} />}
+      {abierta && (
+        <DetalleAyuda key={abierta} codigo={abierta} onCerrar={() => setAbierta(null)} />
+      )}
       <CargadorCcaas onCargar={setCcaas} />
     </div>
   );

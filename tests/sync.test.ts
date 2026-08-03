@@ -34,11 +34,10 @@ describe("syncLista", () => {
 
   it("el segundo sync parte del último y no duplica", async () => {
     const repo = crearRepo(abrirDb(":memory:"));
-    const buscar = vi.fn(async (_o: { fechaDesde?: string; page: number }) => ({
-      filas: [fila(1)],
-      totalPaginas: 1,
-      total: 1,
-    }));
+    const buscar = vi.fn(async (o: { fechaDesde?: string; page: number }) => {
+      void o;
+      return { filas: [fila(1)], totalPaginas: 1, total: 1 };
+    });
     await syncLista(repo, 54, { buscarFn: buscar });
     await syncLista(repo, 54, { buscarFn: buscar });
     expect(repo.contar()).toBe(1);

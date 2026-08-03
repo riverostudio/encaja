@@ -54,8 +54,18 @@ export default function Entrevista({ codigo }: { codigo: string }) {
   );
 
   useEffect(() => {
-    void llamar({ accion: "iniciar" });
-  }, [llamar]);
+    fetch(`/api/encaje/${codigo}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ accion: "iniciar" }),
+    })
+      .then(async (r) => {
+        const d = (await r.json()) as RespuestaEncaje;
+        if (!r.ok) setError(d.error ?? "Error inesperado");
+        else setEstado(d);
+      })
+      .catch((e) => setError(e instanceof Error ? e.message : String(e)));
+  }, [codigo]);
 
   if (error) {
     return (

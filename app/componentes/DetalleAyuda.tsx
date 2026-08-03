@@ -25,9 +25,8 @@ export default function DetalleAyuda({
   const [entrevistando, setEntrevistando] = useState(false);
   const [creandoExp, setCreandoExp] = useState(false);
 
+  // El componente se monta con key={codigo}, así que no hay que resetear estado.
   useEffect(() => {
-    setD(null);
-    setEntrevistando(false);
     fetch(`/api/convocatorias/${codigo}`)
       .then((r) => r.json())
       .then(setD);
