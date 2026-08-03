@@ -73,20 +73,28 @@ export default function DetalleAyuda({
         ) : (
           <div className="px-8 pb-16 pt-8">
             <p
-              className="display text-[15px] italic"
+              className="display sube text-[15px] italic"
               style={{ color: colorPlazo(d.conv.plazo) }}
             >
               {fraseP1azo(d.conv.plazo)}
             </p>
 
-            <h2 className="display mt-2 text-[22px] leading-[1.3]">{d.conv.titulo}</h2>
+            <h2
+              className="display sube mt-2 text-[22px] leading-[1.3]"
+              style={{ "--i": 1 } as React.CSSProperties}
+            >
+              {d.conv.titulo}
+            </h2>
 
-            <p className="mt-3 text-[13px] text-[var(--grafito)]">
+            <p
+              className="sube mt-3 text-[13px] text-[var(--grafito)]"
+              style={{ "--i": 2 } as React.CSSProperties}
+            >
               {d.conv.nivel3 ?? d.conv.nivel2}
               <span className="text-[var(--niebla)]"> · {nivelBonito(d.conv.nivel1)}</span>
             </p>
 
-            <div className="mt-8">
+            <div className="sube mt-8" style={{ "--i": 3 } as React.CSSProperties}>
               {(d.conv.fechaInicioSol || d.conv.fechaFinSol) && (
                 <Dato etiqueta="Plazo de solicitud">
                   <span className="cifra">
@@ -132,7 +140,7 @@ export default function DetalleAyuda({
               </Dato>
             </div>
 
-            <div className="mt-8 flex flex-wrap gap-3">
+            <div className="sube mt-8 flex flex-wrap gap-3" style={{ "--i": 4 } as React.CSSProperties}>
               {!entrevistando && (
                 <button className="btn" onClick={() => setEntrevistando(true)}>
                   ¿Encajo en esta ayuda?

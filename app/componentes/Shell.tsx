@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState, type ReactNode } from "react";
 import Ajustes from "./Ajustes";
+import Tema from "./Tema";
 
 const PESTANAS = [
   { href: "/", etiqueta: "Radar" },
@@ -17,41 +18,43 @@ export default function Shell({ children }: { children: ReactNode }) {
 
   return (
     <div className="flex min-h-dvh flex-col">
-      <header className="sticky top-0 z-30 border-b border-[var(--linea)] bg-[var(--papel)]/92 backdrop-blur-sm">
-        <div className="mx-auto flex max-w-5xl items-center gap-8 px-6 py-5">
-          <Link href="/" className="flex items-baseline gap-2.5">
+      <header
+        className="sticky top-0 z-30 border-b border-[var(--linea)] backdrop-blur-md"
+        style={{ background: "var(--fondo-velo)" }}
+      >
+        <div className="mx-auto flex max-w-6xl items-center gap-6 px-6 py-4">
+          <Link href="/" className="group flex items-baseline gap-2.5">
             <span className="display text-[20px] leading-none">Radar de Ayudas</span>
-            <span className="rotulo hidden sm:inline">España</span>
+            <span className="rotulo hidden transition-colors group-hover:text-[var(--grafito)] sm:inline">
+              España
+            </span>
           </Link>
 
-          <nav className="ml-auto flex items-center gap-6">
-            {PESTANAS.map((p) => (
-              <Link
-                key={p.href}
-                href={p.href}
-                className={`text-[13.5px] transition-colors ${
-                  ruta === p.href || (p.href !== "/" && ruta.startsWith(p.href))
-                    ? "text-[var(--tinta)]"
-                    : "text-[var(--niebla)] hover:text-[var(--grafito)]"
-                }`}
-              >
-                {p.etiqueta}
-              </Link>
-            ))}
-            <button
-              className="text-[13.5px] text-[var(--niebla)] transition-colors hover:text-[var(--grafito)]"
-              onClick={() => setAjustesAbierto(true)}
-            >
+          <nav className="ml-auto flex items-center gap-5">
+            {PESTANAS.map((p) => {
+              const activa = p.href === "/" ? ruta === "/" : ruta.startsWith(p.href);
+              return (
+                <Link
+                  key={p.href}
+                  href={p.href}
+                  className={`filtro !text-[13.5px] ${activa ? "filtro-activo" : ""}`}
+                >
+                  {p.etiqueta}
+                </Link>
+              );
+            })}
+            <button className="filtro !text-[13.5px]" onClick={() => setAjustesAbierto(true)}>
               Ajustes
             </button>
+            <Tema />
           </nav>
         </div>
       </header>
 
-      <main className="mx-auto w-full max-w-5xl flex-1 px-6 py-10">{children}</main>
+      <main className="mx-auto w-full max-w-6xl flex-1 px-6 py-10">{children}</main>
 
       <footer className="mt-16 border-t border-[var(--linea)]">
-        <div className="mx-auto max-w-5xl px-6 py-6">
+        <div className="mx-auto max-w-6xl px-6 py-6">
           <p className="nota max-w-2xl">
             Datos del{" "}
             <a

@@ -23,9 +23,19 @@ export const metadata: Metadata = {
   },
 };
 
+// Fija la piel antes del primer pintado: sin parpadeo blanco al entrar en oscuro.
+const GUION_TEMA = `(function(){try{
+  var t = localStorage.getItem('tema');
+  if(!t) t = matchMedia('(prefers-color-scheme: dark)').matches ? 'oscuro' : 'claro';
+  document.documentElement.setAttribute('data-tema', t);
+}catch(e){document.documentElement.setAttribute('data-tema','claro');}})();`;
+
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="es" className={`${display.variable} ${texto.variable} h-full`}>
+    <html lang="es" data-tema="claro" className={`${display.variable} ${texto.variable} h-full`}>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: GUION_TEMA }} />
+      </head>
       <body className="min-h-full flex flex-col">
         <Shell>{children}</Shell>
       </body>

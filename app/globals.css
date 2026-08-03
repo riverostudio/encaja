@@ -1,46 +1,77 @@
 @import "tailwindcss";
 
 /* ————————————————————————————————————————————————
-   RADAR DE AYUDAS · sistema visual «papel de archivo»
-   Fondo papel cálido, tinta casi negra, UNA tinta de acento
-   (bermellón) reservada a la urgencia. Nada de degradados,
-   sombras ni brillos: solo tipografía, filetes y aire.
+   RADAR DE AYUDAS · sistema visual
+   Dos pieles: «papel» (claro) y «tinta» (oscuro), misma
+   estructura. Una sola familia cromática de acento — la
+   urgencia del plazo — y movimiento discreto: nada parpadea,
+   todo entra y responde.
    ———————————————————————————————————————————————— */
 
-:root {
-  --papel: #faf8f4;
+:root,
+[data-tema="claro"] {
+  --fondo: #faf8f4;
+  --fondo-velo: rgba(250, 248, 244, 0.82);
   --lienzo: #ffffff;
+  --lienzo-alto: #ffffff;
   --tinta: #16150f;
   --grafito: #5f5a50;
   --niebla: #9d968b;
   --linea: #e7e2d8;
+  --linea-suave: #f2eee7;
   --linea-fuerte: #d2cabb;
-
-  --senal: #c13b20; /* cierra ya */
-  --ocre: #97681c; /* aviso */
-  --bosque: #2f5d45; /* abierta */
-
-  --fuente-display: var(--font-display), Georgia, "Times New Roman", serif;
-  --fuente-texto: var(--font-texto), system-ui, -apple-system, sans-serif;
-}
-
-html {
-  background: var(--papel);
+  --sombra: 0 1px 2px rgba(22, 21, 15, 0.04);
+  --sombra-alta: 0 14px 40px -12px rgba(22, 21, 15, 0.16);
+  --senal: #c13b20;
+  --ocre: #97681c;
+  --bosque: #2f5d45;
+  --halo: rgba(22, 21, 15, 0.28);
   color-scheme: light;
 }
 
+[data-tema="oscuro"] {
+  --fondo: #100f0d;
+  --fondo-velo: rgba(16, 15, 13, 0.82);
+  --lienzo: #191714;
+  --lienzo-alto: #1f1c18;
+  --tinta: #f2ede4;
+  --grafito: #a49c8e;
+  --niebla: #6d665b;
+  --linea: #2a2621;
+  --linea-suave: #221f1b;
+  --linea-fuerte: #3b352d;
+  --sombra: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --sombra-alta: 0 18px 46px -14px rgba(0, 0, 0, 0.75);
+  --senal: #ff7a55;
+  --ocre: #e0aa4c;
+  --bosque: #7cc39a;
+  --halo: rgba(0, 0, 0, 0.6);
+  color-scheme: dark;
+}
+
+:root {
+  --fuente-display: var(--font-display), Georgia, "Times New Roman", serif;
+  --fuente-texto: var(--font-texto), system-ui, -apple-system, sans-serif;
+  --curva: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+html {
+  background: var(--fondo);
+}
+
 body {
-  background: var(--papel);
+  background: var(--fondo);
   color: var(--tinta);
   font-family: var(--fuente-texto);
   font-size: 15px;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
+  transition: background-color 0.45s ease, color 0.45s ease;
 }
 
 ::selection {
   background: var(--tinta);
-  color: var(--papel);
+  color: var(--fondo);
 }
 
 /* ——— tipografía ——— */
@@ -63,47 +94,101 @@ body {
   font-feature-settings: "tnum";
 }
 
-/* ——— filete: la única «caja» que existe ——— */
 .filete {
   border-top: 1px solid var(--linea);
 }
 
-.hoja {
+/* ————————————————————— TARJETA ————————————————————— */
+.tarjeta {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  padding: 22px 22px 18px;
+  text-align: left;
   background: var(--lienzo);
   border: 1px solid var(--linea);
-  border-radius: 4px;
-}
-
-/* ——— fila de ayuda ——— */
-.fila {
-  display: grid;
-  grid-template-columns: 68px 1fr auto;
-  gap: 24px;
-  align-items: baseline;
-  width: 100%;
-  padding: 22px 12px 22px 4px;
-  text-align: left;
-  border-top: 1px solid var(--linea);
+  border-radius: 10px;
+  box-shadow: var(--sombra);
   cursor: pointer;
-  transition: background-color 0.15s ease;
+  overflow: hidden;
+  transition:
+    transform 0.35s var(--curva),
+    box-shadow 0.35s var(--curva),
+    border-color 0.35s var(--curva),
+    background-color 0.45s ease;
 }
 
-.fila:hover {
-  background: rgba(22, 21, 15, 0.028);
+/* filete de acento que se despliega al pasar por encima */
+.tarjeta::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 2px;
+  width: 0;
+  background: var(--acento, var(--linea-fuerte));
+  transition: width 0.45s var(--curva);
 }
 
-.fila:last-child {
-  border-bottom: 1px solid var(--linea);
+.tarjeta:hover {
+  transform: translateY(-3px);
+  border-color: var(--linea-fuerte);
+  box-shadow: var(--sombra-alta);
 }
 
-@media (max-width: 640px) {
-  .fila {
-    grid-template-columns: 56px 1fr;
-    gap: 16px;
+.tarjeta:hover::before {
+  width: 100%;
+}
+
+.tarjeta:active {
+  transform: translateY(-1px);
+}
+
+.tarjeta .flecha {
+  opacity: 0;
+  transform: translateX(-5px);
+  transition: opacity 0.3s var(--curva), transform 0.3s var(--curva);
+}
+
+.tarjeta:hover .flecha {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+/* entrada escalonada */
+@keyframes entrada {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
   }
 }
 
-/* ——— controles desnudos ——— */
+.entra {
+  animation: entrada 0.6s var(--curva) backwards;
+  animation-delay: calc(var(--i, 0) * 26ms);
+}
+
+/* ——— esqueleto de carga ——— */
+.esqueleto {
+  background: linear-gradient(
+    90deg,
+    var(--linea-suave) 25%,
+    var(--linea) 50%,
+    var(--linea-suave) 75%
+  );
+  background-size: 220% 100%;
+  animation: brillo 1.5s ease-in-out infinite;
+  border-radius: 3px;
+}
+
+@keyframes brillo {
+  to {
+    background-position: -220% 0;
+  }
+}
+
+/* ——— controles ——— */
 .campo {
   background: transparent;
   border: none;
@@ -114,7 +199,7 @@ body {
   font-size: 15px;
   padding: 6px 2px;
   outline: none;
-  transition: border-color 0.15s ease;
+  transition: border-color 0.3s var(--curva);
 }
 
 .campo::placeholder {
@@ -123,6 +208,25 @@ body {
 
 .campo:focus {
   border-bottom-color: var(--tinta);
+}
+
+.busqueda {
+  position: relative;
+}
+
+.busqueda::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  height: 1px;
+  width: 0;
+  background: var(--tinta);
+  transition: width 0.5s var(--curva);
+}
+
+.busqueda:focus-within::after {
+  width: 100%;
 }
 
 select.campo {
@@ -136,25 +240,43 @@ select.campo {
   cursor: pointer;
 }
 
-/* ——— filtros de texto, sin píldoras ——— */
+/* ——— filtros de texto con subrayado que crece ——— */
 .filtro {
+  position: relative;
   font-size: 13px;
   color: var(--niebla);
-  padding: 2px 0;
-  border-bottom: 1px solid transparent;
+  padding: 2px 0 4px;
   cursor: pointer;
-  transition: color 0.15s ease, border-color 0.15s ease;
   white-space: nowrap;
+  transition: color 0.25s var(--curva);
+}
+
+.filtro::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  height: 1px;
+  width: 0;
+  background: currentColor;
+  transition: width 0.35s var(--curva);
 }
 
 .filtro:hover {
   color: var(--grafito);
 }
 
+.filtro:hover::after {
+  width: 100%;
+}
+
 .filtro-activo {
   color: var(--tinta);
-  border-bottom-color: var(--tinta);
   font-weight: 500;
+}
+
+.filtro-activo::after {
+  width: 100%;
 }
 
 /* ——— botones ——— */
@@ -163,21 +285,31 @@ select.campo {
   font-size: 13px;
   font-weight: 500;
   padding: 9px 18px;
-  border-radius: 3px;
+  border-radius: 6px;
   border: 1px solid var(--tinta);
   background: var(--tinta);
-  color: var(--papel);
+  color: var(--fondo);
   cursor: pointer;
-  transition: opacity 0.15s ease;
+  transition:
+    opacity 0.25s var(--curva),
+    transform 0.25s var(--curva),
+    background-color 0.45s ease,
+    color 0.45s ease;
 }
 
 .btn:hover {
-  opacity: 0.82;
+  opacity: 0.85;
+  transform: translateY(-1px);
+}
+
+.btn:active {
+  transform: translateY(0);
 }
 
 .btn:disabled {
   opacity: 0.4;
   cursor: default;
+  transform: none;
 }
 
 .btn-linea {
@@ -200,12 +332,39 @@ select.campo {
   cursor: pointer;
   border-bottom: 1px solid var(--linea-fuerte);
   border-radius: 0;
+  transition: color 0.25s var(--curva), border-color 0.25s var(--curva);
 }
 
 .btn-texto:hover {
   color: var(--tinta);
   border-bottom-color: var(--tinta);
   opacity: 1;
+  transform: none;
+}
+
+/* ——— interruptor de piel ——— */
+.interruptor {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 1px solid var(--linea);
+  background: transparent;
+  color: var(--grafito);
+  cursor: pointer;
+  font-size: 13px;
+  line-height: 1;
+  transition:
+    border-color 0.3s var(--curva),
+    color 0.3s var(--curva),
+    transform 0.5s var(--curva);
+}
+
+.interruptor:hover {
+  border-color: var(--linea-fuerte);
+  color: var(--tinta);
+  transform: rotate(180deg);
 }
 
 /* ——— enlaces ——— */
@@ -213,7 +372,7 @@ select.campo {
   color: var(--tinta);
   text-decoration: none;
   border-bottom: 1px solid var(--linea-fuerte);
-  transition: border-color 0.15s ease;
+  transition: border-color 0.25s var(--curva);
 }
 
 .enlace:hover {
@@ -224,9 +383,10 @@ select.campo {
 .telon {
   position: fixed;
   inset: 0;
-  background: rgba(22, 21, 15, 0.28);
+  background: var(--halo);
+  backdrop-filter: blur(2px);
   z-index: 40;
-  animation: aparece 0.2s ease;
+  animation: aparece 0.3s ease;
 }
 
 .cajon {
@@ -239,12 +399,13 @@ select.campo {
   border-left: 1px solid var(--linea);
   z-index: 50;
   overflow-y: auto;
-  animation: desliza 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+  box-shadow: var(--sombra-alta);
+  animation: desliza 0.42s var(--curva);
 }
 
 @keyframes desliza {
   from {
-    transform: translateX(18px);
+    transform: translateX(40px);
     opacity: 0;
   }
 }
@@ -255,13 +416,26 @@ select.campo {
   }
 }
 
+/* aparición suave de bloques dentro del cajón */
+@keyframes sube {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
+
+.sube {
+  animation: sube 0.5s var(--curva) backwards;
+  animation-delay: calc(var(--i, 0) * 45ms);
+}
+
 /* ——— espera ——— */
 .pulso {
   display: inline-block;
   width: 5px;
   height: 5px;
   border-radius: 50%;
-  background: var(--tinta);
+  background: currentColor;
   animation: respira 1.1s ease-in-out infinite;
 }
 
@@ -275,7 +449,7 @@ select.campo {
   }
 }
 
-/* ——— dato en ficha (etiqueta + valor) ——— */
+/* ——— dato (etiqueta + valor) ——— */
 .dato {
   padding: 14px 0;
   border-top: 1px solid var(--linea);
@@ -285,4 +459,15 @@ select.campo {
   font-size: 12.5px;
   line-height: 1.6;
   color: var(--grafito);
+}
+
+/* ——— respeto por quien no quiere movimiento ——— */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-delay: 0ms !important;
+    transition-duration: 0.01ms !important;
+  }
 }
