@@ -34,12 +34,16 @@ describe("syncLista", () => {
 
   it("el segundo sync parte del último y no duplica", async () => {
     const repo = crearRepo(abrirDb(":memory:"));
-    const buscar = vi.fn(async () => ({ filas: [fila(1)], totalPaginas: 1, total: 1 }));
+    const buscar = vi.fn(async (_o: { fechaDesde?: string; page: number }) => ({
+      filas: [fila(1)],
+      totalPaginas: 1,
+      total: 1,
+    }));
     await syncLista(repo, 54, { buscarFn: buscar });
     await syncLista(repo, 54, { buscarFn: buscar });
     expect(repo.contar()).toBe(1);
-    const segunda = buscar.mock.calls[1][0] as { fechaDesde?: string };
-    expect(segunda.fechaDesde).toBe(new Date().toISOString().slice(0, 10)); // desde hoy... no: desde el último sync (hoy)
+    // el segundo sync arranca donde terminó el primero (hoy)
+    expect(buscar.mock.calls[1][0].fechaDesde).toBe(new Date().toISOString().slice(0, 10));
   });
 });
 
