@@ -25,7 +25,8 @@ CREATE TABLE IF NOT EXISTS convocatorias (
   regiones TEXT NOT NULL DEFAULT '[]',
   fondos TEXT NOT NULL DEFAULT '[]',
   detalle_json TEXT,
-  detalle_at TEXT
+  detalle_at TEXT,
+  region_sync INTEGER
 );
 CREATE INDEX IF NOT EXISTS idx_conv_fin ON convocatorias(fecha_fin_sol);
 CREATE INDEX IF NOT EXISTS idx_conv_registro ON convocatorias(fecha_registro);

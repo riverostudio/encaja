@@ -49,7 +49,7 @@ export async function syncLista(
       pageSize: 200,
     });
     totalPaginas = Math.min(r.totalPaginas, MAX_PAGINAS);
-    nuevas += repo.upsertLista(r.filas.map(filaAConvocatoria));
+    nuevas += repo.upsertLista(r.filas.map(filaAConvocatoria), regionId);
     opts.onProgreso?.(pagina + 1, totalPaginas);
     pagina++;
     if (r.filas.length === 0) break;

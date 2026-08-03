@@ -80,6 +80,16 @@ describe("repo", () => {
     expect(repo.listarExpedientes()[0].estado).toBe("preparacion");
   });
 
+  it("filtra por región de sync dejando pasar lo ESTATAL", () => {
+    repo.upsertLista([fila({ codigoBdns: "A", nivel1: "AUTONOMICA" })], 54);
+    repo.upsertLista([fila({ codigoBdns: "B", nivel1: "AUTONOMICA" })], 49);
+    repo.upsertLista([fila({ codigoBdns: "C", nivel1: "ESTADO" })], 49);
+    const cv = repo.buscar({ regionSync: 54 }).map((c) => c.codigoBdns);
+    expect(cv).toContain("A");
+    expect(cv).toContain("C"); // lo estatal aplica en todas partes
+    expect(cv).not.toContain("B");
+  });
+
   it("ajustes y sync_runs", () => {
     repo.setAjuste("cp", "46183");
     expect(repo.getAjuste("cp")).toBe("46183");

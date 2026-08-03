@@ -6,6 +6,7 @@ export interface FiltrosBusqueda {
   nivel1?: string;
   instrumento?: string;
   beneficiario?: string;
+  regionSync?: number;
   limite?: number;
 }
 
@@ -65,12 +66,13 @@ export function crearRepo(db: Database.Database) {
   const ahora = () => new Date().toISOString();
 
   const stUpsertLista = db.prepare(`
-    INSERT INTO convocatorias (codigo_bdns, titulo, titulo_coof, nivel1, nivel2, nivel3, fecha_registro, mrr)
-    VALUES (@codigoBdns, @titulo, @tituloCoof, @nivel1, @nivel2, @nivel3, @fechaRegistro, @mrr)
+    INSERT INTO convocatorias (codigo_bdns, titulo, titulo_coof, nivel1, nivel2, nivel3, fecha_registro, mrr, region_sync)
+    VALUES (@codigoBdns, @titulo, @tituloCoof, @nivel1, @nivel2, @nivel3, @fechaRegistro, @mrr, @regionSync)
     ON CONFLICT(codigo_bdns) DO UPDATE SET
       titulo=excluded.titulo, titulo_coof=excluded.titulo_coof,
       nivel1=excluded.nivel1, nivel2=excluded.nivel2, nivel3=excluded.nivel3,
-      fecha_registro=excluded.fecha_registro, mrr=excluded.mrr
+      fecha_registro=excluded.fecha_registro, mrr=excluded.mrr,
+      region_sync=coalesce(excluded.region_sync, convocatorias.region_sync)
   `);
 
   const stUpsertDetalle = db.prepare(`
@@ -84,7 +86,7 @@ export function crearRepo(db: Database.Database) {
   `);
 
   const repo = {
-    upsertLista(filas: Convocatoria[]): number {
+    upsertLista(filas: Convocatoria[], regionSync?: number): number {
       const tx = db.transaction((fs: Convocatoria[]) => {
         for (const f of fs) {
           stUpsertLista.run({
@@ -96,6 +98,7 @@ export function crearRepo(db: Database.Database) {
             nivel3: f.nivel3 ?? null,
             fechaRegistro: f.fechaRegistro ?? null,
             mrr: f.mrr ? 1 : 0,
+            regionSync: regionSync ?? null,
           });
         }
       });
@@ -114,6 +117,7 @@ export function crearRepo(db: Database.Database) {
         nivel3: c.nivel3 ?? null,
         fechaRegistro: c.fechaRegistro ?? null,
         mrr: c.mrr ? 1 : 0,
+        regionSync: null,
       });
       stUpsertDetalle.run({
         codigoBdns: c.codigoBdns,
@@ -172,6 +176,10 @@ export function crearRepo(db: Database.Database) {
         cond.push(`beneficiarios LIKE @beneficiario`);
         params.beneficiario = `%${filtros.beneficiario}%`;
       }
+      if (filtros.regionSync != null) {
+        cond.push(`(region_sync=@regionSync OR nivel1='ESTADO')`);
+        params.regionSync = filtros.regionSync;
+      }
       const where = cond.length ? `WHERE ${cond.join(" AND ")}` : "";
       const filas = db
         .prepare(
@@ -184,6 +192,13 @@ export function crearRepo(db: Database.Database) {
 
     contar(): number {
       const r = db.prepare(`SELECT count(*) n FROM convocatorias`).get() as { n: number };
+      return r.n;
+    },
+
+    contarPendientes(): number {
+      const r = db
+        .prepare(`SELECT count(*) n FROM convocatorias WHERE detalle_at IS NULL`)
+        .get() as { n: number };
       return r.n;
     },
 
