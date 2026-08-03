@@ -169,6 +169,76 @@ body {
   animation-delay: calc(var(--i, 0) * 26ms);
 }
 
+/* ————————————— ESPERA CON GRACIA —————————————
+   Un barrido que recorre las tarjetas fantasma, como un
+   escáner leyendo el archivo. */
+.escaner {
+  position: relative;
+  overflow: hidden;
+}
+
+.escaner::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    100deg,
+    transparent 20%,
+    color-mix(in srgb, var(--tinta) 6%, transparent) 45%,
+    color-mix(in srgb, var(--tinta) 10%, transparent) 50%,
+    color-mix(in srgb, var(--tinta) 6%, transparent) 55%,
+    transparent 80%
+  );
+  transform: translateX(-100%);
+  animation: barrer 2.1s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  pointer-events: none;
+}
+
+@keyframes barrer {
+  to {
+    transform: translateX(100%);
+  }
+}
+
+/* los tres puntos que van saltando mientras se piensa */
+.puntos span {
+  display: inline-block;
+  animation: saltar 1.3s ease-in-out infinite;
+}
+
+.puntos span:nth-child(2) {
+  animation-delay: 0.15s;
+}
+
+.puntos span:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+@keyframes saltar {
+  0%,
+  60%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.35;
+  }
+  30% {
+    transform: translateY(-4px);
+    opacity: 1;
+  }
+}
+
+/* el mensaje que va cambiando durante la espera */
+.mensaje-espera {
+  animation: cruzar 0.5s var(--curva);
+}
+
+@keyframes cruzar {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
 /* ——— esqueleto de carga ——— */
 .esqueleto {
   background: linear-gradient(

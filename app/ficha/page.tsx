@@ -1,140 +1,248 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import Link from "next/link";
+import { useCallback, useEffect, useState } from "react";
 
-interface Hecho {
-  clave: string;
+interface OpcionUi {
   valor: string;
-  fuente: string;
-  updatedAt: string;
+  texto: string;
+  ayuda?: string;
 }
 
-const SUGERENCIAS: { clave: string; ayuda: string }[] = [
-  { clave: "tipo_actividad", ayuda: "autonomo · pyme · particular" },
-  { clave: "cp", ayuda: "código postal" },
-  { clave: "municipio", ayuda: "tu municipio" },
-  { clave: "cnae_letras", ayuda: "letras CNAE, ej: R,S" },
-  { clave: "num_empleados", ayuda: "empleados en plantilla" },
-  { clave: "al_corriente_hacienda", ayuda: "sí / no" },
-  { clave: "al_corriente_ss", ayuda: "sí / no" },
-  { clave: "facturacion_anual", ayuda: "en euros" },
-];
+interface PreguntaUi {
+  clave: string;
+  pregunta: string;
+  ayuda?: string;
+  tipo: "opcion" | "varias" | "cp" | "numero";
+  opciones: OpcionUi[] | null;
+}
 
-export default function PaginaFicha() {
-  const [hechos, setHechos] = useState<Hecho[]>([]);
-  const [clave, setClave] = useState("");
-  const [valor, setValor] = useState("");
+interface EstadoPerfil {
+  respuestas: Record<string, string>;
+  siguiente: PreguntaUi | null;
+  progreso: { respondidas: number; total: number; completo: boolean };
+  resumen: string;
+  zona: { municipio: string; provincia: string } | null;
+  preguntas: PreguntaUi[];
+}
+
+export default function PaginaPerfil() {
+  const [e, setE] = useState<EstadoPerfil | null>(null);
+  const [texto, setTexto] = useState("");
+  const [marcadas, setMarcadas] = useState<string[]>([]);
+  const [repasando, setRepasando] = useState(false);
+  const [paso, setPaso] = useState(0);
 
   useEffect(() => {
-    fetch("/api/ficha")
+    fetch("/api/perfil")
       .then((r) => r.json())
-      .then((d: { hechos: Hecho[] }) => setHechos(d.hechos));
+      .then((d: EstadoPerfil) => setE(d));
   }, []);
 
-  async function guardar(c: string, v: string) {
-    const r = await fetch("/api/ficha", {
+  const responder = useCallback(async (clave: string, valor: string) => {
+    const r = await fetch("/api/perfil", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ clave: c, valor: v }),
+      body: JSON.stringify({ clave, valor }),
     });
-    const d = (await r.json()) as { hechos: Hecho[] };
-    setHechos(d.hechos);
-    setClave("");
-    setValor("");
-  }
+    const d = (await r.json()) as EstadoPerfil;
+    setE(d);
+    setTexto("");
+    setMarcadas([]);
+    setPaso((p) => p + 1);
+  }, []);
 
-  async function borrar(c: string) {
-    const r = await fetch(`/api/ficha?clave=${encodeURIComponent(c)}`, { method: "DELETE" });
-    const d = (await r.json()) as { hechos: Hecho[] };
-    setHechos(d.hechos);
-  }
+  const borrar = useCallback(async (clave: string) => {
+    const r = await fetch(`/api/perfil?clave=${encodeURIComponent(clave)}`, { method: "DELETE" });
+    setE((await r.json()) as EstadoPerfil);
+    setRepasando(false);
+    setPaso((p) => p + 1);
+  }, []);
 
-  const usadas = new Set(hechos.map((h) => h.clave));
-
-  return (
-    <div className="max-w-2xl">
-      <h1 className="display text-[32px] leading-tight">Mi ficha</h1>
-      <p className="nota mt-2 max-w-lg">
-        Todo lo que el radar ya sabe de ti. Cada entrevista añade datos aquí, y cuantos más haya
-        menos te pregunta. Si borras uno, la próxima entrevista volverá a preguntarlo.
+  if (!e) {
+    return (
+      <p className="flex items-center gap-2 py-16 text-[14px] text-[var(--niebla)]">
+        <span className="pulso" /> Cargando tu perfil…
       </p>
+    );
+  }
 
-      <form
-        className="mt-10 flex flex-wrap items-end gap-4"
-        onSubmit={(e) => {
-          e.preventDefault();
-          if (clave.trim()) void guardar(clave.trim(), valor.trim());
-        }}
-      >
-        <label className="block">
-          <span className="rotulo mb-1.5 block">Dato</span>
-          <input
-            className="campo cifra w-[200px]"
-            list="claves"
-            placeholder="tipo_actividad"
-            value={clave}
-            onChange={(e) => setClave(e.target.value)}
-          />
-        </label>
-        <datalist id="claves">
-          {SUGERENCIAS.map((s) => (
-            <option key={s.clave} value={s.clave}>
-              {s.ayuda}
-            </option>
-          ))}
-        </datalist>
-        <label className="block flex-1">
-          <span className="rotulo mb-1.5 block">Valor</span>
-          <input
-            className="campo w-full"
-            placeholder="autonomo"
-            value={valor}
-            onChange={(e) => setValor(e.target.value)}
-          />
-        </label>
-        <button className="btn" type="submit">
-          Guardar
-        </button>
-      </form>
+  const p = e.siguiente;
+  const porcentaje = Math.round((e.progreso.respondidas / Math.max(1, e.progreso.total)) * 100);
 
-      {SUGERENCIAS.filter((s) => !usadas.has(s.clave)).length > 0 && (
-        <div className="mt-5 flex flex-wrap items-center gap-x-4 gap-y-2">
-          <span className="rotulo">Sugerencias</span>
-          {SUGERENCIAS.filter((s) => !usadas.has(s.clave)).map((s) => (
-            <button
-              key={s.clave}
-              className="filtro cifra"
-              title={s.ayuda}
-              onClick={() => setClave(s.clave)}
-            >
-              {s.clave}
-            </button>
-          ))}
-        </div>
-      )}
-
-      {hechos.length === 0 ? (
-        <p className="filete mt-10 py-16 text-center text-[14px] text-[var(--niebla)]">
-          Ficha vacía. Se irá rellenando sola con las entrevistas.
+  // ——— perfil terminado: resumen y repaso ———
+  if (!p || repasando) {
+    return (
+      <div className="max-w-2xl">
+        <p className="rotulo">Tu perfil</p>
+        <h1 className="display mt-1 text-[32px] leading-tight">{e.resumen}</h1>
+        <p className="nota mt-3 max-w-lg">
+          Con esto el radar ya te enseña solo lo que te sirve, y los cuestionarios de cada ayuda no
+          te vuelven a preguntar lo que ya sabes. Toca cualquier respuesta para cambiarla.
         </p>
-      ) : (
-        <div className="mt-10">
-          {hechos.map((h) => (
-            <div key={h.clave} className="dato flex items-baseline gap-6">
-              <span className="rotulo cifra w-[170px] shrink-0">{h.clave}</span>
-              <span className="display flex-1 text-[17px]">{h.valor}</span>
-              <span className="text-[11.5px] text-[var(--niebla)]">{h.fuente}</span>
-              <button
-                className="text-[12px] text-[var(--niebla)] transition-colors hover:text-[var(--senal)]"
-                title="Borrar: volverá a preguntarse"
-                onClick={() => void borrar(h.clave)}
+
+        <div className="mt-9">
+          {e.preguntas.map((pregunta, i) => {
+            const valor = e.respuestas[pregunta.clave];
+            return (
+              <div
+                key={pregunta.clave}
+                className="dato sube flex items-baseline gap-6"
+                style={{ "--i": Math.min(i, 8) } as React.CSSProperties}
               >
-                borrar
-              </button>
-            </div>
-          ))}
+                <span className="w-[220px] shrink-0 text-[13px] text-[var(--grafito)]">
+                  {pregunta.pregunta}
+                </span>
+                <span className="display flex-1 text-[17px]">
+                  {valor === undefined || valor === "" ? (
+                    <span className="text-[var(--niebla)]">sin responder</span>
+                  ) : (
+                    textoDe(pregunta, valor)
+                  )}
+                </span>
+                <button
+                  className="text-[12px] text-[var(--niebla)] transition-colors hover:text-[var(--tinta)]"
+                  onClick={() => void borrar(pregunta.clave)}
+                >
+                  cambiar
+                </button>
+              </div>
+            );
+          })}
         </div>
-      )}
+
+        {e.zona && (
+          <p className="nota mt-6">
+            Tu zona: <strong>{e.zona.municipio}</strong>, {e.zona.provincia}. Ya se incluyen las
+            ayudas de tu ayuntamiento y tu diputación.
+          </p>
+        )}
+
+        <Link href="/" className="btn mt-9 inline-block">
+          Ver mis ayudas
+        </Link>
+      </div>
+    );
+  }
+
+  // ——— asistente, una pregunta cada vez ———
+  return (
+    <div className="mx-auto max-w-2xl">
+      <div className="flex items-baseline justify-between gap-4">
+        <p className="rotulo">
+          Tu perfil · {e.progreso.respondidas + 1} de {e.progreso.total}
+        </p>
+        {e.progreso.respondidas > 0 && (
+          <button className="btn-texto" onClick={() => setRepasando(true)}>
+            Ver lo respondido
+          </button>
+        )}
+      </div>
+      <div className="mt-2 h-[2px] w-full bg-[var(--linea)]">
+        <div
+          className="h-full transition-[width] duration-700 ease-out"
+          style={{ width: `${porcentaje}%`, background: "var(--tinta)" }}
+        />
+      </div>
+
+      <div key={paso} className="sube mt-12">
+        <h1 className="display text-[32px] leading-tight">{p.pregunta}</h1>
+        {p.ayuda && <p className="mt-3 text-[14px] leading-relaxed text-[var(--grafito)]">{p.ayuda}</p>}
+
+        <div className="mt-9">
+          {p.tipo === "opcion" && p.opciones && (
+            <div className="flex flex-col gap-2.5">
+              {p.opciones.map((o, i) => (
+                <button
+                  key={o.valor}
+                  className="opcion sube !w-full !text-left"
+                  style={{ "--i": i } as React.CSSProperties}
+                  onClick={() => void responder(p.clave, o.valor)}
+                >
+                  {o.texto}
+                  {o.ayuda && (
+                    <span className="mt-0.5 block font-sans text-[12.5px] text-[var(--niebla)]">
+                      {o.ayuda}
+                    </span>
+                  )}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {p.tipo === "varias" && p.opciones && (
+            <>
+              <div className="flex flex-wrap gap-2.5">
+                {p.opciones.map((o, i) => {
+                  const activa = marcadas.includes(o.valor);
+                  return (
+                    <button
+                      key={o.valor}
+                      className="opcion sube !py-3 !text-[16px]"
+                      style={
+                        {
+                          "--i": i,
+                          borderColor: activa ? "var(--tinta)" : undefined,
+                          background: activa ? "var(--tinta)" : undefined,
+                          color: activa ? "var(--fondo)" : undefined,
+                        } as React.CSSProperties
+                      }
+                      onClick={() =>
+                        setMarcadas((m) =>
+                          m.includes(o.valor) ? m.filter((x) => x !== o.valor) : [...m, o.valor],
+                        )
+                      }
+                    >
+                      {o.texto}
+                    </button>
+                  );
+                })}
+              </div>
+              <button className="btn mt-7" onClick={() => void responder(p.clave, marcadas.join(","))}>
+                {marcadas.length === 0 ? "Ninguna me aplica" : `Seguir con ${marcadas.length}`}
+              </button>
+            </>
+          )}
+
+          {(p.tipo === "cp" || p.tipo === "numero") && (
+            <form
+              className="flex items-end gap-3"
+              onSubmit={(ev) => {
+                ev.preventDefault();
+                if (texto.trim()) void responder(p.clave, texto.trim());
+              }}
+            >
+              <input
+                autoFocus
+                inputMode="numeric"
+                maxLength={p.tipo === "cp" ? 5 : undefined}
+                className="campo cifra w-[160px] !text-[26px]"
+                placeholder={p.tipo === "cp" ? "46183" : "0"}
+                value={texto}
+                onChange={(ev) => setTexto(ev.target.value.replace(/\D/g, ""))}
+              />
+              <button className="btn" type="submit" disabled={!texto.trim()}>
+                Seguir
+              </button>
+            </form>
+          )}
+        </div>
+
+        <p className="nota mt-10">
+          Esto se queda en tu Mac. No sale de aquí, y puedes cambiarlo cuando quieras.
+        </p>
+      </div>
     </div>
   );
+}
+
+function textoDe(pregunta: PreguntaUi, valor: string): string {
+  if (pregunta.tipo === "varias") {
+    const marcadas = valor.split(",").filter(Boolean);
+    if (marcadas.length === 0) return "Ninguna";
+    return marcadas
+      .map((v) => pregunta.opciones?.find((o) => o.valor === v)?.texto ?? v)
+      .join(", ");
+  }
+  return pregunta.opciones?.find((o) => o.valor === valor)?.texto ?? valor;
 }

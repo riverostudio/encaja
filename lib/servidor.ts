@@ -6,6 +6,7 @@ import { crearRepo, type Repo } from "./repo";
 import { estadoPlazo, formatoRango } from "./plazos";
 import { resolverCP, esOrganoDeMiZona } from "./territorio";
 import { resumirEstructural, type ResumenLlano } from "./resumen";
+import { evaluarEstructural } from "./encaje";
 import type { Convocatoria, DictamenValor, Plazo, ResumenIA } from "./tipos";
 
 let repoGlobal: Repo | null = null;
@@ -52,6 +53,8 @@ export interface FiltrosRadar {
   estado?: string; // abiertas | urgentes | proximas | todas
   region?: number;
   cp?: string;
+  /** Con perfil completo, esconde lo que el filtro oficial ya descarta. */
+  soloAplicables?: boolean;
 }
 
 const ORDEN_ESTADO: Record<string, number> = {
@@ -90,6 +93,15 @@ export function buscarRadar(repo: Repo, f: FiltrosRadar): ConvocatoriaConPlazo[]
   if (zona) {
     filtradas = filtradas.filter(
       (c) => c.nivel1 !== "LOCAL" || esOrganoDeMiZona(c.nivel2, c.nivel3, zona),
+    );
+  }
+
+  // Solo lo que esta persona puede pedir de verdad: fuera lo que el filtro
+  // oficial descarta sin lugar a dudas (beneficiario, territorio, plazo).
+  if (f.soloAplicables) {
+    const hechos = repo.getHechos(1);
+    filtradas = filtradas.filter(
+      (c) => evaluarEstructural(c, hechos).resultado !== "no",
     );
   }
 

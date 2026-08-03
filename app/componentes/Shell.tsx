@@ -8,7 +8,7 @@ import Tema from "./Tema";
 
 const PESTANAS = [
   { href: "/", etiqueta: "Radar" },
-  { href: "/ficha", etiqueta: "Mi ficha" },
+  { href: "/ficha", etiqueta: "Mi perfil" },
   { href: "/expedientes", etiqueta: "Expedientes" },
 ];
 

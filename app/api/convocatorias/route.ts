@@ -14,6 +14,7 @@ export async function GET(req: NextRequest) {
       estado: q.get("estado") ?? undefined,
       region: q.get("region") ? Number(q.get("region")) : undefined,
       cp: q.get("cp") ?? undefined,
+      soloAplicables: q.get("soloAplicables") === "1",
     });
     return NextResponse.json({ filas });
   } catch (e) {

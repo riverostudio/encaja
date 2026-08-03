@@ -13,7 +13,6 @@ export default function Ajustes({ onCerrar }: { onCerrar: () => void }) {
   const [estado, setEstado] = useState<Estado | null>(null);
   const [clave, setClave] = useState("");
   const [cp, setCp] = useState("");
-  const [modelo, setModelo] = useState("");
   const [guardado, setGuardado] = useState(false);
 
   useEffect(() => {
@@ -22,7 +21,6 @@ export default function Ajustes({ onCerrar }: { onCerrar: () => void }) {
       .then((d: Estado) => {
         setEstado(d);
         setCp(d.cp ?? "");
-        setModelo(d.modelo);
       });
   }, []);
 
@@ -38,7 +36,7 @@ export default function Ajustes({ onCerrar }: { onCerrar: () => void }) {
     await fetch("/api/ajustes", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ gemini_key: clave || undefined, cp, modelo: modelo || undefined }),
+      body: JSON.stringify({ gemini_key: clave || undefined, cp }),
     });
     setGuardado(true);
     setClave("");
@@ -96,15 +94,6 @@ export default function Ajustes({ onCerrar }: { onCerrar: () => void }) {
                 {estado.zona.municipio}, {estado.zona.provincia}
               </span>
             )}
-          </div>
-
-          <div className="dato">
-            <div className="rotulo mb-1.5">Modelo</div>
-            <input
-              className="campo w-full"
-              value={modelo}
-              onChange={(e) => setModelo(e.target.value)}
-            />
           </div>
 
           <button className="btn mt-7 w-full" onClick={guardar}>

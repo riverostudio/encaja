@@ -1,8 +1,10 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import TarjetaAyuda from "./componentes/TarjetaAyuda";
 import DetalleAyuda from "./componentes/DetalleAyuda";
+import Esperando, { MENSAJES_RADAR, MENSAJES_SYNC } from "./componentes/Esperando";
 import type { ConvUi } from "./componentes/tipos-ui";
 
 interface EstadoSync {
@@ -17,7 +19,6 @@ interface Ccaa {
   nombre: string;
 }
 
-const SEIS_HORAS = 6 * 60 * 60 * 1000;
 const POR_TANDA = 60;
 
 const ESTADOS = [
@@ -66,6 +67,11 @@ export default function PaginaRadar() {
   const [estadoFiltro, setEstadoFiltro] = useState("");
   const [instrumento, setInstrumento] = useState("");
   const [paraQuien, setParaQuien] = useState("");
+  const [soloAplicables, setSoloAplicables] = useState(true);
+  const [perfil, setPerfil] = useState<{
+    resumen: string;
+    progreso: { completo: boolean; respondidas: number };
+  } | null>(null);
   const [filas, setFilas] = useState<ConvUi[]>([]);
   const [visibles, setVisibles] = useState(POR_TANDA);
   const [cargando, setCargando] = useState(true);
@@ -84,12 +90,13 @@ export default function PaginaRadar() {
     if (paraQuien) q.set("beneficiario", paraQuien);
     if (region !== "") q.set("region", String(region));
     if (cp.length === 5) q.set("cp", cp);
+    if (soloAplicables) q.set("soloAplicables", "1");
     const r = await fetch(`/api/convocatorias?${q}`);
     const d = (await r.json()) as { filas: ConvUi[] };
     setFilas(d.filas ?? []);
     setVisibles(POR_TANDA);
     setCargando(false);
-  }, [texto, estadoFiltro, instrumento, paraQuien, region, cp]);
+  }, [texto, estadoFiltro, instrumento, paraQuien, region, cp, soloAplicables]);
 
   const refrescarSync = useCallback(async () => {
     const d = (await (await fetch("/api/sync")).json()) as Omit<EstadoSync, "horas">;
@@ -123,15 +130,23 @@ export default function PaginaRadar() {
     if (inicializado.current) return;
     inicializado.current = true;
     (async () => {
-      const aj = (await (await fetch("/api/ajustes")).json()) as {
-        cp: string | null;
-        ccaa: number;
-      };
+      const [aj, datosPerfil] = await Promise.all([
+        fetch("/api/ajustes").then((r) => r.json()) as Promise<{ cp: string | null; ccaa: number }>,
+        fetch("/api/perfil").then((r) => r.json()) as Promise<{
+          beneficiario: string | null;
+          resumen: string;
+          progreso: { completo: boolean; respondidas: number };
+        }>,
+      ]);
       if (aj.cp) setCp(aj.cp);
       if (aj.ccaa) setRegion(aj.ccaa);
+      // El perfil manda: el radar arranca filtrado a lo que le sirve a esta persona.
+      if (datosPerfil.beneficiario) setParaQuien(datosPerfil.beneficiario);
+      setPerfil(datosPerfil);
+      // Solo se sincroniza si el archivo está vacío. A partir de ahí, manda
+      // el botón: nada de re-descargar (ni de gastar IA) sin pedirlo.
       const s = await refrescarSync();
-      const viejo = !s.ultimo || Date.now() - new Date(s.ultimo).getTime() > SEIS_HORAS;
-      if (viejo) void sincronizar(aj.ccaa || 54);
+      if (s.total === 0) void sincronizar(aj.ccaa || 54);
     })();
   }, [refrescarSync, sincronizar]);
 
@@ -233,8 +248,39 @@ export default function PaginaRadar() {
         </label>
       </div>
 
+      {/* ——— aviso: sin perfil, esto es un cajón de sastre ——— */}
+      {perfil && !perfil.progreso.completo && (
+        <div
+          className="sube mt-8 flex flex-wrap items-center gap-4 rounded-lg border p-4"
+          style={{ borderColor: "var(--ocre)", background: "var(--lienzo-alto)" }}
+        >
+          <span className="flex-1 text-[13.5px] leading-relaxed">
+            <strong className="display text-[16px]">
+              {perfil.progreso.respondidas === 0
+                ? "Aún no sé nada de ti"
+                : "Te falta terminar tu perfil"}
+            </strong>
+            <span className="mt-1 block text-[var(--grafito)]">
+              Contéstame ocho preguntas y el radar te enseña solo las ayudas que tú puedes pedir, en
+              vez de las {filas.length} de todo el mundo.
+            </span>
+          </span>
+          <Link href="/ficha" className="btn shrink-0">
+            {perfil.progreso.respondidas === 0 ? "Empezar" : "Terminar"}
+          </Link>
+        </div>
+      )}
+      {perfil?.progreso.completo && (
+        <p className="mt-8 text-[13px] text-[var(--grafito)]">
+          {perfil.resumen}.{" "}
+          <Link href="/ficha" className="enlace">
+            Cambiar mi perfil
+          </Link>
+        </p>
+      )}
+
       {/* ——— ¿para quién? el filtro que más cambia la lista ——— */}
-      <div className="mt-8 flex flex-wrap items-center gap-x-5 gap-y-2">
+      <div className="mt-5 flex flex-wrap items-center gap-x-5 gap-y-2">
         <span className="rotulo">Buscas</span>
         {PARA_QUIEN.map((q) => (
           <button
@@ -282,6 +328,18 @@ export default function PaginaRadar() {
             {t.texto}
           </button>
         ))}
+        {perfil?.progreso.completo && (
+          <>
+            <span className="text-[var(--linea-fuerte)]">/</span>
+            <button
+              className={`filtro ${soloAplicables ? "filtro-activo" : ""}`}
+              onClick={() => setSoloAplicables(!soloAplicables)}
+              title="Esconde las que tu perfil descarta sin lugar a dudas"
+            >
+              {soloAplicables ? "Solo las que puedo pedir" : "Enseñándome todas"}
+            </button>
+          </>
+        )}
       </div>
 
       {/* ——— estado ——— */}
@@ -324,12 +382,8 @@ export default function PaginaRadar() {
       </div>
 
       {/* ——— rejilla ——— */}
-      {cargando ? (
-        <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {Array.from({ length: 6 }, (_, i) => (
-            <Esqueleto key={i} indice={i} />
-          ))}
-        </div>
+      {cargando || sincronizando ? (
+        <Esperando mensajes={sincronizando ? MENSAJES_SYNC : MENSAJES_RADAR} />
       ) : filas.length === 0 ? (
         <div className="filete mt-6 py-24 text-center">
           <p className="display text-[20px]">Nada con estos filtros.</p>
@@ -368,21 +422,6 @@ export default function PaginaRadar() {
   );
 }
 
-function Esqueleto({ indice }: { indice: number }) {
-  return (
-    <div
-      className="tarjeta entra !cursor-default"
-      style={{ "--i": indice } as React.CSSProperties}
-    >
-      <div className="esqueleto h-9 w-16" />
-      <div className="esqueleto mt-3 h-2.5 w-12" />
-      <div className="esqueleto mt-6 h-3.5 w-full" />
-      <div className="esqueleto mt-2 h-3.5 w-11/12" />
-      <div className="esqueleto mt-2 h-3.5 w-2/3" />
-      <div className="esqueleto mt-6 h-3 w-1/3" />
-    </div>
-  );
-}
 
 function CargadorCcaas({ onCargar }: { onCargar: (c: Ccaa[]) => void }) {
   useEffect(() => {
