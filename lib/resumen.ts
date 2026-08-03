@@ -5,9 +5,36 @@
 import type { Convocatoria } from "./tipos";
 
 export interface ResumenLlano {
+  /** Para qué es el dinero. */
   que: string;
+  /** Quién puede pedirla. */
+  quien: string;
+  /** Qué te llevas (dinero, préstamo, aval…). */
   consigues: string;
 }
+
+// Las categorías oficiales de la BDNS, dichas como las diría un vecino.
+// Cuando no se reconoce una, se usa la oficial tal cual: nunca se inventa.
+const PARA_QUE: Record<string, string> = {
+  educación: "Para estudiar: colegio, universidad, cursos o material",
+  cultura: "Para cultura: música, teatro, libros, patrimonio o fiestas",
+  "servicios sociales y promoción social": "Para ayudar a quien lo está pasando mal",
+  "comercio, turismo y pymes": "Para montar o sostener un negocio pequeño",
+  "agricultura, pesca y alimentación": "Para el campo, la ganadería o la pesca",
+  "investigación, desarrollo e innovación": "Para investigar o innovar",
+  "otras prestaciones económicas": "Una prestación en dinero",
+  "fomento del empleo": "Para crear empleo o encontrar trabajo",
+  sanidad: "Para salud y atención sanitaria",
+  "industria y energía": "Para industria o para gastar menos energía",
+  justicia: "Para asuntos de justicia y defensa jurídica",
+  infraestructuras: "Para obras e instalaciones",
+  "acceso a la vivienda y fomento de la edificación": "Para vivienda: comprar, alquilar o reformar",
+  desempleo: "Para gente que está sin trabajo",
+  "cooperación internacional para el desarrollo y cultural": "Para cooperación y ayuda internacional",
+  "seguridad ciudadana e instituciones penitenciarias": "Para seguridad ciudadana",
+  "subvenciones al transporte": "Para transporte y desplazamientos",
+  "otras actuaciones de carácter económico": "Ayuda económica de un programa concreto",
+};
 
 /** 23.559.000 → "23,6 M€" · 318.000 → "318.000 €" */
 export function importeCorto(n?: number | null): string | null {
@@ -63,23 +90,26 @@ function queTeDan(instrumentos: string[]): string {
 }
 
 /**
- * Dos frases para la tarjeta: qué es esto y qué te puedes llevar.
- * Nunca afirma cuánto te tocaría a ti: el presupuesto es la bolsa total.
+ * Lo que hace falta saber de un vistazo: para qué es y quién puede pedirla.
+ * Todo sale de los datos oficiales, así que no puede afirmar nada falso;
+ * cuando un dato no está publicado, lo dice en vez de rellenarlo.
  */
 export function resumirEstructural(conv: Convocatoria): ResumenLlano {
-  const quien = aQuienVa(conv.beneficiarios);
   const finalidad = conv.finalidad?.trim();
+  const clave = finalidad?.toLowerCase();
+  const que = clave
+    ? (PARA_QUE[clave] ?? `Para ${finalidad!.toLowerCase()}`)
+    : "El objeto lo detallan las bases";
 
-  let que: string;
-  if (finalidad && quien) que = `Ayuda de ${finalidad.toLowerCase()} para ${quien}.`;
-  else if (finalidad) que = `Ayuda pública en materia de ${finalidad.toLowerCase()}.`;
-  else if (quien) que = `Ayuda pública dirigida a ${quien}.`;
-  else que = "Ayuda pública: las bases detallan el objeto y a quién va dirigida.";
+  const destinatarios = aQuienVa(conv.beneficiarios);
+  const quien = destinatarios
+    ? `Pueden pedirla ${destinatarios}`
+    : "Las bases dicen quién puede pedirla";
 
   const bolsa = importeCorto(conv.presupuesto);
   const consigues = bolsa
     ? `${queTeDan(conv.instrumentos)}. Hay ${bolsa} en total, que se reparte entre quienes la piden.`
     : `${queTeDan(conv.instrumentos)}. La cuantía la fijan las bases.`;
 
-  return { que, consigues };
+  return { que, quien, consigues };
 }

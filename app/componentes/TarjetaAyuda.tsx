@@ -29,7 +29,6 @@ export default function TarjetaAyuda({
   const sello = conv.veredicto ? SELLO[conv.veredicto] : null;
 
   const titular = conv.resumen?.titular;
-  const consigues = conv.resumen?.consigues ?? conv.llano.consigues;
 
   return (
     <button
@@ -68,17 +67,13 @@ export default function TarjetaAyuda({
         {conv.titulo}
       </span>
 
-      {/* ——— y lo que significa ——— */}
+      {/* ——— para qué es y quién puede pedirla ——— */}
       <span className="mt-3 border-t border-[var(--linea)] pt-3">
-        {titular && (
-          <span className="display line-clamp-2 text-[17px] leading-snug text-[var(--tinta)]">
-            {titular}
-          </span>
-        )}
-        <span
-          className={`line-clamp-2 text-[13px] leading-relaxed text-[var(--grafito)] ${titular ? "mt-1.5" : ""}`}
-        >
-          {consigues}
+        <span className="display line-clamp-2 text-[16.5px] leading-snug text-[var(--tinta)]">
+          {titular ?? conv.llano.que}
+        </span>
+        <span className="mt-1.5 line-clamp-2 text-[13px] leading-relaxed text-[var(--grafito)]">
+          {conv.resumen?.aQuien || conv.llano.quien}
         </span>
       </span>
 

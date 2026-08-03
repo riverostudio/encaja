@@ -1,5 +1,10 @@
 import { describe, it, expect } from "vitest";
-import { parsearRequisitos, parsearVeredictos, siguientePregunta } from "../lib/requisitos";
+import {
+  parsearRequisitos,
+  parsearVeredictos,
+  preguntables,
+  siguientePregunta,
+} from "../lib/requisitos";
 import type { Requisito } from "../lib/tipos";
 
 describe("parsearRequisitos", () => {
@@ -56,6 +61,30 @@ describe("parsearRequisitos", () => {
       }),
     );
     expect(r).toHaveLength(1);
+  });
+});
+
+describe("preguntables", () => {
+  const muchos: Requisito[] = Array.from({ length: 20 }, (_, i) => ({
+    id: `r${i}`,
+    literal: `L${i}`,
+    tipo: "condicion" as const,
+    clave: `k${i}`,
+    pregunta: `¿P${i}?`,
+  }));
+
+  it("nunca ofrece más de 8, por muchas que extraiga la IA", () => {
+    expect(preguntables(muchos, new Map())).toHaveLength(8);
+  });
+
+  it("responder no destapa preguntas nuevas: la entrevista termina", () => {
+    const hechos = new Map<string, string>();
+    let vueltas = 0;
+    while (preguntables(muchos, hechos).length > 0 && vueltas < 50) {
+      hechos.set(preguntables(muchos, hechos)[0].clave!, "sí");
+      vueltas++;
+    }
+    expect(vueltas).toBe(8);
   });
 });
 

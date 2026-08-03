@@ -87,6 +87,14 @@ export default function DetalleAyuda({
       <Cuestionario
         codigo={codigo}
         titulo={resumen?.titular ?? d.conv.titulo}
+        sobreLaAyuda={[
+          resumen?.que ?? d.conv.llano.que,
+          resumen?.aQuien ?? d.conv.llano.quien,
+          `Plazo: ${d.conv.rangoFechas}. ${fraseP1azo(d.conv.plazo)}.`,
+          d.conv.llano.consigues,
+          `La convoca ${d.conv.nivel3 ?? d.conv.nivel2}.`,
+          ...(resumen?.ojo ? [`Ojo: ${resumen.ojo}`] : []),
+        ]}
         onVeredicto={(v) => setVeredicto(v as VeredictoUi)}
         onCerrar={() => setCuestionario(false)}
       />

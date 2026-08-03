@@ -1,45 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getRepo, errorJson } from "@/lib/servidor";
-import { descargarBases, detalle } from "@/lib/bdns";
+import { detalle } from "@/lib/bdns";
+import { obtenerRequisitos, EXPLICACION_SIN_BASES } from "@/lib/bases";
 import { evaluarEstructural } from "@/lib/encaje";
 import { dictaminar } from "@/lib/dictamen";
-import { generar, hayClave, type Parte } from "@/lib/ia";
+import { generar, hayClave } from "@/lib/ia";
 import {
-  PROMPT_EXTRACCION,
   PROMPT_VEREDICTO,
-  parsearRequisitos,
   parsearVeredictos,
   siguientePregunta,
+  preguntables,
 } from "@/lib/requisitos";
-import type { Convocatoria, Requisito } from "@/lib/tipos";
+
 
 export const dynamic = "force-dynamic";
 const PERFIL = 1;
-
-async function obtenerRequisitos(conv: Convocatoria): Promise<Requisito[]> {
-  const repo = getRepo();
-  const previa = repo.getEvaluacion(conv.codigoBdns, PERFIL);
-  if (previa?.requisitosJson) return JSON.parse(previa.requisitosJson) as Requisito[];
-
-  const bases = await descargarBases(conv);
-  const partes: Parte[] = [{ texto: PROMPT_EXTRACCION }];
-  if (bases?.tipo === "pdf") {
-    partes.push({ pdf: bases.datos as Buffer });
-  } else if (bases?.tipo === "url") {
-    // Bases publicadas como página web: se baja el HTML y se manda como texto plano.
-    const r = await fetch(bases.datos as string, { redirect: "follow" }).catch(() => null);
-    const html = r && r.ok ? await r.text() : "";
-    const textoPlano = html.replace(/<script[\s\S]*?<\/script>/gi, "").replace(/<[^>]+>/g, " ");
-    if (textoPlano.trim().length < 200) return [];
-    partes.push({ texto: `BASES REGULADORAS (extraídas de ${bases.datos}):\n${textoPlano.slice(0, 100_000)}` });
-  } else {
-    return [];
-  }
-  const respuesta = await generar(getRepo(), partes, { esperaJson: true });
-  const requisitos = parsearRequisitos(respuesta);
-  repo.guardarEvaluacion(conv.codigoBdns, PERFIL, { requisitosJson: JSON.stringify(requisitos) });
-  return requisitos;
-}
 
 export async function POST(
   req: NextRequest,
@@ -80,17 +55,19 @@ export async function POST(
         fase: "sin_ia",
         estructural,
         aviso:
-          "Sin clave de Gemini solo puedo hacer el filtro estructural. Pega tu clave en Ajustes para leer las bases y hacer la entrevista completa.",
+          "Sin clave de IA solo puedo hacer el filtro con los datos oficiales. Pon tu clave en Ajustes para que además lea las bases y te entreviste.",
       });
     }
 
-    const requisitos = await obtenerRequisitos(conv);
+    const lectura = await obtenerRequisitos(repo, conv, PERFIL);
+    const requisitos = lectura.requisitos;
     if (requisitos.length === 0) {
       return NextResponse.json({
         fase: "sin_bases",
         estructural,
-        aviso:
-          "No he podido leer las bases (no hay PDF descargable). Ábrelas desde el enlace oficial y revisa los requisitos a mano.",
+        aviso: lectura.motivo
+          ? EXPLICACION_SIN_BASES[lectura.motivo]
+          : "No he podido sacar los requisitos de las bases. Ábrelas en el enlace oficial.",
       });
     }
 
@@ -118,12 +95,15 @@ export async function POST(
     }
 
     const pregunta = siguientePregunta(requisitos, hechos);
-    const evaluables = requisitos.filter((r) => r.tipo !== "documento" && r.clave);
-    const respondidas = evaluables.filter((r) => hechos.has(r.clave!)).length;
+    // El total que se enseña es el que de verdad se va a preguntar.
+    const quedan = preguntables(requisitos, hechos).length;
+    const yaRespondidas = requisitos.filter(
+      (r) => r.tipo !== "documento" && r.clave && hechos.has(r.clave),
+    ).length;
     return NextResponse.json({
       fase: pregunta ? "entrevista" : "listo_para_dictamen",
       pregunta,
-      progreso: { respondidas, total: evaluables.length },
+      progreso: { respondidas: yaRespondidas, total: yaRespondidas + quedan },
       requisitos,
       estructural,
     });

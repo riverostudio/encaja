@@ -6,6 +6,7 @@ export interface PlazoUi {
 
 export interface ResumenLlanoUi {
   que: string;
+  quien: string;
   consigues: string;
 }
 

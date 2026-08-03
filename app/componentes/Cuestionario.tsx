@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import EsperaLectura, { PASOS_ENCAJE } from "./EsperaLectura";
 import type { MotivoUi, RequisitoUi } from "./tipos-ui";
 
 interface RespuestaEncaje {
@@ -50,11 +51,14 @@ const VEREDICTO: Record<string, { titulo: string; pie: string; color: string; ic
 export default function Cuestionario({
   codigo,
   titulo,
+  sobreLaAyuda = [],
   onCerrar,
   onVeredicto,
 }: {
   codigo: string;
   titulo: string;
+  /** Datos de ESTA convocatoria, para que la espera cuente algo. */
+  sobreLaAyuda?: string[];
   onCerrar: () => void;
   onVeredicto?: (v: string) => void;
 }) {
@@ -154,9 +158,7 @@ export default function Cuestionario({
               : error}
           </p>
         ) : !estado ? (
-          <p className="flex items-center gap-2 text-[15px] text-[var(--niebla)]">
-            <span className="pulso" /> Leyendo la convocatoria…
-          </p>
+          <EsperaLectura pasos={PASOS_ENCAJE} sobreLaAyuda={sobreLaAyuda} />
         ) : estado.fase === "sin_ia" || estado.fase === "sin_bases" ? (
           <div className="sube">
             <Estructural estado={estado} />
@@ -176,9 +178,10 @@ export default function Cuestionario({
             )}
 
             {cargando ? (
-              <p className="mt-6 flex items-center gap-2 text-[15px] text-[var(--niebla)]">
-                <span className="pulso" /> Un momento…
-              </p>
+              <EsperaLectura
+                pasos={["Guardando tu respuesta", "Mirando qué falta por saber"]}
+                sobreLaAyuda={sobreLaAyuda}
+              />
             ) : estado.fase === "entrevista" && estado.pregunta ? (
               <Pregunta
                 pregunta={estado.pregunta}

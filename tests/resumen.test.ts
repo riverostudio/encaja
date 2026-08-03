@@ -63,13 +63,33 @@ describe("aQuienVa", () => {
 });
 
 describe("resumirEstructural", () => {
-  it("explica qué es y qué te llevas, sin jerga", () => {
+  it("dice para qué es, sin repetir la jerga oficial", () => {
     const r = resumirEstructural(conv());
-    // la finalidad va en minúscula porque cae en mitad de la frase
-    expect(r.que.toLowerCase()).toContain("fomento del empleo");
-    expect(r.que).toContain("pymes y autónomos");
+    // "Fomento del Empleo" es categoría de la BDNS: se cuenta en cristiano
+    expect(r.que.toLowerCase()).toContain("empleo");
+    expect(r.que.toLowerCase()).not.toContain("fomento del empleo");
+  });
+
+  it("dice quién puede pedirla, separado de para qué es", () => {
+    const r = resumirEstructural(conv());
+    expect(r.quien).toContain("pymes y autónomos");
+    expect(r.quien.toLowerCase()).toContain("pueden pedirla");
+  });
+
+  it("el dinero se cuenta aparte, sin prometer lo que te toca", () => {
+    const r = resumirEstructural(conv());
     expect(r.consigues).toContain("fondo perdido");
     expect(r.consigues).toContain("23,6 M€");
+  });
+
+  it("una finalidad que no conocemos se enseña tal cual, no se inventa", () => {
+    const r = resumirEstructural(conv({ finalidad: "Materia rarísima nueva" }));
+    expect(r.que.toLowerCase()).toContain("materia rarísima nueva");
+  });
+
+  it("sin beneficiarios publicados lo dice, no se lo inventa", () => {
+    const r = resumirEstructural(conv({ beneficiarios: [] }));
+    expect(r.quien.toLowerCase()).toContain("las bases");
   });
 
   it("un préstamo no se llama dinero regalado", () => {
@@ -93,6 +113,7 @@ describe("resumirEstructural", () => {
   it("sin finalidad ni beneficiarios sigue diciendo algo útil", () => {
     const r = resumirEstructural(conv({ finalidad: null, beneficiarios: [] }));
     expect(r.que.length).toBeGreaterThan(10);
+    expect(r.quien.length).toBeGreaterThan(10);
     expect(r.consigues.length).toBeGreaterThan(10);
   });
 

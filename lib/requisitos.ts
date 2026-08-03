@@ -41,7 +41,20 @@ Reglas:
 - "dato"/"condicion" = algo que hay que SER o CUMPLIR: con clave y pregunta.
 - Usa claves GENÉRICAS y reutilizables entre convocatorias.
 - No inventes requisitos: si no está en el texto, no existe.
-- Máximo 25 requisitos, los realmente exigidos al solicitante.`;
+- **Máximo 8 requisitos CON pregunta**, y que sean los que de verdad deciden
+  si alguien puede pedirla o no. El resto, si los incluyes, sin pregunta.
+- **No preguntes lo que ya te digo que sé del solicitante**: esos requisitos
+  van sin "pregunta", solo con su literal.
+- Nada de preguntas obvias ni de trámite ("¿va a presentar la solicitud?").`;
+
+/** Lo que ya sabemos, para que la IA no lo vuelva a preguntar. */
+export function bloqueLoQueYaSe(hechos: Map<string, string>): string {
+  if (hechos.size === 0) return "No sé nada todavía del solicitante.";
+  const lineas = [...hechos.entries()]
+    .filter(([k]) => !k.startsWith("_"))
+    .map(([k, v]) => `- ${k}: ${v}`);
+  return `YA SÉ ESTO DEL SOLICITANTE (no lo preguntes otra vez):\n${lineas.join("\n")}`;
+}
 
 export const PROMPT_VEREDICTO = `Eres un técnico experto en subvenciones públicas españolas.
 Te doy los requisitos de una convocatoria (con su cita literal) y los datos
@@ -131,10 +144,24 @@ export function siguientePregunta(
   requisitos: Requisito[],
   hechos: Map<string, string>,
 ): Requisito | null {
-  for (const r of requisitos) {
-    if (r.tipo === "documento") continue;
-    if (!r.clave || !r.pregunta) continue;
-    if (!hechos.has(r.clave)) return r;
-  }
-  return null;
+  return preguntables(requisitos, hechos)[0] ?? null;
+}
+
+/** Tope duro: nadie contesta 21 preguntas, por muy bien extraídas que estén. */
+export const MAX_PREGUNTAS = 8;
+
+/**
+ * Las preguntas que quedan por hacer, ya recortadas. El tope se aplica aquí
+ * y no solo en el prompt, para no depender de que la IA obedezca.
+ */
+export function preguntables(
+  requisitos: Requisito[],
+  hechos: Map<string, string>,
+): Requisito[] {
+  // El recorte se hace ANTES de descartar las respondidas: si no, cada
+  // respuesta destaparía una nueva y la entrevista no acabaría nunca.
+  return requisitos
+    .filter((r) => r.tipo !== "documento" && r.clave && r.pregunta)
+    .slice(0, MAX_PREGUNTAS)
+    .filter((r) => !hechos.has(r.clave!));
 }
