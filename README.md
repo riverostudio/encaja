@@ -1,36 +1,84 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 📡 Radar de Ayudas
 
-## Getting Started
+Todas las **subvenciones y ayudas económicas de España** en un panel local:
+eliges territorio (por defecto **Comunitat Valenciana**, afinable con tu
+**código postal**), y cuando una te interesa la app **te entrevista** y
+dictamina si encajas citando el texto literal de las bases. Si encajas, te
+monta el **expediente**: checklist de documentos, borradores en Word e
+instrucciones de presentación.
 
-First, run the development server:
+> **Fuente única y oficial:** la BDNS (Base de Datos Nacional de Subvenciones),
+> donde por ley se publica toda ayuda pública — Estado, autonomías,
+> diputaciones y ayuntamientos. La app nunca afirma nada que no pueda
+> enseñarte en el documento oficial.
+
+## Arrancarla
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+cd ~/radar-ayudas && npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Abre **http://localhost:3002** (el 3000 es de World Monitor y el 3001 del CRM).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Si acabas de clonarla o borraste `node_modules`:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+cd ~/radar-ayudas && npm ci
+```
 
-## Learn More
+## Las 3 plantas
 
-To learn more about Next.js, take a look at the following resources:
+| Ruta | Qué hace |
+|---|---|
+| `/` | **RADAR**: selector de comunidad + código postal (46183 → l'Eliana activa tu ayuntamiento y diputación), filtros por tipo y estado, buscador, y los plazos en semáforo: 🔴 cierra en ≤7 días · 🟠 ≤21 · ⏳ abre pronto. Se sincroniza con la BDNS al entrar (si hace >6 h) o con el botón ⟳ |
+| `/ficha` | **MI FICHA**: todo lo que la app sabe de ti. Cada entrevista la rellena; a la quinta ayuda casi no pregunta. Borrar un dato = volverá a preguntarse |
+| `/expedientes` | **EXPEDIENTES**: tablero Interesa → En preparación → Presentada → Concedida/Denegada. Cada expediente es una carpeta REAL en `expedientes/` con FUENTE.md, INSTRUCCIONES.md y los borradores DOCX |
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## La entrevista «¿Encajo?»
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+1. **Filtro estructural** (gratis, sin IA): beneficiario, territorio y plazo
+   contra los datos oficiales de la BDNS. Si no cuadra, descarte inmediato con
+   el motivo.
+2. **Lectura de bases** (IA): descarga el PDF oficial, extrae los requisitos
+   con su **cita literal**, y solo pregunta lo que tu ficha aún no sepa.
+3. **Dictamen**: ✅ ENCAJAS / ❌ NO (con el artículo exacto) / 🤔 DUDA (qué
+   consultar). Nunca inventa: sin dato suficiente, dictamina DUDA.
 
-## Deploy on Vercel
+## La clave de Gemini (IA)
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Sin clave, el radar y el filtro estructural funcionan igual; la lectura de
+bases, la entrevista completa y los borradores necesitan una clave de
+[Google AI Studio](https://aistudio.google.com/apikey):
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- Pégala en **⚙︎ Ajustes** (se guarda en la base de datos local, fuera de git), o
+- ponla en `.env.local` como `GEMINI_API_KEY=...`
+
+**Nunca** va en el código, en git ni en el navegador.
+
+## Sync manual / cron futuro
+
+La app se actualiza al abrirla o con el botón. A propósito **no hay cron**.
+Si algún día lo quieres:
+
+```bash
+npm run sync          # C. Valenciana
+npm run sync -- 49    # otra región BDNS (49 = Cataluña)
+```
+
+## Dónde está cada cosa
+
+- `lib/` — toda la lógica, pura y con tests (`npm test`, 60 tests)
+- `app/api/` — capa fina HTTP · `app/` — interfaz
+- `data/radar.db` — SQLite local (gitignored)
+- `expedientes/` — tus expedientes (gitignored)
+- `datasets/` — CP→municipio (14.270 códigos postales, fuentes abiertas) e ids
+  del árbol de regiones BDNS; regenerables con `node scripts/generar-datasets.mjs`
+- `docs/superpowers/` — spec y plan de diseño
+
+## Límites a propósito
+
+- **No firma ni presenta** ante la Administración: la sede electrónica y tu
+  certificado son siempre tuyos. Los DOCX van marcados **BORRADOR**.
+- No da consejo fiscal personalizado: enseña requisitos literales y enlaza fuentes.
+- Datos BDNS dinámicos (aviso legal del SNPSAP): verifica siempre la
+  convocatoria oficial antes de presentar.
