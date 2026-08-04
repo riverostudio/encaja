@@ -37,15 +37,28 @@ solicitante debe cumplir o aportar. Devuelve SOLO un JSON con esta forma:
 }]}
 
 Reglas:
-- "documento" = algo que hay que APORTAR (memoria, certificado, presupuesto…): sin clave ni pregunta.
-- "dato"/"condicion" = algo que hay que SER o CUMPLIR: con clave y pregunta.
+- "documento" = algo que hay que APORTAR o FIRMAR al solicitar: memoria,
+  certificado, presupuesto, y también las **declaraciones responsables y los
+  compromisos** ("declaro aceptar las bases", "me comprometo a mantener los
+  requisitos", "autorizo la consulta de mis datos"). Sin clave ni pregunta:
+  no deciden si alguien puede pedirla, se firman y ya está.
+- "dato"/"condicion" = algo que hay que SER o CUMPLIR **antes de solicitar** y
+  que de verdad decide si encajas: con clave y pregunta.
+- Nunca marques como "condicion" algo que ocurre DESPUÉS de que te la concedan
+  (justificar, mantener la actividad, presentar memoria final): eso es
+  "documento" o no lo incluyas.
 - Usa claves GENÉRICAS y reutilizables entre convocatorias.
 - No inventes requisitos: si no está en el texto, no existe.
 - **Máximo 8 requisitos CON pregunta**, y que sean los que de verdad deciden
   si alguien puede pedirla o no. El resto, si los incluyes, sin pregunta.
 - **No preguntes lo que ya te digo que sé del solicitante**: esos requisitos
   van sin "pregunta", solo con su literal.
-- Nada de preguntas obvias ni de trámite ("¿va a presentar la solicitud?").`;
+- Nada de preguntas obvias ni de trámite ("¿va a presentar la solicitud?").
+- **No extraigas cláusulas paraguas** del tipo "cumplir todos los requisitos
+  exigidos", "reunir las condiciones a la fecha de fin de plazo" o "no estar
+  incurso en las prohibiciones del art. 13": no son requisitos concretos, no
+  se pueden comprobar y solo ensucian el dictamen. Extrae los requisitos
+  CONCRETOS que esas cláusulas resumen.`;
 
 /** Lo que ya sabemos, para que la IA no lo vuelva a preguntar. */
 export function bloqueLoQueYaSe(hechos: Map<string, string>): string {

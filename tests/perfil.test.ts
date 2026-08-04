@@ -32,7 +32,7 @@ describe("siguientePreguntaPerfil", () => {
   });
 
   it("va saltando lo ya respondido", () => {
-    expect(siguientePreguntaPerfil(h({ perfil: "particular" }))?.clave).toBe("situacion");
+    expect(siguientePreguntaPerfil(h({ perfil: "particular" }))?.clave).toBe("objetivo");
   });
 
   it("null cuando está todo respondido", () => {
@@ -158,5 +158,33 @@ describe("textoRespuesta", () => {
   it("traduce una opción simple", () => {
     const perfil = PREGUNTAS_PERFIL.find((p) => p.clave === "perfil")!;
     expect(textoRespuesta(perfil, "autonomo")).toBe("Como autónomo");
+  });
+});
+
+describe("el objetivo manda en los atajos", () => {
+  it("quien quiere formarse ve primero cursos y becas", () => {
+    const a = atajosParaPerfil(
+      h({ perfil: "particular", objetivo: "aprender", situacion: "desempleado" }),
+    );
+    expect(a[0].texto).toContain("Cursos");
+    expect(a.map((x) => x.texto)).toContain("Becas y estudios");
+    expect(a.map((x) => x.texto)).toContain("Idiomas");
+  });
+
+  it("quien está en un apuro ve primero emergencia y comida", () => {
+    const a = atajosParaPerfil(h({ perfil: "particular", objetivo: "apuro" }));
+    expect(a[0].texto).toContain("Emergencia");
+    expect(a.map((x) => x.texto)).toContain("Comida y necesidades básicas");
+  });
+
+  it("se pueden marcar varios objetivos y salen en orden", () => {
+    const a = atajosParaPerfil(h({ perfil: "particular", objetivo: "vivienda,aprender" }));
+    expect(a[0].texto).toContain("Alquiler");
+    expect(a.map((x) => x.texto)).toContain("Cursos y formación");
+  });
+
+  it("sin objetivo sigue funcionando como antes", () => {
+    const a = atajosParaPerfil(h({ perfil: "particular", situacion: "desempleado" }));
+    expect(a.length).toBeGreaterThan(0);
   });
 });

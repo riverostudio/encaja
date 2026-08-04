@@ -3,6 +3,17 @@
 import type { Requisito, ResultadoDictamen, Veredicto, Motivo } from "./tipos";
 import type { ResultadoEstructural } from "./encaje";
 
+/** Reconoce las dudas que la IA justifica como "esto pasa después". */
+function esPosterior(motivo: string): boolean {
+  const m = motivo.toLowerCase();
+  return (
+    m.includes("posterior a la concesión") ||
+    m.includes("compromiso posterior") ||
+    m.includes("declaración explícita") ||
+    m.includes("no puede ser evaluado")
+  );
+}
+
 export function dictaminar(
   estructural: ResultadoEstructural,
   requisitos: Requisito[],
@@ -32,7 +43,9 @@ export function dictaminar(
       literal: req?.literal,
     });
     if (v.veredicto === "no_cumple") hayNo = true;
-    if (v.veredicto === "duda") hayDuda = true;
+    // Una duda sobre algo que solo se puede saber DESPUÉS de la concesión no
+    // debe tumbar el dictamen: no es un requisito de entrada.
+    if (v.veredicto === "duda" && !esPosterior(v.motivo)) hayDuda = true;
   }
 
   if (hayNo) {

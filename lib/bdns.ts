@@ -46,6 +46,37 @@ async function pedir(url: string, fetchFn: FetchFn, binario = false): Promise<un
   }
 }
 
+/**
+ * La BDNS publica muchos enlaces sin protocolo ("ujiapps.uji.es/..."). En un
+ * href del navegador eso se toma como ruta relativa y lleva a ninguna parte,
+ * así que se les pone https:// al guardarlos.
+ */
+export function urlAbsoluta(u: string | null | undefined): string | null {
+  const limpio = u?.trim();
+  if (!limpio) return null;
+  if (/^https?:\/\//i.test(limpio)) return limpio;
+
+  // A veces el organismo pega algo delante ("Inmahttps://cindi.gva.es/…").
+  // Si dentro hay una URL de verdad, se rescata.
+  const dentro = limpio.match(/https?:\/\/\S+/i);
+  if (dentro) return dentro[0];
+
+  // Protocolo mal escrito: "ttps://…", "ttp://…" (se comieron la hache).
+  const mutilado = limpio.match(/^t?tps?:\/\/(.+)$/i);
+  if (mutilado) return `https://${mutilado[1]}`;
+
+  // Basura publicada por el propio organismo: rutas de su ordenador.
+  if (/^[a-z]:\\/i.test(limpio) || limpio.includes("\\")) return null;
+
+  // Protocolos que no son web (mailto:, ftp:…) se dejan como están.
+  if (/^[a-z][a-z0-9+.-]*:/i.test(limpio)) return limpio;
+
+  // Sin un punto no es un dominio: no se inventa un enlace.
+  const sinBarras = limpio.replace(/^\/+/, "");
+  if (!/^[^\s/]+\.[^\s/]{2,}/.test(sinBarras)) return null;
+  return `https://${sinBarras}`;
+}
+
 function aFechaBdns(iso: string): string {
   const [a, m, d] = iso.split("-");
   return `${d}/${m}/${a}`;
@@ -134,8 +165,8 @@ export async function detalle(
     fechaFinSol: limpiar(d.fechaFinSolicitud),
     abiertaFlag: d.abierto ?? null,
     presupuesto: d.presupuestoTotal ?? null,
-    urlBases: limpiar(d.urlBasesReguladoras),
-    sede: limpiar(d.sedeElectronica),
+    urlBases: urlAbsoluta(d.urlBasesReguladoras),
+    sede: urlAbsoluta(d.sedeElectronica),
     finalidad: limpiar(d.descripcionFinalidad),
     beneficiarios: (d.tiposBeneficiarios ?? []).map((b) => (b.descripcion ?? "").trim()).filter(Boolean),
     instrumentos: (d.instrumentos ?? []).map((i) => (i.descripcion ?? "").trim()).filter(Boolean),

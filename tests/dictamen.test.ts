@@ -55,3 +55,30 @@ describe("dictaminar", () => {
     expect(dictaminar(estructuralPasa, soloDocs, []).dictamen).toBe("encaja");
   });
 });
+
+describe("compromisos posteriores a la concesión", () => {
+  const reqCompromiso: Requisito[] = [
+    { id: "r1", literal: "Estar matriculado", tipo: "condicion", clave: "k1", pregunta: "¿?" },
+    { id: "r2", literal: "Compromiso de mantener los requisitos", tipo: "condicion", clave: "k2", pregunta: "¿?" },
+  ];
+
+  it("una duda sobre algo que pasa DESPUÉS no tumba el dictamen", () => {
+    const v: Veredicto[] = [
+      { id: "r1", veredicto: "cumple", motivo: "Está matriculado" },
+      {
+        id: "r2",
+        veredicto: "duda",
+        motivo: "Este requisito se refiere a un compromiso posterior a la concesión de la ayuda",
+      },
+    ];
+    expect(dictaminar(estructuralPasa, reqCompromiso, v).dictamen).toBe("encaja");
+  });
+
+  it("pero una duda real sobre un requisito de entrada sí", () => {
+    const v: Veredicto[] = [
+      { id: "r1", veredicto: "duda", motivo: "No consta si está matriculado" },
+      { id: "r2", veredicto: "cumple", motivo: "Aceptado" },
+    ];
+    expect(dictaminar(estructuralPasa, reqCompromiso, v).dictamen).toBe("duda");
+  });
+});

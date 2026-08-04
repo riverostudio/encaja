@@ -31,6 +31,21 @@ export const PREGUNTAS_PERFIL: PreguntaPerfil[] = [
     ],
   },
   {
+    clave: "objetivo",
+    pregunta: "¿Qué te vendría bien ahora mismo?",
+    ayuda: "Marca todo lo que te interese. Con esto te busco primero lo tuyo.",
+    tipo: "varias",
+    opciones: [
+      { valor: "aprender", texto: "Formarme o estudiar gratis", ayuda: "Cursos, becas, idiomas, FP" },
+      { valor: "apuro", texto: "Salir de un apuro", ayuda: "Estoy en una situación complicada" },
+      { valor: "trabajo", texto: "Encontrar trabajo" },
+      { valor: "emprender", texto: "Montar algo por mi cuenta" },
+      { valor: "vivienda", texto: "Con la vivienda", ayuda: "Alquiler, reformas, suministros" },
+      { valor: "familia", texto: "Para mis hijos o mi familia" },
+      { valor: "salud", texto: "Por salud o dependencia" },
+    ],
+  },
+  {
     clave: "situacion",
     pregunta: "¿En qué situación estás ahora?",
     ayuda: "Muchas ayudas van dirigidas justo a una de estas.",
@@ -258,12 +273,54 @@ const ATAJOS_NEGOCIO: Atajo[] = [
  * Los atajos que le sirven a ESTA persona, no un cajón de sastre.
  * Se ordenan por lo que más le puede tocar según su perfil.
  */
+const POR_OBJETIVO: Record<string, Atajo[]> = {
+  aprender: [
+    { texto: "Cursos y formación", busca: "formación|cualificación|reciclaje profesional" },
+    { texto: "Becas y estudios", busca: "beca|becas|ayudas al estudio" },
+    { texto: "Idiomas", busca: "idiomas|inglés|acreditación de idiomas" },
+    { texto: "Formación profesional", busca: "formación profesional|ciclo formativo|fp" },
+  ],
+  apuro: [
+    { texto: "Emergencia social", busca: "emergencia|urgente necesidad|urgencia social" },
+    { texto: "Comida y necesidades básicas", busca: "alimentos|alimentaria|necesidades básicas" },
+    { texto: "Rentas mínimas", busca: "renta|prestación económica|garantía de ingresos" },
+    { texto: "Riesgo de exclusión", busca: "exclusión|vulnerabilidad|vulnerable" },
+  ],
+  trabajo: [
+    { texto: "Estando sin trabajo", busca: "desempleo|desempleadas|desempleados|parados" },
+    { texto: "Volver a trabajar", busca: "inserción laboral|empleabilidad|fomento del empleo" },
+    { texto: "Cursos y formación", busca: "formación|cualificación|reciclaje profesional" },
+  ],
+  emprender: [
+    { texto: "Montármelo por mi cuenta", busca: "emprendedores|emprendimiento|autoempleo" },
+    { texto: "Digitalización", busca: "digitalización|digital" },
+  ],
+  vivienda: [
+    { texto: "Alquiler y vivienda", busca: "alquiler|vivienda|alojamiento" },
+    { texto: "Luz, agua y gas", busca: "pobreza energética|suministros|energética|bono social" },
+    { texto: "Rehabilitar la casa", busca: "rehabilitación|reforma|accesibilidad vivienda" },
+  ],
+  familia: [
+    { texto: "Comedor y libros", busca: "comedor|material escolar|libros de texto" },
+    { texto: "Familia e infancia", busca: "familia|infancia|menores|conciliación" },
+    { texto: "Conciliación", busca: "conciliación|escuela infantil|guardería" },
+  ],
+  salud: [
+    { texto: "Discapacidad y dependencia", busca: "discapacidad|dependencia|diversidad funcional" },
+    { texto: "Salud", busca: "salud|sanitaria|enfermedad" },
+  ],
+};
+
 export function atajosParaPerfil(hechos: Map<string, string>): Atajo[] {
   const perfil = hechos.get("perfil");
   const atajos: Atajo[] = [];
   const añadir = (a: Atajo) => {
     if (!atajos.some((x) => x.busca === a.busca)) atajos.push(a);
   };
+
+  // Lo que la persona ha dicho que quiere manda por encima de todo lo demás.
+  const objetivos = (hechos.get("objetivo") ?? "").split(",").filter(Boolean);
+  for (const o of objetivos) (POR_OBJETIVO[o] ?? []).forEach(añadir);
 
   if (perfil === "autonomo" || perfil === "empresa") {
     ATAJOS_NEGOCIO.forEach(añadir);

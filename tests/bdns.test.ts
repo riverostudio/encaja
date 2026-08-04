@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { buscarPagina, detalle, descargarBases } from "../lib/bdns";
+import { buscarPagina, detalle, descargarBases, urlAbsoluta } from "../lib/bdns";
 import { PAGINA_BUSQUEDA, DETALLE_923287 } from "./fixtures/bdns";
 
 function fetchMock(cuerpo: unknown, opts: { esBinario?: boolean } = {}) {
@@ -63,5 +63,62 @@ describe("descargarBases", () => {
     expect(r?.tipo).toBe("pdf");
     const url = (f as unknown as ReturnType<typeof vi.fn>).mock.calls[0][0] as string;
     expect(url).toContain("idDocumento=1419175");
+  });
+});
+
+describe("urlAbsoluta", () => {
+  it("pone https a los enlaces sin protocolo", () => {
+    // La BDNS publica 904 así; en un href serían rutas relativas rotas.
+    expect(urlAbsoluta("ujiapps.uji.es/seu/info?pArId=1")).toBe(
+      "https://ujiapps.uji.es/seu/info?pArId=1",
+    );
+    expect(urlAbsoluta("www.gva.es/ayudas")).toBe("https://www.gva.es/ayudas");
+  });
+
+  it("no toca los que ya lo llevan", () => {
+    expect(urlAbsoluta("https://boe.es/x")).toBe("https://boe.es/x");
+    expect(urlAbsoluta("http://sepe.es/y")).toBe("http://sepe.es/y");
+  });
+
+  it("respeta otros protocolos", () => {
+    expect(urlAbsoluta("mailto:ayudas@gva.es")).toBe("mailto:ayudas@gva.es");
+  });
+
+  it("vacío es null, no «https://»", () => {
+    expect(urlAbsoluta(null)).toBeNull();
+    expect(urlAbsoluta("   ")).toBeNull();
+    expect(urlAbsoluta(undefined)).toBeNull();
+  });
+
+  it("quita las barras sobrantes del principio", () => {
+    expect(urlAbsoluta("//gva.es/x")).toBe("https://gva.es/x");
+  });
+});
+
+describe("urlAbsoluta con la basura que publican los organismos", () => {
+  it("descarta rutas del ordenador de quien lo subió", () => {
+    expect(urlAbsoluta("C:\\Users\\Carme\\OneDrive\\bases.pdf")).toBeNull();
+  });
+
+  it("rescata la URL cuando le han pegado algo delante", () => {
+    expect(urlAbsoluta("Inmahttps://cindi.gva.es/es/web/innovacion")).toBe(
+      "https://cindi.gva.es/es/web/innovacion",
+    );
+  });
+
+  it("no convierte en enlace lo que no es un dominio", () => {
+    expect(urlAbsoluta("pendiente de publicar")).toBeNull();
+    expect(urlAbsoluta("ver bases")).toBeNull();
+  });
+
+  it("un dominio de verdad sí", () => {
+    expect(urlAbsoluta("sede.gva.es/ayudas")).toBe("https://sede.gva.es/ayudas");
+  });
+});
+
+describe("protocolos mutilados", () => {
+  it("repara «ttps://» al que le falta la hache", () => {
+    expect(urlAbsoluta("ttps://www.boe.es/x.pdf")).toBe("https://www.boe.es/x.pdf");
+    expect(urlAbsoluta("ttp://gva.es/y")).toBe("https://gva.es/y");
   });
 });
