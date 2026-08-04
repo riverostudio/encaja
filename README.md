@@ -94,3 +94,29 @@ agujeros reales (solo una comunidad sincronizada, el paro no está en la BDNS,
 - No da consejo fiscal personalizado: enseña requisitos literales y enlaza fuentes.
 - Datos BDNS dinámicos (aviso legal del SNPSAP): verifica siempre la
   convocatoria oficial antes de presentar.
+
+---
+
+## Quién lo hace
+
+Víctor Rivero, en el laboratorio de aplicaciones de
+[Rivero Studio](https://riverostudio.web.app/apps/). Proyecto personal
+iniciado en 2026, **público y sin ánimo de lucro**: no cobra, no vende nada,
+no lleva publicidad.
+
+Página de presentación: <https://encaja-ayudas.vercel.app>
+
+## Licencia
+
+Código bajo licencia [MIT](LICENSE): cualquiera puede leerlo, copiarlo,
+modificarlo y usarlo, también con fines comerciales, conservando el aviso de
+copyright. Se ofrece «tal cual», sin garantía de ningún tipo.
+
+Los datos proceden del Sistema Nacional de Publicidad de Subvenciones y Ayudas
+Públicas ([infosubvenciones.es](https://www.infosubvenciones.es)) y se
+reutilizan al amparo de la Ley 37/2007. Los textos de las convocatorias
+pertenecen a los organismos que las publican; Encaja no está avalada por
+ninguna administración.
+
+**Encaja no es asesoramiento jurídico y no sustituye a la convocatoria
+oficial.** Comprueba siempre la fuente antes de presentar nada.

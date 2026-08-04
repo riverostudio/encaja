@@ -11,6 +11,21 @@ export interface ResultadoCP extends Zona {
   regionIds: number[];
 }
 
+/**
+ * ¿La ayuda transcurre en España? La BDNS publica convocatorias de organismos
+ * españoles cuya acción ocurre fuera: la cooperación de la AECID marca
+ * "XXXX - TODO EL MUNDO", y algún programa europeo marca solo Francia o Reino
+ * Unido. Las convoca España, pero nadie que viva aquí puede pedirlas.
+ *
+ * Sin dato NO se descarta: la app prefiere enseñar de más a esconder una ayuda
+ * real por un campo que el organismo dejó vacío.
+ */
+export function transcurreEnEspana(regiones: string[] | null | undefined): boolean {
+  if (!regiones || regiones.length === 0) return true;
+  // Los códigos NUTS de España empiezan por ES; ojo con SE (Suecia) y EE (Estonia).
+  return regiones.some((r) => String(r).trim().toUpperCase().startsWith("ES"));
+}
+
 const ARTICULOS = new Set(["EL", "LA", "LOS", "LAS", "ELS", "LES", "ES", "SA", "SES", "NA", "L", "S", "A", "O", "OS", "AS"]);
 
 /**

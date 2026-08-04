@@ -176,7 +176,11 @@ export function crearRepo(db: Database.Database) {
     },
 
     buscar(filtros: FiltrosBusqueda): Convocatoria[] {
-      const cond: string[] = [];
+      // Espejo en SQL de transcurreEnEspana(): la comilla delante de ES evita
+      // colar a SVERIGE o EESTI. Sin dato no descarta.
+      const cond: string[] = [
+        `(regiones IS NULL OR regiones='' OR regiones='[]' OR regiones LIKE '%"ES%')`,
+      ];
       const params: Record<string, unknown> = {};
       if (filtros.texto) {
         // Un texto puede traer varias alternativas separadas por "|": basta con

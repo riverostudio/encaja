@@ -24,7 +24,9 @@
 <meta name="theme-color" content="#faf8f4" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#100f0d" media="(prefers-color-scheme: dark)">
 
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='18' fill='%23faf8f4'/><text y='73' x='50' text-anchor='middle' font-family='Georgia,serif' font-size='64' fill='%2316150f'>E</text><circle cx='78' cy='72' r='7' fill='%23c13b20'/></svg>">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%23AA151B'/><rect y='8' width='32' height='16' fill='%23F1BF00'/></svg>">
+<link rel="apple-touch-icon" href="/icono-180.png">
+<link rel="mask-icon" href="/icono.svg" color="#AA151B">
 <script>
   // El tema, antes de pintar: sin esto la pagina parpadea en blanco al abrirla de noche.
   (function(){try{var t=localStorage.getItem("tema");if(t)document.documentElement.dataset.theme=t}catch(e){}})();
@@ -136,13 +138,14 @@ img{max-width:100%;display:block;height:auto}
   a:hover{border-bottom-color:currentColor}
   a:focus-visible{outline:2px solid var(--senal);outline-offset:3px;border-radius:2px}
 
-/* La captura es de la app en modo oscuro; el marco la separa del papel. */
-.pantalla{margin-top:26px;border:1px solid var(--linea-fuerte);border-radius:12px;
-          overflow:hidden;background:#100f0d;box-shadow:0 18px 44px -22px rgba(22,21,15,.35)}
+/* El marco va claro en los dos temas: la captura lo es, y asi se lee como una
+   pantalla encendida en vez de como un recuadro que pelea con el fondo. */
+.pantalla{margin-top:26px;border:1px solid #d2cabb;border-radius:12px;overflow:hidden;
+          background:#fff;box-shadow:0 18px 44px -22px rgba(22,21,15,.32)}
 .barra{display:flex;align-items:center;gap:7px;padding:11px 14px;
-       border-bottom:1px solid rgba(255,255,255,.07);background:#191714}
-.barra i{width:9px;height:9px;border-radius:50%;background:rgba(255,255,255,.15)}
-.barra span{margin-left:8px;font-size:11px;color:#6d665b;letter-spacing:.04em}
+       border-bottom:1px solid #e7e2d8;background:#f3efe7}
+.barra i{width:9px;height:9px;border-radius:50%;background:#d2cabb}
+.barra span{margin-left:8px;font-size:11px;color:#8a8377;letter-spacing:.04em}
 .pantalla img{width:100%}
 .solo-movil{display:none}
 @media (max-width:700px){
@@ -150,6 +153,24 @@ img{max-width:100%;display:block;height:auto}
   .solo-ancho{display:none}
 }
 .pie-captura{margin-top:11px;font-size:12.5px;color:var(--niebla)}
+
+/* Lo legal: se lee poco, pero tiene que estar y estar claro. */
+.legal{margin-top:52px;padding-top:30px;border-top:1px solid var(--linea)}
+.legal h2{font-size:22px;margin-bottom:4px}
+.legal dl{margin:22px 0 0}
+.legal dt{font-size:13px;font-weight:600;letter-spacing:.02em;margin-top:20px}
+.legal dt:first-of-type{margin-top:0}
+.legal dd{margin:5px 0 0;font-size:14px;color:var(--grafito);max-width:68ch}
+.legal dd + dd{margin-top:7px}
+
+.firma{margin-top:34px;padding:22px 24px;border:1px solid var(--linea);border-radius:12px;
+       background:var(--lienzo);display:flex;flex-wrap:wrap;gap:16px 26px;align-items:baseline}
+.firma .quien{font-family:var(--serif);font-size:19px}
+.firma .quien a{border-bottom-color:var(--senal)}
+.firma .nota{font-size:13px;color:var(--grafito);flex:1;min-width:230px}
+.gratis{display:inline-flex;align-items:center;gap:7px;font-size:12px;letter-spacing:.03em;
+        color:var(--bosque);border:1px solid var(--bosque);border-radius:999px;padding:4px 12px;
+        white-space:nowrap}
 
 /* Standalone: el visor de artifacts ya no pone el conmutador, lo trae la pagina. */
 .tema{position:absolute;top:16px;right:16px;z-index:9;display:flex;align-items:center;gap:7px;
@@ -210,9 +231,9 @@ img{max-width:100%;display:block;height:auto}
   </div>
 
   <div class="cifras">
-    <div><div class="n">4.578</div><div class="t">convocatorias en el archivo</div></div>
-    <div><div class="n">787</div><div class="t">abiertas ahora mismo</div></div>
-    <div><div class="n">19</div><div class="t">comunidades, más el Estado y tu ayuntamiento</div></div>
+    <div><div class="n">4.114</div><div class="t">convocatorias en el archivo</div></div>
+    <div><div class="n">609</div><div class="t">abiertas ahora mismo</div></div>
+    <div><div class="n">19</div><div class="t">comunidades y ciudades autónomas, más el Estado y tu ayuntamiento</div></div>
     <div><div class="n" style="color:var(--senal)">0</div><div class="t">datos inventados: todo enlaza su fuente oficial</div></div>
   </div>
 
@@ -267,9 +288,9 @@ img{max-width:100%;display:block;height:auto}
 
     <div class="pantalla">
       <div class="barra"><i></i><i></i><i></i><span>Encaja · Comunitat Valenciana · 46183</span></div>
-      <img class="solo-ancho" src="radar-escritorio.png" width="1495" height="1300"
+      <img class="solo-ancho" src="radar-escritorio.png" width="1495" height="1370"
            alt="Cuatro convocatorias en tarjetas. Premios por tesis y trabajos de máster: cierra en 11 días, 15.500 €. Ayudas para profesores de Filipinas, Polonia y Brasil: cierra en 12 días, 76.580 €. Becas para estudiar en la UNED de Valencia: abierta, quedan 27 días, 75.000 €. Premio tesis sobre cambio climático: abierta, quedan 37 días, 3.600 €.">
-      <img class="solo-movil" src="radar-movil.png" width="735" height="625"
+      <img class="solo-movil" src="radar-movil.png" width="715" height="660"
            alt="Una convocatoria: del 31 de julio al 31 de agosto, abierta, quedan 27 días, autonómica. El título oficial, «Resolución de 27 de julio de 2026, de la Conselleria de Educación, Cultura y…», y debajo su traducción: becas para estudiar en la UNED de Valencia, para estudiantes que no trabajen por cuenta propia. 75.000 € para todo el programa.">
     </div>
     <p class="pie-captura">El color del plazo avisa solo: ámbar cuando queda poco, verde
@@ -329,6 +350,63 @@ img{max-width:100%;display:block;height:auto}
         <p>Ficha oficial, bases reguladoras y sede electrónica. Si algo no se puede comprobar, se
           dice.</p>
       </div>
+    </div>
+  </section>
+
+  <section class="legal">
+    <h2>Lo legal, en claro</h2>
+    <p class="sub">Encaja es un proyecto público y sin ánimo de lucro. No cobra, no vende nada,
+      no muestra publicidad y no tiene clientes.</p>
+
+    <dl>
+      <dt>Quién lo hace</dt>
+      <dd>Víctor Rivero, en el laboratorio de aplicaciones de
+        <a href="https://riverostudio.web.app/apps/" target="_blank" rel="noreferrer noopener">Rivero
+        Studio</a>. Proyecto personal iniciado en 2026. No es una administración pública ni actúa
+        en nombre de ninguna, y ningún organismo lo patrocina ni lo avala.</dd>
+
+      <dt>De dónde salen los datos</dt>
+      <dd>Del Sistema Nacional de Publicidad de Subvenciones y Ayudas Públicas
+        (<a href="https://www.infosubvenciones.es" target="_blank" rel="noreferrer noopener">infosubvenciones.es</a>),
+        gestionado por la Intervención General de la Administración del Estado. Se reutilizan al
+        amparo de la Ley 37/2007, de reutilización de la información del sector público, citando la
+        fuente y sin alterar el sentido de la información.</dd>
+      <dd>Los textos de las convocatorias son de los organismos que las publican. Encaja añade una
+        explicación en lenguaje llano, que va siempre separada del texto oficial y señalada como tal.</dd>
+
+      <dt>Qué no es</dt>
+      <dd>No es asesoramiento jurídico, fiscal ni administrativo, y no sustituye a la convocatoria
+        oficial. Los datos son dinámicos: un plazo puede cambiar, ampliarse o corregirse después de
+        que Encaja los lea. <b>Antes de presentar nada, comprueba siempre la convocatoria oficial</b>,
+        que es la única que vale.</dd>
+      <dd>Encaja no firma, no presenta y no tramita nada en nombre de nadie, y no se responsabiliza
+        de las decisiones que se tomen a partir de la información que muestra.</dd>
+
+      <dt>Qué pasa con tus datos</dt>
+      <dd>Esta página es estática: no usa cookies, no lleva analítica ni rastreadores, y no hay
+        formularios ni registro. No se recoge ningún dato personal. El alojamiento
+        (Vercel) guarda registros técnicos de las peticiones, como cualquier servidor web.</dd>
+      <dd>La aplicación se ejecuta en tu propio ordenador. El perfil que respondes y la clave de la
+        IA que elijas se quedan en tu equipo; la clave solo se usa para hablar con el proveedor que
+        tú hayas escogido.</dd>
+
+      <dt>El código</dt>
+      <dd>Es abierto, con licencia MIT: cualquiera puede leerlo, copiarlo, modificarlo y usarlo,
+        también para fines comerciales, conservando el aviso de copyright. Se publica en
+        <a href="https://github.com/koala73/encaja" target="_blank" rel="noreferrer noopener">github.com/koala73/encaja</a>.
+        Se ofrece «tal cual», sin garantía de ningún tipo.</dd>
+
+      <dt>Errores y avisos</dt>
+      <dd>Si ves un dato mal, un enlace roto o algo que deba retirarse, escríbelo en las incidencias
+        del repositorio y se corrige.</dd>
+    </dl>
+
+    <div class="firma">
+      <span class="quien">Un laboratorio de
+        <a href="https://riverostudio.web.app/apps/" target="_blank" rel="noreferrer noopener">Rivero Studio</a></span>
+      <span class="gratis">Gratis · sin ánimo de lucro · código abierto</span>
+      <span class="nota">Hecho en 2026 en L'Eliana, Valencia, porque la información que ya es
+        pública debería poder entenderse.</span>
     </div>
   </section>
 
