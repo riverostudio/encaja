@@ -5,7 +5,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import TarjetaAyuda from "./componentes/TarjetaAyuda";
 import DetalleAyuda from "./componentes/DetalleAyuda";
 import Esperando, { MENSAJES_RADAR, MENSAJES_SYNC } from "./componentes/Esperando";
-import type { ConvUi } from "./componentes/tipos-ui";
+import type { ConvUi, ResumenIaUi } from "./componentes/tipos-ui";
 
 interface EstadoSync {
   ultimo: string | null;
@@ -84,6 +84,8 @@ export default function PaginaRadar() {
     progreso: { completo: boolean; respondidas: number };
   } | null>(null);
   const [prestaciones, setPrestaciones] = useState<PrestacionUi[]>([]);
+  const [traduciendo, setTraduciendo] = useState(0);
+  const pedidas = useRef<Set<string>>(new Set());
   const [filas, setFilas] = useState<ConvUi[]>([]);
   const [visibles, setVisibles] = useState(POR_TANDA);
   const [cargando, setCargando] = useState(true);
@@ -107,6 +109,7 @@ export default function PaginaRadar() {
     const d = (await r.json()) as { filas: ConvUi[] };
     setFilas(d.filas ?? []);
     setVisibles(POR_TANDA);
+    pedidas.current.clear();
     setCargando(false);
   }, [texto, estadoFiltro, instrumento, paraQuien, region, cp, soloAplicables]);
 
@@ -180,6 +183,46 @@ export default function PaginaRadar() {
       .then((r) => r.json())
       .then((d: { zona: { municipio: string; provincia: string } | null }) => setZona(d.zona));
   }, [cp]);
+
+  // Se traduce SOLO lo que tienes delante. Lo traducido queda guardado en tu
+  // ordenador, así que al volver a verlo no cuesta ni una llamada más.
+  useEffect(() => {
+    const aLaVista = filas.slice(0, visibles);
+    const faltan = aLaVista
+      .filter((c) => !c.resumen && !pedidas.current.has(c.codigoBdns))
+      .map((c) => c.codigoBdns);
+    if (faltan.length === 0) return;
+
+    let cancelado = false;
+    (async () => {
+      // De ocho en ocho: se ve cómo van apareciendo y se puede irse de la página.
+      for (let i = 0; i < faltan.length && !cancelado; i += 8) {
+        const trozo = faltan.slice(i, i + 8);
+        trozo.forEach((c) => pedidas.current.add(c));
+        setTraduciendo((n) => n + trozo.length);
+        try {
+          const r = await fetch("/api/resumen/lote", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ codigos: trozo }),
+          });
+          const d = (await r.json()) as { resumenes: Record<string, ResumenIaUi> };
+          if (cancelado) return;
+          setFilas((antes) =>
+            antes.map((c) => (d.resumenes[c.codigoBdns] ? { ...c, resumen: d.resumenes[c.codigoBdns] } : c)),
+          );
+        } catch {
+          // Si falla, se reintenta la próxima vez que aparezca en pantalla.
+          trozo.forEach((c) => pedidas.current.delete(c));
+        } finally {
+          setTraduciendo((n) => Math.max(0, n - trozo.length));
+        }
+      }
+    })();
+    return () => {
+      cancelado = true;
+    };
+  }, [filas, visibles]);
 
   // Scroll infinito: más tarjetas cuando el centinela entra en pantalla.
   useEffect(() => {
@@ -365,6 +408,11 @@ export default function PaginaRadar() {
             <>
               <span className="cifra text-[var(--grafito)]">{filas.length}</span> ayudas · las que
               antes cierran, primero
+              {traduciendo > 0 && (
+                <span className="ml-3 inline-flex items-center gap-2">
+                  <span className="pulso" /> traduciendo {traduciendo}…
+                </span>
+              )}
             </>
           )}
         </p>

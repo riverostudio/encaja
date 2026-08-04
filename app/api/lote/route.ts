@@ -119,5 +119,12 @@ export async function GET() {
   const sinFechas = todas.filter(
     (c) => !c.fechaFinSol && !c.fechaInicioSol && !c.sinFechasConfirmado && !c.plazoRelativo && Boolean(c.detalleJson),
   ).length;
-  return NextResponse.json({ sinTraducir, sinFechas, configurada: hayClave(repo) });
+  return NextResponse.json({
+    sinTraducir,
+    sinFechas,
+    // Lo ya guardado: es lo que de verdad interesa ver crecer.
+    traducidas: todas.filter((c) => Boolean(c.resumenIa)).length,
+    total: todas.length,
+    configurada: hayClave(repo),
+  });
 }
