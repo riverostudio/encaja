@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getRepo, errorJson } from "@/lib/servidor";
-import { syncLista, syncDetalles, refrescarAbiertas } from "@/lib/sync";
+import { syncLista, syncEstatal, syncDetalles, refrescarAbiertas } from "@/lib/sync";
 
 export const dynamic = "force-dynamic";
 
@@ -19,10 +19,14 @@ export async function POST(req: NextRequest) {
     const repo = getRepo();
     const region = regionId ?? 54;
     const lista = await syncLista(repo, region);
-    const detalles = await syncDetalles(repo, { limite: 300 });
+    // Lo del Estado sirve vivas donde vivas: siempre se trae también.
+    const estatal = await syncEstatal(repo);
+    const detalles = await syncDetalles(repo, { limite: 600 });
     const refrescadas = await refrescarAbiertas(repo, { limite: 60 });
     return NextResponse.json({
-      nuevas: lista.nuevas,
+      nuevas: lista.nuevas + estatal.nuevas,
+      deTuComunidad: lista.nuevas,
+      delEstado: estatal.nuevas,
       detalles,
       refrescadas,
       pendientesDetalle: repo.contarPendientes(),

@@ -136,7 +136,7 @@ describe("atajosParaPerfil", () => {
         circunstancias: "discapacidad,familia_numerosa,menor_30,victima_violencia",
       }),
     );
-    expect(a.length).toBeLessThanOrEqual(7);
+    expect(a.length).toBeLessThanOrEqual(10);
     expect(new Set(a.map((x) => x.busca)).size).toBe(a.length);
   });
 });

@@ -231,10 +231,21 @@ export interface Atajo {
   busca: string;
 }
 
-const ATAJOS_PERSONA: Atajo[] = [
+// Lo que busca de verdad quien va justo de dinero.
+const ATAJOS_POCOS_INGRESOS: Atajo[] = [
   { texto: "Alquiler y vivienda", busca: "alquiler" },
   { texto: "Emergencia social", busca: "emergencia" },
   { texto: "Luz, agua y gas", busca: "suministros" },
+  { texto: "Rentas mínimas", busca: "renta" },
+  { texto: "Riesgo de exclusión", busca: "exclusión" },
+  { texto: "Comida y necesidades básicas", busca: "necesidades básicas" },
+];
+
+const ATAJOS_SIN_TRABAJO: Atajo[] = [
+  { texto: "Estando sin trabajo", busca: "desempleo" },
+  { texto: "Cursos y formación", busca: "formación" },
+  { texto: "Volver a trabajar", busca: "inserción laboral" },
+  { texto: "Montármelo por mi cuenta", busca: "emprendedores" },
 ];
 const ATAJOS_NEGOCIO: Atajo[] = [
   { texto: "Digitalización", busca: "digitalización" },
@@ -264,16 +275,13 @@ export function atajosParaPerfil(hechos: Map<string, string>): Atajo[] {
 
   // Persona: primero lo que le toca por su situación.
   const situacion = hechos.get("situacion");
-  if (situacion === "desempleado") {
-    añadir({ texto: "Estando sin trabajo", busca: "desempleo" });
-    añadir({ texto: "Cursos y formación", busca: "formación" });
-  }
+  if (situacion === "desempleado") ATAJOS_SIN_TRABAJO.forEach(añadir);
   if (situacion === "estudiante") añadir({ texto: "Becas y estudios", busca: "beca" });
   if (situacion === "jubilado") añadir({ texto: "Mayores", busca: "mayores" });
 
   const ingresos = hechos.get("ingresos");
   if (ingresos === "menos_12000" || ingresos === "12000_18000") {
-    ATAJOS_PERSONA.forEach(añadir);
+    ATAJOS_POCOS_INGRESOS.forEach(añadir);
   }
 
   const menores = hechos.get("menores_cargo");
@@ -298,7 +306,7 @@ export function atajosParaPerfil(hechos: Map<string, string>): Atajo[] {
   añadir({ texto: "Becas y estudios", busca: "beca" });
   añadir({ texto: "Alquiler y vivienda", busca: "alquiler" });
   añadir({ texto: "Rehabilitar la casa", busca: "rehabilitación" });
-  return atajos.slice(0, 7);
+  return atajos.slice(0, 10);
 }
 
 /** Texto legible de una respuesta guardada, para la pantalla de repaso. */

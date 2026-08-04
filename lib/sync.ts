@@ -102,6 +102,45 @@ export async function syncDetalles(
   return hechos;
 }
 
+/** Territorio ficticio para las del Estado: valen en toda España. */
+export const REGION_ESTADO = -1;
+
+/**
+ * Sincroniza las convocatorias del ESTADO, que sirven vivas donde vivas.
+ * Es donde están las de desempleo, rentas mínimas y exclusión social, y
+ * el filtro por comunidad se las deja fuera.
+ */
+export async function syncEstatal(
+  repo: Repo,
+  opts: { buscarFn?: BuscarFn; onProgreso?: (pagina: number, total: number) => void } = {},
+): Promise<{ nuevas: number; paginas: number }> {
+  const buscarFn = opts.buscarFn ?? ((o) => buscarPagina(o));
+  const previo = repo.ultimoSync(REGION_ESTADO);
+  const desde = previo?.hasta ?? haceDiasIso(BACKFILL_DIAS);
+  const hasta = hoyIso();
+
+  let nuevas = 0;
+  let pagina = 0;
+  let totalPaginas = 1;
+  while (pagina < totalPaginas && pagina < MAX_PAGINAS) {
+    const r = await buscarFn({
+      tipoAdministracion: "C",
+      fechaDesde: desde,
+      fechaHasta: hasta,
+      page: pagina,
+      pageSize: 200,
+    });
+    totalPaginas = Math.min(r.totalPaginas, MAX_PAGINAS);
+    // Sin region_sync: al ser ESTADO, el filtro territorial ya las deja pasar.
+    nuevas += repo.upsertLista(r.filas.map(filaAConvocatoria));
+    opts.onProgreso?.(pagina + 1, totalPaginas);
+    pagina++;
+    if (r.filas.length === 0) break;
+  }
+  repo.registrarSync(REGION_ESTADO, desde, hasta, nuevas);
+  return { nuevas, paginas: pagina };
+}
+
 /**
  * Re-descarga el detalle de convocatorias que siguen potencialmente abiertas
  * (fin en el futuro cercano o sin fechas) con detalle de hace >7 días.

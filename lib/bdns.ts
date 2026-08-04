@@ -23,6 +23,8 @@ export interface OpcionesBusqueda {
   fechaDesde?: string; // ISO YYYY-MM-DD
   fechaHasta?: string; // ISO YYYY-MM-DD
   texto?: string;
+  /** C = Estado · A = autonómica · L = local · O = otros */
+  tipoAdministracion?: "C" | "A" | "L" | "O";
   page: number;
   pageSize?: number;
 }
@@ -62,6 +64,7 @@ export async function buscarPagina(
     pageSize: String(opts.pageSize ?? 200),
   });
   for (const r of opts.regiones ?? []) p.append("regiones", String(r));
+  if (opts.tipoAdministracion) p.set("tipoAdministracion", opts.tipoAdministracion);
   if (opts.fechaDesde) p.set("fechaDesde", aFechaBdns(opts.fechaDesde));
   if (opts.fechaHasta) p.set("fechaHasta", aFechaBdns(opts.fechaHasta));
   if (opts.texto) {
