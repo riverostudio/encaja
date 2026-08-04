@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { credencialesDe } from "@/lib/sesion";
 import { getRepo, errorJson } from "@/lib/servidor";
 import { generar, hayClave } from "@/lib/ia";
 import { PROMPT_RESUMEN, parsearResumen } from "@/lib/requisitos";
@@ -10,8 +11,9 @@ export const dynamic = "force-dynamic";
  * Escribe (una vez) el resumen en cristiano de una convocatoria y lo guarda.
  * Sin clave de Gemini no falla: la app sigue enseñando el resumen estructural.
  */
-export async function POST(_req: NextRequest, ctx: { params: Promise<{ codigo: string }> }) {
+export async function POST(req: NextRequest, ctx: { params: Promise<{ codigo: string }> }) {
   try {
+    const cred = credencialesDe(req);
     const { codigo } = await ctx.params;
     const repo = getRepo();
     const conv = repo.getConvocatoria(codigo);
@@ -20,7 +22,7 @@ export async function POST(_req: NextRequest, ctx: { params: Promise<{ codigo: s
     if (conv.resumenIa) {
       return NextResponse.json({ resumen: JSON.parse(conv.resumenIa), cacheado: true });
     }
-    if (!hayClave(repo)) {
+    if (!cred && !hayClave(repo)) {
       return NextResponse.json({ resumen: null, sinClave: true });
     }
 
@@ -40,9 +42,7 @@ export async function POST(_req: NextRequest, ctx: { params: Promise<{ codigo: s
       .filter(Boolean)
       .join("\n");
 
-    const respuesta = await generar(repo, [{ texto: `${PROMPT_RESUMEN}\n\n${ficha}` }], {
-      esperaJson: true,
-    });
+    const respuesta = await generar(repo, [{ texto: `${PROMPT_RESUMEN}\n\n${ficha}` }], { esperaJson: true, credenciales: cred });
     const resumen = parsearResumen(respuesta);
     if (!resumen) return NextResponse.json({ resumen: null, error: "Respuesta ilegible" });
 

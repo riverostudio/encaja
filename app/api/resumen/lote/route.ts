@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { credencialesDe } from "@/lib/sesion";
 import { getRepo, errorJson } from "@/lib/servidor";
 import { generar, hayClave } from "@/lib/ia";
 import { PROMPT_RESUMEN, parsearResumen } from "@/lib/requisitos";
@@ -32,6 +33,7 @@ function ficha(conv: Convocatoria): string {
  */
 export async function POST(req: NextRequest) {
   try {
+    const cred = credencialesDe(req);
     const { codigos } = (await req.json()) as { codigos: string[] };
     if (!Array.isArray(codigos) || codigos.length === 0) {
       return NextResponse.json({ resumenes: {} });
@@ -55,7 +57,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    if (porTraducir.length === 0 || !hayClave(repo)) {
+    if (porTraducir.length === 0 || (!cred && !hayClave(repo))) {
       return NextResponse.json({ resumenes, quedan: porTraducir.length });
     }
 
@@ -64,9 +66,7 @@ export async function POST(req: NextRequest) {
     await Promise.all(
       tanda.map(async (conv) => {
         try {
-          const texto = await generar(repo, [{ texto: `${PROMPT_RESUMEN}\n\n${ficha(conv)}` }], {
-            esperaJson: true,
-          });
+          const texto = await generar(repo, [{ texto: `${PROMPT_RESUMEN}\n\n${ficha(conv)}` }], { esperaJson: true, credenciales: cred });
           const resumen = parsearResumen(texto);
           if (!resumen) return;
           repo.guardarResumen(conv.codigoBdns, JSON.stringify(resumen));
@@ -79,8 +79,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({
       resumenes,
-      quedan: Math.max(0, porTraducir.length - tanda.length),
-    });
+      quedan: Math.max(0, porTraducir.length - tanda.length) });
   } catch (e) {
     return NextResponse.json(errorJson(e), { status: 500 });
   }

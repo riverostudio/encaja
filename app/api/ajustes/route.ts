@@ -7,8 +7,7 @@ import {
   probarClave,
   proveedorActual,
   PROVEEDORES,
-  type Proveedor,
-} from "@/lib/ia";
+  type Proveedor } from "@/lib/ia";
 import { resolverCP } from "@/lib/territorio";
 
 export const dynamic = "force-dynamic";
@@ -26,8 +25,7 @@ export async function GET() {
     proveedores: PROVEEDORES,
     cp,
     zona: cp ? resolverCP(cp) : null,
-    ccaa: repo.getAjuste("ccaa") ? Number(repo.getAjuste("ccaa")) : 54,
-  });
+    ccaa: repo.getAjuste("ccaa") ? Number(repo.getAjuste("ccaa")) : 54 });
 }
 
 export async function POST(req: NextRequest) {

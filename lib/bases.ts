@@ -3,7 +3,7 @@
 import type { Repo } from "./repo";
 import type { Convocatoria, Requisito } from "./tipos";
 import { descargarBases } from "./bdns";
-import { generar, hayClave } from "./ia";
+import { generar, hayClave, type CredencialesIA } from "./ia";
 import { PROMPT_EXTRACCION, bloqueLoQueYaSe, parsearRequisitos } from "./requisitos";
 
 export type MotivoSinBases = "sin_clave" | "sin_documento" | "ilegible";
@@ -22,6 +22,7 @@ export async function obtenerRequisitos(
   repo: Repo,
   conv: Convocatoria,
   perfilId = 1,
+  credenciales: CredencialesIA | null = null,
 ): Promise<ResultadoBases> {
   const previa = repo.getEvaluacion(conv.codigoBdns, perfilId);
   if (previa?.requisitosJson) {
@@ -50,7 +51,7 @@ export async function obtenerRequisitos(
     return { requisitos: [], motivo: "sin_documento" };
   }
 
-  const respuesta = await generar(repo, partes, { esperaJson: true });
+  const respuesta = await generar(repo, partes, { esperaJson: true, credenciales });
   const requisitos = parsearRequisitos(respuesta);
   if (requisitos.length === 0) return { requisitos: [], motivo: "ilegible" };
 

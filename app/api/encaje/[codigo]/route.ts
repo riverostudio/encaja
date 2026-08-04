@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { credencialesDe, hechosDe, idDeSesion } from "@/lib/sesion";
 import { getRepo, errorJson } from "@/lib/servidor";
 import { detalle } from "@/lib/bdns";
 import { obtenerRequisitos, EXPLICACION_SIN_BASES } from "@/lib/bases";
@@ -9,12 +10,10 @@ import {
   PROMPT_VEREDICTO,
   parsearVeredictos,
   siguientePregunta,
-  preguntables,
-} from "@/lib/requisitos";
+  preguntables } from "@/lib/requisitos";
 
 
 export const dynamic = "force-dynamic";
-const PERFIL = 1;
 
 export async function POST(
   req: NextRequest,
@@ -28,38 +27,41 @@ export async function POST(
       valor?: string;
     };
     const repo = getRepo();
+    // Si el navegador trae su perfil, es un visitante: nada suyo se guarda aquí.
+    const propios = hechosDe(req);
+    const perfil = idDeSesion(req);
+    const guardar = !propios;
+    const cred = credencialesDe(req);
     let conv = repo.getConvocatoria(codigo);
     if (!conv || !conv.detalleAt) {
       repo.upsertDetalle(await detalle(codigo));
       conv = repo.getConvocatoria(codigo)!;
     }
 
+    const hechos = propios ?? repo.getHechos(perfil);
     if (cuerpo.accion === "responder" && cuerpo.clave && cuerpo.valor != null) {
-      repo.setHecho(PERFIL, cuerpo.clave, cuerpo.valor, `entrevista ${codigo}`);
+      hechos.set(cuerpo.clave, cuerpo.valor);
+      if (guardar) repo.setHecho(perfil, cuerpo.clave, cuerpo.valor, `entrevista ${codigo}`);
     }
-
-    const hechos = repo.getHechos(PERFIL);
     const estructural = evaluarEstructural(conv, hechos);
 
     if (estructural.resultado === "no") {
       const resultado = dictaminar(estructural, [], []);
-      repo.guardarEvaluacion(codigo, PERFIL, {
+      if (guardar) repo.guardarEvaluacion(codigo, perfil, {
         dictamen: resultado.dictamen,
-        motivosJson: JSON.stringify(resultado.motivos),
-      });
+        motivosJson: JSON.stringify(resultado.motivos) });
       return NextResponse.json({ fase: "dictamen", ...resultado, estructural });
     }
 
-    if (!hayClave(repo)) {
+    if (!cred && !hayClave(repo)) {
       return NextResponse.json({
         fase: "sin_ia",
         estructural,
         aviso:
-          "Sin clave de IA solo puedo hacer el filtro con los datos oficiales. Pon tu clave en Ajustes para que además lea las bases y te entreviste.",
-      });
+          "Sin clave de IA solo puedo hacer el filtro con los datos oficiales. Pon tu clave en Ajustes para que además lea las bases y te entreviste." });
     }
 
-    const lectura = await obtenerRequisitos(repo, conv, PERFIL);
+    const lectura = await obtenerRequisitos(repo, conv, perfil, cred);
     const requisitos = lectura.requisitos;
     if (requisitos.length === 0) {
       return NextResponse.json({
@@ -67,8 +69,7 @@ export async function POST(
         estructural,
         aviso: lectura.motivo
           ? EXPLICACION_SIN_BASES[lectura.motivo]
-          : "No he podido sacar los requisitos de las bases. Ábrelas en el enlace oficial.",
-      });
+          : "No he podido sacar los requisitos de las bases. Ábrelas en el enlace oficial." });
     }
 
     if (cuerpo.accion === "dictaminar") {
@@ -79,18 +80,16 @@ export async function POST(
           {
             texto: `${PROMPT_VEREDICTO}\n\nREQUISITOS:\n${JSON.stringify(
               requisitos.filter((r) => r.tipo !== "documento"),
-            )}\n\nDATOS DEL SOLICITANTE:\n${lineasHechos}`,
-          },
+            )}\n\nDATOS DEL SOLICITANTE:\n${lineasHechos}` },
         ],
-        { esperaJson: true },
+        { esperaJson: true, credenciales: cred },
       );
       const veredictos = parsearVeredictos(respuesta);
       const resultado = dictaminar(estructural, requisitos, veredictos);
-      repo.guardarEvaluacion(codigo, PERFIL, {
+      if (guardar) repo.guardarEvaluacion(codigo, perfil, {
         dictamen: resultado.dictamen,
         veredictosJson: JSON.stringify(veredictos),
-        motivosJson: JSON.stringify(resultado.motivos),
-      });
+        motivosJson: JSON.stringify(resultado.motivos) });
       return NextResponse.json({ fase: "dictamen", ...resultado, requisitos, estructural });
     }
 
@@ -105,8 +104,7 @@ export async function POST(
       pregunta,
       progreso: { respondidas: yaRespondidas, total: yaRespondidas + quedan },
       requisitos,
-      estructural,
-    });
+      estructural });
   } catch (e) {
     return NextResponse.json(errorJson(e), { status: 500 });
   }

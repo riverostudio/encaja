@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { credencialesDe, idDeSesion } from "@/lib/sesion";
 import { getRepo, dirExpedientes, errorJson } from "@/lib/servidor";
 import { crearCarpetaExpediente, escribirInstrucciones, montarChecklist } from "@/lib/expediente";
 import { obtenerRequisitos, EXPLICACION_SIN_BASES } from "@/lib/bases";
@@ -6,7 +7,6 @@ import { estadoPlazo } from "@/lib/plazos";
 import type { Requisito } from "@/lib/tipos";
 
 export const dynamic = "force-dynamic";
-const PERFIL = 1;
 
 export async function GET() {
   const repo = getRepo();
@@ -16,14 +16,15 @@ export async function GET() {
       ...e,
       titulo: conv?.titulo ?? e.codigoBdns,
       organo: conv ? (conv.nivel3 ?? conv.nivel2) : "",
-      plazo: conv ? estadoPlazo(conv.fechaInicioSol, conv.fechaFinSol) : null,
-    };
+      plazo: conv ? estadoPlazo(conv.fechaInicioSol, conv.fechaFinSol) : null };
   });
   return NextResponse.json({ filas });
 }
 
 export async function POST(req: NextRequest) {
   try {
+    const perfil = idDeSesion(req);
+    const cred = credencialesDe(req);
     const { codigo } = (await req.json()) as { codigo: string };
     const repo = getRepo();
     const conv = repo.getConvocatoria(codigo);
@@ -34,7 +35,7 @@ export async function POST(req: NextRequest) {
     let aviso: string | null = null;
     let requisitos: Requisito[] = [];
     try {
-      const r = await obtenerRequisitos(repo, conv, PERFIL);
+      const r = await obtenerRequisitos(repo, conv, perfil, cred);
       requisitos = r.requisitos;
       if (r.motivo) aviso = EXPLICACION_SIN_BASES[r.motivo];
     } catch (e) {
@@ -43,12 +44,11 @@ export async function POST(req: NextRequest) {
 
     const carpeta = crearCarpetaExpediente(dirExpedientes(), conv);
     escribirInstrucciones(carpeta, conv, requisitos);
-    repo.crearExpediente(codigo, PERFIL, carpeta, JSON.stringify(montarChecklist(requisitos)));
+    repo.crearExpediente(codigo, perfil, carpeta, JSON.stringify(montarChecklist(requisitos)));
     if (requisitos.length > 0) {
       // La checklist puede haberse creado vacía en una visita anterior.
       repo.actualizarExpediente(codigo, {
-        checklistJson: JSON.stringify(montarChecklist(requisitos)),
-      });
+        checklistJson: JSON.stringify(montarChecklist(requisitos)) });
     }
     return NextResponse.json({ expediente: repo.getExpediente(codigo), aviso });
   } catch (e) {

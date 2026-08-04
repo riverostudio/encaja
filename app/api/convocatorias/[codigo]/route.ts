@@ -37,12 +37,10 @@ export async function GET(
         plazo: estadoPlazo(conv.fechaInicioSol, conv.fechaFinSol),
         rangoFechas: formatoRango(conv.fechaInicioSol, conv.fechaFinSol),
         llano: resumirEstructural(conv),
-        resumen,
-      },
+        resumen },
       urlFicha: urlFichaBdns(codigo),
       evaluacion,
-      expediente,
-    });
+      expediente });
   } catch (e) {
     return NextResponse.json(errorJson(e), { status: 500 });
   }

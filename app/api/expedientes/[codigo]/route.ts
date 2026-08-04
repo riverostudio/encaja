@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { credencialesDe, idDeSesion } from "@/lib/sesion";
 import { execFile } from "node:child_process";
 import { getRepo, errorJson } from "@/lib/servidor";
 import { generarBorradorDocx, escribirInstrucciones, urlFichaBdns } from "@/lib/expediente";
@@ -17,18 +18,18 @@ function leerResumenIa(json?: string | null): ResumenIA | null {
 }
 
 export const dynamic = "force-dynamic";
-const PERFIL = 1;
 
 export async function GET(
-  _req: NextRequest,
+  req: NextRequest,
   ctx: { params: Promise<{ codigo: string }> },
 ) {
+  const perfil = idDeSesion(req);
   const { codigo } = await ctx.params;
   const repo = getRepo();
   const e = repo.getExpediente(codigo);
   if (!e) return NextResponse.json({ error: "No existe el expediente" }, { status: 404 });
   const conv = repo.getConvocatoria(codigo);
-  const evaluacion = repo.getEvaluacion(codigo, PERFIL);
+  const evaluacion = repo.getEvaluacion(codigo, perfil);
   const requisitos: Requisito[] = evaluacion?.requisitosJson
     ? (JSON.parse(evaluacion.requisitosJson) as Requisito[])
     : [];
@@ -42,16 +43,14 @@ export async function GET(
           rangoFechas: formatoRango(conv.fechaInicioSol, conv.fechaFinSol),
           llano: resumirEstructural(conv),
           resumen: leerResumenIa(conv.resumenIa),
-          urlFicha: urlFichaBdns(codigo),
-        }
+          urlFicha: urlFichaBdns(codigo) }
       : null,
     // Todo lo que hay que cumplir, no solo lo que hay que aportar.
     condiciones: requisitos.filter((r) => r.tipo !== "documento"),
     veredicto: evaluacion?.dictamen ?? null,
     // Dónde se presenta: sede si consta; si no, las bases lo dicen.
     dondeSolicitar: conv?.sede ?? conv?.urlBases ?? urlFichaBdns(codigo),
-    esSedeDirecta: Boolean(conv?.sede),
-  });
+    esSedeDirecta: Boolean(conv?.sede) });
 }
 
 export async function PATCH(
@@ -89,6 +88,8 @@ export async function POST(
   ctx: { params: Promise<{ codigo: string }> },
 ) {
   try {
+    const perfil = idDeSesion(req);
+    const cred = credencialesDe(req);
     const { codigo } = await ctx.params;
     const cuerpo = (await req.json()) as {
       accion: "borrador" | "abrir_carpeta" | "regenerar_instrucciones";
@@ -106,7 +107,7 @@ export async function POST(
     }
 
     if (cuerpo.accion === "regenerar_instrucciones") {
-      const evalu = repo.getEvaluacion(codigo, PERFIL);
+      const evalu = repo.getEvaluacion(codigo, perfil);
       const reqs: Requisito[] = evalu?.requisitosJson ? JSON.parse(evalu.requisitosJson) : [];
       escribirInstrucciones(e.carpeta, conv, reqs);
       return NextResponse.json({ ok: true });
@@ -119,7 +120,7 @@ export async function POST(
       );
     }
 
-    const hechos = [...repo.getHechos(PERFIL).entries()]
+    const hechos = [...repo.getHechos(perfil).entries()]
       .map(([k, v]) => `- ${k}: ${v}`)
       .join("\n");
     const tipoDoc = cuerpo.tipo === "declaracion" ? "declaración responsable" : "memoria técnica";
@@ -134,10 +135,9 @@ Datos del solicitante:
 ${hechos || "(sin datos: deja huecos [COMPLETAR])"}
 
 Devuelve SOLO JSON: {"titulo":"...","secciones":[{"h":"encabezado","p":["párrafo 1","párrafo 2"]}]}
-Donde falte un dato usa [COMPLETAR: qué falta]. No inventes cifras ni fechas.`,
-        },
+Donde falte un dato usa [COMPLETAR: qué falta]. No inventes cifras ni fechas.` },
       ],
-      { esperaJson: true },
+      { esperaJson: true, credenciales: cred },
     );
     const ini = respuesta.indexOf("{");
     const fin = respuesta.lastIndexOf("}");

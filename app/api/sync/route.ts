@@ -10,8 +10,7 @@ export async function GET() {
   return NextResponse.json({
     ultimo: repo.ultimoSyncGlobal()?.ts ?? null,
     total: repo.contar(),
-    pendientesDetalle: repo.contarPendientes(),
-  });
+    pendientesDetalle: repo.contarPendientes() });
 }
 
 export async function POST(req: NextRequest) {
@@ -39,8 +38,7 @@ export async function POST(req: NextRequest) {
         comunidades: hechas.length,
         delEstado: estatal.nuevas,
         detalles,
-        pendientesDetalle: repo.contarPendientes(),
-      });
+        pendientesDetalle: repo.contarPendientes() });
     }
 
     const region = regionId ?? 54;
@@ -55,8 +53,7 @@ export async function POST(req: NextRequest) {
       delEstado: estatal.nuevas,
       detalles,
       refrescadas,
-      pendientesDetalle: repo.contarPendientes(),
-    });
+      pendientesDetalle: repo.contarPendientes() });
   } catch (e) {
     return NextResponse.json(errorJson(e), { status: 500 });
   }

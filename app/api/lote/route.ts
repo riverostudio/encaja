@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { credencialesDe } from "@/lib/sesion";
 import { getRepo, errorJson } from "@/lib/servidor";
 import { generar, hayClave } from "@/lib/ia";
 import { PROMPT_RESUMEN, parsearResumen } from "@/lib/requisitos";
@@ -35,12 +36,13 @@ function fichaDe(conv: Convocatoria): string {
  */
 export async function POST(req: NextRequest) {
   try {
+    const cred = credencialesDe(req);
     const { tarea, tanda = 12 } = (await req.json()) as {
       tarea: "traducir" | "fechas";
       tanda?: number;
     };
     const repo = getRepo();
-    if (!hayClave(repo)) {
+    if (!cred && !hayClave(repo)) {
       return NextResponse.json({ error: "Configura tu clave de IA en Ajustes" }, { status: 400 });
     }
 
@@ -62,9 +64,7 @@ export async function POST(req: NextRequest) {
     for (const conv of candidatas.slice(0, tanda)) {
       try {
         if (tarea === "traducir") {
-          const texto = await generar(repo, [{ texto: `${PROMPT_RESUMEN}\n\n${fichaDe(conv)}` }], {
-            esperaJson: true,
-          });
+          const texto = await generar(repo, [{ texto: `${PROMPT_RESUMEN}\n\n${fichaDe(conv)}` }], { esperaJson: true, credenciales: cred });
           const resumen = parsearResumen(texto);
           if (!resumen) {
             fallos++;
@@ -82,7 +82,7 @@ export async function POST(req: NextRequest) {
           const texto = await generar(
             repo,
             [{ texto: PROMPT_FECHAS }, { pdf: bases.datos as Buffer }],
-            { esperaJson: true },
+            { esperaJson: true, credenciales: cred },
           );
           const fechas = parsearFechas(texto);
           if (!fechas) {
@@ -102,8 +102,7 @@ export async function POST(req: NextRequest) {
       hechas,
       fallos,
       quedan: Math.max(0, candidatas.length - tanda),
-      total: candidatas.length,
-    });
+      total: candidatas.length });
   } catch (e) {
     return NextResponse.json(errorJson(e), { status: 500 });
   }
@@ -125,6 +124,5 @@ export async function GET() {
     // Lo ya guardado: es lo que de verdad interesa ver crecer.
     traducidas: todas.filter((c) => Boolean(c.resumenIa)).length,
     total: todas.length,
-    configurada: hayClave(repo),
-  });
+    configurada: hayClave(repo) });
 }

@@ -7,6 +7,5 @@ export async function GET(req: NextRequest) {
   const cp = req.nextUrl.searchParams.get("cp");
   return NextResponse.json({
     ccaas: CCAAS,
-    zona: cp ? resolverCP(cp) : null,
-  });
+    zona: cp ? resolverCP(cp) : null });
 }

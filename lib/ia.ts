@@ -216,18 +216,28 @@ async function mensajeError(r: Response, quien: string): Promise<string> {
 }
 
 /** Llama al proveedor configurado y devuelve el texto de la respuesta. */
+/** Clave que llega en la petición del visitante, no la guardada. */
+export interface CredencialesIA {
+  proveedor: Proveedor;
+  modelo: string | null;
+  clave: string;
+}
+
 export async function generar(
   repo: Repo,
   partes: Parte[],
-  opts: { esperaJson?: boolean } = {},
+  opts: { esperaJson?: boolean; credenciales?: CredencialesIA | null } = {},
 ): Promise<string> {
-  const proveedor = proveedorActual(repo);
-  const clave = claveDe(repo, proveedor);
+  // Las credenciales del visitante mandan sobre las guardadas: en la app
+  // pública la clave llega en cada petición y no se guarda en ningún sitio.
+  const cred = opts.credenciales ?? null;
+  const proveedor = cred?.proveedor ?? proveedorActual(repo);
+  const clave = cred?.clave ?? claveDe(repo, proveedor);
   if (!clave) throw new Error("SIN_CLAVE: configura tu clave de IA en Ajustes.");
 
   const peticion: Peticion = {
     clave,
-    modelo: modeloActual(repo),
+    modelo: cred?.modelo ?? (cred ? fichaDe(proveedor).modeloDefecto : modeloActual(repo)),
     partes,
     esperaJson: Boolean(opts.esperaJson),
   };
