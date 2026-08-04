@@ -1,0 +1,332 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Encaja · ayudas públicas de España, explicadas</title>
+<meta name="description" content="Todas las ayudas públicas de España reunidas, traducidas a lenguaje llano — y si encajas en ellas.">
+<link rel="canonical" href="https://encaja-ayudas.vercel.app/">
+
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://encaja-ayudas.vercel.app/">
+<meta property="og:title" content="Encaja · ayudas públicas de España, explicadas">
+<meta property="og:description" content="Cada año se convocan miles de ayudas públicas que casi nadie pide, porque están escritas para juristas. Encaja las reúne, las traduce y te dice si puedes pedirlas.">
+<meta property="og:image" content="https://encaja-ayudas.vercel.app/portada.png">
+<meta property="og:image:width" content="2400">
+<meta property="og:image:height" content="1254">
+<meta property="og:image:alt" content="Encaja — todas las ayudas del Estado, tu comunidad y tu pueblo, y si encajas en ellas.">
+<meta property="og:locale" content="es_ES">
+<meta property="og:site_name" content="Encaja">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Encaja · ayudas públicas de España, explicadas">
+<meta name="twitter:description" content="Miles de ayudas públicas que casi nadie pide, porque están escritas para juristas. Encaja las traduce y te dice si encajas.">
+<meta name="twitter:image" content="https://encaja-ayudas.vercel.app/portada.png">
+<meta name="theme-color" content="#faf8f4" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#100f0d" media="(prefers-color-scheme: dark)">
+
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='18' fill='%23faf8f4'/><text y='73' x='50' text-anchor='middle' font-family='Georgia,serif' font-size='64' fill='%2316150f'>E</text><circle cx='78' cy='72' r='7' fill='%23c13b20'/></svg>">
+<script>
+  // El tema, antes de pintar: sin esto la pagina parpadea en blanco al abrirla de noche.
+  (function(){try{var t=localStorage.getItem("tema");if(t)document.documentElement.dataset.theme=t}catch(e){}})();
+</script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+img{max-width:100%;display:block}
+
+  :root{
+    --papel:#faf8f4; --lienzo:#ffffff; --alto:#fffdfa;
+    --tinta:#16150f; --grafito:#5f5a50; --niebla:#9d968b;
+    --linea:#e7e2d8; --linea-fuerte:#d2cabb;
+    --senal:#c13b20; --ocre:#97681c; --bosque:#2f5d45;
+    --serif:Georgia,"Iowan Old Style","Times New Roman",serif;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI","Helvetica Neue",Arial,sans-serif;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --papel:#100f0d; --lienzo:#191714; --alto:#1f1c18;
+      --tinta:#f2ede4; --grafito:#a49c8e; --niebla:#6d665b;
+      --linea:#2a2621; --linea-fuerte:#3b352d;
+      --senal:#ff7a55; --ocre:#e0aa4c; --bosque:#7cc39a;
+    }
+  }
+  :root[data-theme="dark"]{
+    --papel:#100f0d; --lienzo:#191714; --alto:#1f1c18;
+    --tinta:#f2ede4; --grafito:#a49c8e; --niebla:#6d665b;
+    --linea:#2a2621; --linea-fuerte:#3b352d;
+    --senal:#ff7a55; --ocre:#e0aa4c; --bosque:#7cc39a;
+  }
+  :root[data-theme="light"]{
+    --papel:#faf8f4; --lienzo:#ffffff; --alto:#fffdfa;
+    --tinta:#16150f; --grafito:#5f5a50; --niebla:#9d968b;
+    --linea:#e7e2d8; --linea-fuerte:#d2cabb;
+    --senal:#c13b20; --ocre:#97681c; --bosque:#2f5d45;
+  }
+
+  body{background:var(--papel);color:var(--tinta);font-family:var(--sans);
+       font-size:16px;line-height:1.6;-webkit-font-smoothing:antialiased}
+  .env{max-width:940px;margin:0 auto;padding:0 24px}
+
+  /* el semáforo de plazos, hecho identidad */
+  .cinta{display:flex;height:4px}
+  .cinta i{flex:1}
+  .cinta i:nth-child(1){background:var(--senal)}
+  .cinta i:nth-child(2){background:var(--senal);opacity:.55}
+  .cinta i:nth-child(3){background:var(--ocre);opacity:.7}
+  .cinta i:nth-child(4){background:var(--bosque);opacity:.55}
+  .cinta i:nth-child(5){background:var(--bosque)}
+
+  .rotulo{font-size:11px;letter-spacing:.19em;text-transform:uppercase;
+          color:var(--niebla);font-weight:600}
+
+  header{padding:64px 0 8px}
+  .marca{font-family:var(--serif);font-size:46px;line-height:1;letter-spacing:-.02em;margin:14px 0 0}
+  .marca span{color:var(--senal)}
+  h1{font-family:var(--serif);font-weight:400;font-size:clamp(29px,4.6vw,44px);
+     line-height:1.18;letter-spacing:-.015em;text-wrap:balance;margin:26px 0 0;max-width:19ch}
+  h1 b{font-weight:400;border-bottom:2px solid var(--senal);padding-bottom:2px}
+  .entradilla{margin-top:22px;max-width:60ch;font-size:17px;color:var(--grafito)}
+
+  /* la tesis: el BOE arriba, lo que significa abajo */
+  .tesis{display:grid;grid-template-columns:1fr 1fr;gap:0;margin:52px 0 0;
+         border:1px solid var(--linea);border-radius:12px;overflow:hidden;background:var(--lienzo)}
+  .tesis>div{padding:26px 26px 28px}
+  .tesis .antes{border-right:1px solid var(--linea);background:var(--alto)}
+  .tesis h3{font-size:11px;letter-spacing:.16em;text-transform:uppercase;
+            color:var(--niebla);font-weight:600;margin:0 0 12px}
+  .jerga{font-family:var(--serif);font-size:15px;line-height:1.45;color:var(--grafito)}
+  .claro{font-family:var(--serif);font-size:20px;line-height:1.3}
+  .claro+p{margin-top:9px;font-size:13.5px;color:var(--grafito)}
+  @media (max-width:700px){
+    .tesis{grid-template-columns:1fr}
+    .tesis .antes{border-right:none;border-bottom:1px solid var(--linea)}
+  }
+
+  .cifras{display:grid;grid-template-columns:repeat(4,1fr);gap:26px;margin:46px 0 0;
+          padding:26px 0;border-top:1px solid var(--linea);border-bottom:1px solid var(--linea)}
+  .cifras .n{font-family:var(--serif);font-size:31px;line-height:1;font-variant-numeric:tabular-nums}
+  .cifras .t{font-size:12.5px;color:var(--grafito);margin-top:7px;line-height:1.4}
+  @media (max-width:620px){.cifras{grid-template-columns:1fr 1fr;gap:22px}}
+
+  section{padding:52px 0 0}
+  h2{font-family:var(--serif);font-weight:400;font-size:27px;letter-spacing:-.01em;margin:0 0 8px}
+  .sub{color:var(--grafito);max-width:62ch;margin:0 0 26px}
+
+  /* los pasos: sí son una secuencia, por eso van numerados */
+  ol.pasos{list-style:none;padding:0;margin:0;display:grid;gap:2px}
+  ol.pasos li{display:grid;grid-template-columns:44px 1fr;gap:18px;align-items:start;
+              padding:20px 0;border-top:1px solid var(--linea)}
+  ol.pasos li:last-child{border-bottom:1px solid var(--linea)}
+  ol.pasos .num{font-family:var(--serif);font-size:22px;color:var(--senal);line-height:1.1}
+  ol.pasos b{font-weight:600;font-size:15.5px;display:block;margin-bottom:4px}
+  ol.pasos p{margin:0;color:var(--grafito);font-size:14.5px}
+
+  .rejilla{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media (max-width:700px){.rejilla{grid-template-columns:1fr}}
+  .caja{border:1px solid var(--linea);border-radius:10px;padding:20px 22px;background:var(--lienzo)}
+  .caja h4{margin:0 0 6px;font-size:15px;font-weight:600}
+  .caja p{margin:0;font-size:14px;color:var(--grafito)}
+
+  .limite{border-left:2px solid var(--senal);padding:2px 0 2px 18px;margin-top:14px}
+  .limite p{margin:0 0 8px;font-size:14.5px}
+  .limite p:last-child{margin-bottom:0}
+
+  footer{margin-top:60px;padding:26px 0 60px;border-top:1px solid var(--linea);
+         font-size:13px;color:var(--niebla);line-height:1.65}
+  a{color:inherit;text-decoration:none;border-bottom:1px solid var(--linea-fuerte)}
+  a:hover{border-bottom-color:currentColor}
+  a:focus-visible{outline:2px solid var(--senal);outline-offset:3px;border-radius:2px}
+
+/* Standalone: el visor de artifacts ya no pone el conmutador, lo trae la pagina. */
+.tema{position:absolute;top:16px;right:16px;z-index:9;display:flex;align-items:center;gap:7px;
+      background:var(--lienzo);border:1px solid var(--linea);border-radius:999px;
+      padding:7px 13px;font-size:12px;color:var(--grafito);cursor:pointer;
+      font-family:inherit;line-height:1;transition:border-color .2s,color .2s}
+.tema:hover{border-color:var(--linea-fuerte);color:var(--tinta)}
+.tema:focus-visible{outline:2px solid var(--senal);outline-offset:2px}
+.tema svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:1.7;
+          stroke-linecap:round;stroke-linejoin:round}
+@media (min-width:761px){.tema{position:fixed}}
+@media (max-width:760px){.tema{top:12px;right:12px;padding:6px 11px}
+                         header{padding-top:70px}}
+
+/* La portada, como cierre: es la misma que se ve al compartir el enlace. */
+.muestra{margin-top:46px;border:1px solid var(--linea);border-radius:12px;overflow:hidden;
+         background:var(--lienzo)}
+.muestra img{width:100%}
+.pie-muestra{font-size:12px;color:var(--niebla);text-align:center;margin-top:11px}
+@media (prefers-reduced-motion:no-preference){
+  .env>header,.tesis,.cifras,section{animation:entra .6s cubic-bezier(.2,.7,.3,1) backwards}
+  .tesis{animation-delay:.06s}.cifras{animation-delay:.1s}
+  section:nth-of-type(1){animation-delay:.14s}
+  @keyframes entra{from{opacity:0;transform:translateY(9px)}to{opacity:1;transform:none}}
+}
+</style>
+</head>
+<body>
+
+
+<div class="cinta"><i></i><i></i><i></i><i></i><i></i></div>
+
+<button class="tema" id="tema" type="button" aria-label="Cambiar entre modo claro y oscuro">
+  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+  <span>Tema</span>
+</button>
+
+<div class="env">
+  <header>
+    <p class="rotulo">Ayudas públicas · España</p>
+    <p class="marca">Encaja<span>.</span></p>
+    <h1>Todas las ayudas del Estado, tu comunidad y tu pueblo — <b>y si encajas en ellas</b>.</h1>
+    <p class="entradilla">
+      Cada año se convocan miles de ayudas públicas que casi nadie pide, porque están escritas
+      para juristas y repartidas por decenas de boletines. Encaja las reúne todas, las traduce, y
+      te dice si puedes pedirlas antes de que pierdas la tarde leyendo un PDF.
+    </p>
+  </header>
+
+  <div class="tesis">
+    <div class="antes">
+      <h3>Lo que publica el boletín</h3>
+      <p class="jerga">«RESOLUCIÓN de 27 de julio de 2026, de la Conselleria de Educación, Cultura y
+        Universidades, por la que se aprueban las bases reguladoras y se convocan ayudas económicas,
+        en concepto de subvención, para contribuir a la financiación de los gastos de ejecución de
+        acciones y programas…»</p>
+    </div>
+    <div>
+      <h3>Lo que significa</h3>
+      <p class="claro">Para estudiar: universidad, cursos o material</p>
+      <p>Pueden pedirla particulares · Abierta hasta el 31 de agosto · 75.000 € para todo el programa</p>
+    </div>
+  </div>
+
+  <div class="cifras">
+    <div><div class="n">4.578</div><div class="t">convocatorias en el archivo</div></div>
+    <div><div class="n">787</div><div class="t">abiertas ahora mismo</div></div>
+    <div><div class="n">19</div><div class="t">comunidades, más el Estado y tu ayuntamiento</div></div>
+    <div><div class="n" style="color:var(--senal)">0</div><div class="t">datos inventados: todo enlaza su fuente oficial</div></div>
+  </div>
+
+  <section>
+    <h2>Cómo funciona</h2>
+    <p class="sub">Cuatro pasos, en este orden. Cada uno depende del anterior.</p>
+    <ol class="pasos">
+      <li>
+        <span class="num">1</span>
+        <div>
+          <b>Te pregunta quién eres</b>
+          <p>Ocho preguntas en cristiano: si pides como persona o como negocio, qué te vendría bien
+            ahora (formarte, salir de un apuro, encontrar trabajo), en qué situación estás, cuánto
+            entra en casa y tu código postal. Nada de formularios con jerga.</p>
+        </div>
+      </li>
+      <li>
+        <span class="num">2</span>
+        <div>
+          <b>Busca por ti en la fuente oficial</b>
+          <p>Se conecta a la Base de Datos Nacional de Subvenciones, donde por ley se publica toda
+            ayuda pública de España. Con tu código postal aparecen también las de tu ayuntamiento y
+            tu diputación, que no salen en ningún buscador.</p>
+        </div>
+      </li>
+      <li>
+        <span class="num">3</span>
+        <div>
+          <b>Te dice si encajas, citando las bases</b>
+          <p>Descarta lo imposible con los datos oficiales, y para el resto lee el PDF de las bases,
+            te hace las preguntas justas y dictamina: encajas, no encajas o depende — siempre con el
+            texto legal en el que se apoya.</p>
+        </div>
+      </li>
+      <li>
+        <span class="num">4</span>
+        <div>
+          <b>Te deja el expediente listo</b>
+          <p>Una carpeta real con lo que debes cumplir, lo que hay que aportar, borradores redactados
+            y el enlace a la sede donde se presenta. Te recuerda que necesitas DNI electrónico,
+            certificado o Cl@ve, y que guardes el justificante.</p>
+        </div>
+      </li>
+    </ol>
+  </section>
+
+  <section>
+    <h2>Lo que no está en ningún buscador de subvenciones</h2>
+    <p class="sub">El paro y el Ingreso Mínimo Vital no son subvenciones: son prestaciones, y no se
+      publican en la base nacional. Quien más las necesita nunca las encontraría ahí, así que Encaja
+      las trae aparte con su enlace oficial.</p>
+    <div class="rejilla">
+      <div class="caja">
+        <h4>Prestación y subsidio por desempleo</h4>
+        <p>SEPE · sin plazo, se piden cuando cumples los requisitos</p>
+      </div>
+      <div class="caja">
+        <h4>Ingreso Mínimo Vital y complemento por hijos</h4>
+        <p>Seguridad Social · sin plazo</p>
+      </div>
+      <div class="caja">
+        <h4>Bono social eléctrico</h4>
+        <p>Transición Ecológica · descuento en la luz y protección frente al corte</p>
+      </div>
+      <div class="caja">
+        <h4>Becas del Ministerio de Educación</h4>
+        <p>Bachillerato, FP y universidad · matrícula y cuantías por renta</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Dos decisiones de las que no me muevo</h2>
+    <div class="limite">
+      <p><b>No firma ni presenta nada en tu nombre.</b> Manejar el certificado digital de alguien y
+        firmar ante la Administración es irreversible. Encaja prepara el expediente; la persona
+        firma. Los borradores van marcados como tales.</p>
+      <p><b>No inventa cuando falta un dato.</b> Si el organismo no publica el plazo, dice «plazo sin
+        publicar» y enlaza las bases, en vez de rellenarlo. Prefiere quedarse corta a sonar bien y
+        que alguien pierda una convocatoria.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>Cómo está hecho</h2>
+    <p class="sub">Aplicación local en Next.js con base de datos en tu propio ordenador. La
+      inteligencia artificial es la que tú elijas —Gemini, Claude o GPT— con tu clave, que se
+      comprueba antes de guardarse y nunca sale de tu máquina. 150 pruebas automáticas.</p>
+    <div class="rejilla">
+      <div class="caja">
+        <h4>Se traduce lo que miras</h4>
+        <p>Solo las ayudas que tienes en pantalla, y lo traducido queda guardado: no se vuelve a
+          pedir nunca. Cuanto más se usa, menos trabajo queda.</p>
+      </div>
+      <div class="caja">
+        <h4>Cada dato enlaza su fuente</h4>
+        <p>Ficha oficial, bases reguladoras y sede electrónica. Si algo no se puede comprobar, se
+          dice.</p>
+      </div>
+    </div>
+  </section>
+
+  <div class="muestra">
+    <img src="portada.png" width="2400" height="1254"
+         alt="Encaja: todas las ayudas del Estado, tu comunidad y tu pueblo, y si encajas en ellas. 4.578 convocatorias, 787 abiertas, 0 datos inventados.">
+  </div>
+  <p class="pie-muestra">Una convocatoria real, tal como la muestra la app.</p>
+
+  <footer>
+    Los datos proceden del Sistema Nacional de Publicidad de Subvenciones y Ayudas Públicas
+    (<a href="https://www.infosubvenciones.es" target="_blank" rel="noreferrer">infosubvenciones.es</a>),
+    de naturaleza dinámica: verifica siempre contra la convocatoria oficial antes de presentar.<br>
+    Proyecto personal de Víctor Rivero · 2026
+  </footer>
+</div>
+<script>
+  var b=document.getElementById("tema"),r=document.documentElement;
+  b.addEventListener("click",function(){
+    var oscuro=r.dataset.theme
+      ? r.dataset.theme==="dark"
+      : matchMedia("(prefers-color-scheme: dark)").matches;
+    r.dataset.theme=oscuro?"light":"dark";
+    try{localStorage.setItem("tema",r.dataset.theme)}catch(e){}
+  });
+</script>
+</body>
+</html>

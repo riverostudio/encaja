@@ -46,3 +46,6 @@ next-env.d.ts
 /data/
 /expedientes/
 .env.local
+
+# El enlace de Vercel es de esta maquina, no del repositorio.
+/web/.vercel/
