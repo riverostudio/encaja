@@ -19,9 +19,7 @@ export const metadata: Metadata = {
   title: "Encaja · ayudas públicas explicadas",
   description:
     "Todas las ayudas públicas de España, explicadas en cristiano. Te decimos si encajas y cómo pedirlas. Fuente oficial: BDNS.",
-  icons: {
-    icon: "data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>◎</text></svg>",
-  },
+  // El icono sale de app/icon.svg y app/apple-icon.png: la bandera.
 };
 
 // Fija la piel antes del primer pintado: sin parpadeo blanco al entrar en oscuro.
