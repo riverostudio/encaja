@@ -113,7 +113,7 @@ export default function Bienvenida({
     <div className="escenario">
       <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col justify-center px-6 py-16">
         <div className="sube">
-          <p className="rotulo">Radar de Ayudas · España</p>
+          <p className="rotulo">Encaja · ayudas públicas de España</p>
           <h1 className="display mt-3 text-[38px] leading-[1.1]">
             Todas las subvenciones públicas de España, explicadas en cristiano.
           </h1>

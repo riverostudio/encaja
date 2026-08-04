@@ -51,9 +51,9 @@ export default function Shell({ children }: { children: ReactNode }) {
       >
         <div className="mx-auto flex max-w-6xl items-center gap-6 px-6 py-4">
           <Link href="/" className="group flex items-baseline gap-2.5">
-            <span className="display text-[20px] leading-none">Radar de Ayudas</span>
+            <span className="display text-[20px] leading-none">Encaja</span>
             <span className="rotulo hidden transition-colors group-hover:text-[var(--grafito)] sm:inline">
-              España
+              Ayudas públicas · España
             </span>
           </Link>
 

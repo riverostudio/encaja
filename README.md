@@ -1,11 +1,17 @@
-# 📡 Radar de Ayudas
+# Encaja
 
-Todas las **subvenciones y ayudas económicas de España** en un panel local:
-eliges territorio (por defecto **Comunitat Valenciana**, afinable con tu
-**código postal**), y cuando una te interesa la app **te entrevista** y
-dictamina si encajas citando el texto literal de las bases. Si encajas, te
-monta el **expediente**: checklist de documentos, borradores en Word e
-instrucciones de presentación.
+**Todas las ayudas públicas de España, explicadas en cristiano — y si encajas en ellas.**
+
+Cada año se convocan miles de ayudas públicas que casi nadie pide, porque están
+escritas para juristas y repartidas por decenas de boletines. Encaja las reúne
+todas, las traduce y te dice si puedes pedirlas antes de que pierdas la tarde
+leyendo un PDF.
+
+Eliges territorio —afinable hasta tu **código postal**, para que aparezcan
+también las de tu ayuntamiento y tu diputación—, y cuando una te interesa te
+**entrevista** y dictamina si encajas, citando el texto literal de las bases.
+Si encajas, te monta el **expediente**: checklist de documentos, borradores en
+Word e instrucciones de presentación.
 
 > **Fuente única y oficial:** la BDNS (Base de Datos Nacional de Subvenciones),
 > donde por ley se publica toda ayuda pública — Estado, autonomías,
@@ -15,7 +21,7 @@ instrucciones de presentación.
 ## Arrancarla
 
 ```bash
-cd ~/radar-ayudas && npm run dev
+cd ~/encaja && npm run dev
 ```
 
 Abre **http://localhost:3002** (el 3000 es de World Monitor y el 3001 del CRM).
@@ -23,7 +29,7 @@ Abre **http://localhost:3002** (el 3000 es de World Monitor y el 3001 del CRM).
 Si acabas de clonarla o borraste `node_modules`:
 
 ```bash
-cd ~/radar-ayudas && npm ci
+cd ~/encaja && npm ci
 ```
 
 ## Las 3 plantas
