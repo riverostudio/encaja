@@ -1,9 +1,9 @@
-# Se despliega la base LIMPIA, nunca la de trabajo (lleva perfil y clave).
-data/radar.db
-data/radar.db-shm
-data/radar.db-wal
+# Sin esto Vercel hereda .gitignore, que excluye data/ entera, y la funcion
+# arranca sin base: SQLITE_CANTOPEN.
 expedientes/
-web/
 docs/
 tests/
+web/
 .env.local
+data/*
+!data/radar-publico.db

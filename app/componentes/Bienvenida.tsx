@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { guardarIaLocal, APP_PUBLICA } from "./Sesion";
 
 export interface ModeloUi {
   id: string;
@@ -99,9 +100,19 @@ export default function Bienvenida({
           modelo: modelo.trim() || undefined,
         }),
       });
-      const d = (await r.json()) as { error?: string };
+      const d = (await r.json()) as {
+        error?: string;
+        guardarEnNavegador?: { proveedor: string; modelo: string; clave: string };
+      };
       if (!r.ok) setError(d.error ?? "");
-      else onListo();
+      else {
+        // En la app pública la clave se queda en este navegador, no en el servidor.
+        if (d.guardarEnNavegador) {
+          const { proveedor: pr, modelo: mo, clave: cl } = d.guardarEnNavegador;
+          guardarIaLocal(pr, mo, cl);
+        }
+        onListo();
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
@@ -118,9 +129,20 @@ export default function Bienvenida({
             Todas las subvenciones públicas de España, explicadas en cristiano.
           </h1>
           <p className="mt-4 max-w-lg text-[15px] leading-relaxed text-[var(--grafito)]">
-            Para traducirte el lenguaje del BOE, leer las bases de cada convocatoria y decirte si
-            puedes pedirla, la app necesita una inteligencia artificial. Pon la clave de la que ya
-            uses: no hace falta que sea ninguna en concreto.
+            {APP_PUBLICA ? (
+              <>
+                Las 609 ayudas abiertas ya están traducidas: puedes entrar y leerlas todas sin
+                poner nada. La clave solo hace falta para el «¿encajo?», que se lee las bases de
+                una convocatoria y te entrevista. Vale la de la IA que ya uses, y se guarda solo
+                en este navegador.
+              </>
+            ) : (
+              <>
+                Para traducirte el lenguaje del BOE, leer las bases de cada convocatoria y decirte
+                si puedes pedirla, la app necesita una inteligencia artificial. Pon la clave de la
+                que ya uses: no hace falta que sea ninguna en concreto.
+              </>
+            )}
           </p>
         </div>
 
@@ -203,10 +225,21 @@ export default function Bienvenida({
 
         {error && <Aviso bruto={error} proveedor={elegido} />}
 
-        <div className="sube mt-9" style={{ "--i": 5 } as React.CSSProperties}>
+        <div className="sube mt-9 flex flex-wrap items-center gap-x-6 gap-y-3" style={{ "--i": 5 } as React.CSSProperties}>
           <button className="btn !px-8 !py-3.5 !text-[15px]" onClick={entrar} disabled={!clave.trim() || probando}>
             {probando ? "Comprobando la clave…" : "Entrar"}
           </button>
+          {/* Las ayudas abiertas ya vienen traducidas, así que el radar se lee
+              sin clave. Pedirla en la puerta echaría a quien solo quiere mirar. */}
+          {APP_PUBLICA && !probando && (
+            <button
+              type="button"
+              onClick={onListo}
+              className="text-[14px] text-[var(--grafito)] underline decoration-[var(--linea-fuerte)] underline-offset-4 hover:text-[var(--tinta)]"
+            >
+              Entrar sin clave y mirar las ayudas
+            </button>
+          )}
           {probando && (
             <p className="mt-3 flex items-center gap-2 text-[13px] text-[var(--niebla)]">
               <span className="pulso" /> Haciendo una llamada de prueba a {elegido.nombre}…
