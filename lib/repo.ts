@@ -179,19 +179,28 @@ export function crearRepo(db: Database.Database) {
       const cond: string[] = [];
       const params: Record<string, unknown> = {};
       if (filtros.texto) {
-        // Búsqueda a conciencia: cada palabra debe aparecer en alguna parte de
-        // la ficha (título, título cooficial, órgano, finalidad o sectores).
-        const palabras = pelar(filtros.texto)
-          .split(/\s+/)
-          .filter((p) => p.length > 1);
-        palabras.forEach((palabra, i) => {
-          cond.push(
-            `pelar(titulo || ' ' || coalesce(titulo_coof,'') || ' ' || nivel2 || ' ' ||
-              coalesce(nivel3,'') || ' ' || coalesce(finalidad,'') || ' ' || sectores)
-             LIKE @palabra${i}`,
-          );
-          params[`palabra${i}`] = `%${palabra}%`;
+        // Un texto puede traer varias alternativas separadas por "|": basta con
+        // que case UNA. Los atajos las usan porque el BOE llama "pobreza
+        // energética" a lo que la gente busca como "luz" o "suministros".
+        const CAMPOS = `pelar(titulo || ' ' || coalesce(titulo_coof,'') || ' ' || nivel2 || ' ' ||
+              coalesce(nivel3,'') || ' ' || coalesce(finalidad,'') || ' ' || sectores)`;
+        const alternativas = filtros.texto
+          .split("|")
+          .map((t) => pelar(t).trim())
+          .filter(Boolean);
+
+        const orCond: string[] = [];
+        alternativas.forEach((alt, a) => {
+          // Dentro de una alternativa, TODAS sus palabras deben aparecer.
+          const palabras = alt.split(/\s+/).filter((p) => p.length > 1);
+          if (palabras.length === 0) return;
+          const andCond = palabras.map((palabra, i) => {
+            params[`p${a}_${i}`] = `%${palabra}%`;
+            return `${CAMPOS} LIKE @p${a}_${i}`;
+          });
+          orCond.push(`(${andCond.join(" AND ")})`);
         });
+        if (orCond.length > 0) cond.push(`(${orCond.join(" OR ")})`);
       }
       if (filtros.nivel1) {
         cond.push(`nivel1=@nivel1`);

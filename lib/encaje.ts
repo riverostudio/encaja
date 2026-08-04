@@ -12,7 +12,9 @@ export interface ResultadoEstructural {
 }
 
 const BENEF_ACTIVIDAD = ["PYME", "PERSONAS FÍSICAS QUE DESARROLLAN", "GRAN EMPRESA"];
-const BENEF_SIN_ACTIVIDAD = ["QUE NO DESARROLLAN"];
+// Ojo: "PERSONAS JURÍDICAS QUE NO DESARROLLAN" son asociaciones, NO particulares.
+// Ambas comparten "QUE NO DESARROLLAN", así que hay que exigir "FÍSICAS".
+const BENEF_PARTICULAR = ["PERSONAS FÍSICAS QUE NO DESARROLLAN"];
 
 export function evaluarEstructural(
   conv: Convocatoria,
@@ -60,7 +62,7 @@ export function evaluarEstructural(
   } else {
     const listaMayus = conv.beneficiarios.map((b) => b.toUpperCase());
     const admiteActividad = listaMayus.some((b) => BENEF_ACTIVIDAD.some((p) => b.includes(p)));
-    const admiteParticular = listaMayus.some((b) => BENEF_SIN_ACTIVIDAD.some((p) => b.includes(p)));
+    const admiteParticular = listaMayus.some((b) => BENEF_PARTICULAR.some((p) => b.includes(p)));
     // El motivo se cuenta en cristiano, no con la jerga de la BDNS.
     const paraQuien = aQuienVa(conv.beneficiarios) ?? conv.beneficiarios.join("; ").toLowerCase();
     const soyActividad = tipo === "autonomo" || tipo === "pyme";

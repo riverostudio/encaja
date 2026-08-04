@@ -99,6 +99,47 @@ export interface FiltrosRadar {
   soloAplicables?: boolean;
 }
 
+export type Relajado = "perfil" | "beneficiario" | "plazo" | null;
+
+export interface ResultadoRadar {
+  filas: ConvocatoriaConPlazo[];
+  /** Qué filtro hubo que soltar para no dejar la pantalla vacía. */
+  relajado: Relajado;
+  /** Cuántas había con los filtros estrictos (0 si hizo falta relajar). */
+  estrictas: number;
+}
+
+/**
+ * Busca con red: si con los filtros del perfil no sale nada, los va soltando
+ * de uno en uno y dice cuál soltó. Una pantalla vacía no informa; una que
+ * dice "para ti no hay, pero mira estas" sí.
+ */
+export function buscarRadarConRed(repo: Repo, f: FiltrosRadar): ResultadoRadar {
+  const estricto = buscarRadar(repo, f);
+  if (estricto.length > 0) return { filas: estricto, relajado: null, estrictas: estricto.length };
+
+  // 1 · Fuera el descarte automático por perfil.
+  if (f.soloAplicables) {
+    const r = buscarRadar(repo, { ...f, soloAplicables: false });
+    if (r.length > 0) return { filas: r, relajado: "perfil", estrictas: 0 };
+  }
+
+  // 2 · Fuera el filtro de a quién van dirigidas.
+  if (f.beneficiario) {
+    const r = buscarRadar(repo, { ...f, soloAplicables: false, beneficiario: undefined });
+    if (r.length > 0) return { filas: r, relajado: "beneficiario", estrictas: 0 };
+  }
+
+  // 3 · Último recurso: enseñar también las que ya cerraron, bien marcadas.
+  const r = buscarRadar(repo, {
+    ...f,
+    soloAplicables: false,
+    beneficiario: undefined,
+    estado: "todas",
+  });
+  return { filas: r, relajado: r.length > 0 ? "plazo" : null, estrictas: 0 };
+}
+
 /** Búsqueda del radar: filtros + semáforo + prioridad por cierre de plazo. */
 export function buscarRadar(repo: Repo, f: FiltrosRadar): ConvocatoriaConPlazo[] {
   const zona = f.cp ? resolverCP(f.cp) : null;

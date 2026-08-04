@@ -95,10 +95,11 @@ describe("atajosParaPerfil", () => {
     const a = atajosParaPerfil(
       h({ perfil: "particular", situacion: "desempleado", ingresos: "menos_12000" }),
     ).map((x) => x.busca);
-    expect(a[0]).toBe("desempleo");
-    expect(a).toContain("alquiler");
-    expect(a).toContain("emergencia");
-    expect(a).not.toContain("digitalización");
+    // Los atajos llevan sinónimos separados por "|": el BOE no habla como la gente.
+    expect(a[0]).toContain("desempleo");
+    expect(a.join(" ")).toContain("alquiler");
+    expect(a.join(" ")).toContain("emergencia");
+    expect(a.join(" ")).not.toContain("digitalización");
   });
 
   it("a un autónomo le ofrece cosas de negocio", () => {
@@ -114,15 +115,15 @@ describe("atajosParaPerfil", () => {
     const a = atajosParaPerfil(
       h({ perfil: "particular", situacion: "cuenta_ajena", menores_cargo: "2" }),
     ).map((x) => x.busca);
-    expect(a).toContain("comedor");
-    expect(a).toContain("familia");
+    expect(a.join(" ")).toContain("comedor");
+    expect(a.join(" ")).toContain("familia");
   });
 
   it("las circunstancias reconocidas se traducen en atajos", () => {
     const a = atajosParaPerfil(
       h({ perfil: "particular", circunstancias: "discapacidad,familia_numerosa" }),
     ).map((x) => x.busca);
-    expect(a).toContain("discapacidad");
+    expect(a.join(" ")).toContain("discapacidad");
     expect(a).toContain("familia numerosa");
   });
 

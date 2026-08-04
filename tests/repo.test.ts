@@ -122,3 +122,28 @@ describe("repo", () => {
     expect(repo.ultimoSync(99)).toBeNull();
   });
 });
+
+describe("búsqueda con sinónimos", () => {
+  it("con «a|b» basta con que case una", () => {
+    const repo = crearRepo(abrirDb(":memory:"));
+    repo.upsertLista([
+      fila({ codigoBdns: "s1", titulo: "Ayudas contra la pobreza energética" }),
+      fila({ codigoBdns: "s2", titulo: "Bono social para familias" }),
+      fila({ codigoBdns: "s3", titulo: "Ayudas al deporte" }),
+    ]);
+    const r = repo.buscar({ texto: "pobreza energética|bono social" }).map((c) => c.codigoBdns);
+    expect(r).toContain("s1");
+    expect(r).toContain("s2");
+    expect(r).not.toContain("s3");
+  });
+
+  it("dentro de una alternativa siguen exigiéndose todas las palabras", () => {
+    const repo = crearRepo(abrirDb(":memory:"));
+    repo.upsertLista([
+      fila({ codigoBdns: "t1", titulo: "Ayudas de pobreza energética" }),
+      fila({ codigoBdns: "t2", titulo: "Ayudas de pobreza infantil" }),
+    ]);
+    const r = repo.buscar({ texto: "pobreza energética" }).map((c) => c.codigoBdns);
+    expect(r).toEqual(["t1"]);
+  });
+});

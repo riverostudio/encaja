@@ -37,6 +37,14 @@ export default function TarjetaAyuda({
       onClick={() => onAbrir(conv.codigoBdns)}
     >
       <span className="flex items-start justify-between gap-4">
+        {conv.plazo.estado === "cerrada" && (
+          <span
+            className="rotulo absolute right-0 top-0 rounded-bl-lg px-2.5 py-1"
+            style={{ background: "var(--linea)", color: "var(--grafito)" }}
+          >
+            Plazo cerrado
+          </span>
+        )}
         <span className="block">
           <span
             className="display cifra block text-[19px] leading-tight"

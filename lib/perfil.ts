@@ -233,19 +233,19 @@ export interface Atajo {
 
 // Lo que busca de verdad quien va justo de dinero.
 const ATAJOS_POCOS_INGRESOS: Atajo[] = [
-  { texto: "Alquiler y vivienda", busca: "alquiler" },
-  { texto: "Emergencia social", busca: "emergencia" },
-  { texto: "Luz, agua y gas", busca: "suministros" },
-  { texto: "Rentas mínimas", busca: "renta" },
-  { texto: "Riesgo de exclusión", busca: "exclusión" },
-  { texto: "Comida y necesidades básicas", busca: "necesidades básicas" },
+  { texto: "Alquiler y vivienda", busca: "alquiler|vivienda|alojamiento" },
+  { texto: "Emergencia social", busca: "emergencia|urgente necesidad|urgencia social" },
+  { texto: "Luz, agua y gas", busca: "pobreza energética|suministros|energética|bono social" },
+  { texto: "Rentas mínimas", busca: "renta|prestación económica|garantía de ingresos" },
+  { texto: "Riesgo de exclusión", busca: "exclusión|vulnerabilidad|vulnerable" },
+  { texto: "Comida y necesidades básicas", busca: "alimentos|alimentaria|necesidades básicas" },
 ];
 
 const ATAJOS_SIN_TRABAJO: Atajo[] = [
-  { texto: "Estando sin trabajo", busca: "desempleo" },
-  { texto: "Cursos y formación", busca: "formación" },
-  { texto: "Volver a trabajar", busca: "inserción laboral" },
-  { texto: "Montármelo por mi cuenta", busca: "emprendedores" },
+  { texto: "Estando sin trabajo", busca: "desempleo|desempleadas|desempleados|parados" },
+  { texto: "Cursos y formación", busca: "formación|cualificación|reciclaje profesional" },
+  { texto: "Volver a trabajar", busca: "inserción laboral|empleabilidad|fomento del empleo" },
+  { texto: "Montármelo por mi cuenta", busca: "emprendedores|emprendimiento|autoempleo" },
 ];
 const ATAJOS_NEGOCIO: Atajo[] = [
   { texto: "Digitalización", busca: "digitalización" },
@@ -276,7 +276,7 @@ export function atajosParaPerfil(hechos: Map<string, string>): Atajo[] {
   // Persona: primero lo que le toca por su situación.
   const situacion = hechos.get("situacion");
   if (situacion === "desempleado") ATAJOS_SIN_TRABAJO.forEach(añadir);
-  if (situacion === "estudiante") añadir({ texto: "Becas y estudios", busca: "beca" });
+  if (situacion === "estudiante") añadir({ texto: "Becas y estudios", busca: "beca|becas|ayudas al estudio" });
   if (situacion === "jubilado") añadir({ texto: "Mayores", busca: "mayores" });
 
   const ingresos = hechos.get("ingresos");
@@ -286,13 +286,13 @@ export function atajosParaPerfil(hechos: Map<string, string>): Atajo[] {
 
   const menores = hechos.get("menores_cargo");
   if (menores && menores !== "no") {
-    añadir({ texto: "Comedor y libros", busca: "comedor" });
-    añadir({ texto: "Familia e infancia", busca: "familia" });
+    añadir({ texto: "Comedor y libros", busca: "comedor|material escolar|libros de texto" });
+    añadir({ texto: "Familia e infancia", busca: "familia|infancia|menores|conciliación" });
   }
 
   const circunstancias = (hechos.get("circunstancias") ?? "").split(",");
   if (circunstancias.includes("discapacidad") || circunstancias.includes("dependencia")) {
-    añadir({ texto: "Discapacidad y dependencia", busca: "discapacidad" });
+    añadir({ texto: "Discapacidad y dependencia", busca: "discapacidad|dependencia|diversidad funcional" });
   }
   if (circunstancias.includes("familia_numerosa")) {
     añadir({ texto: "Familia numerosa", busca: "familia numerosa" });
@@ -303,9 +303,9 @@ export function atajosParaPerfil(hechos: Map<string, string>): Atajo[] {
   if (circunstancias.includes("menor_30")) añadir({ texto: "Gente joven", busca: "jóvenes" });
 
   // Relleno con lo que le sirve a casi todo el mundo.
-  añadir({ texto: "Becas y estudios", busca: "beca" });
+  añadir({ texto: "Becas y estudios", busca: "beca|becas|ayudas al estudio" });
   añadir({ texto: "Alquiler y vivienda", busca: "alquiler" });
-  añadir({ texto: "Rehabilitar la casa", busca: "rehabilitación" });
+  añadir({ texto: "Rehabilitar la casa", busca: "rehabilitación|reforma|accesibilidad vivienda" });
   return atajos.slice(0, 10);
 }
 

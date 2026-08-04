@@ -82,3 +82,19 @@ describe("evaluarEstructural", () => {
     expect(r.resultado).toBe("duda");
   });
 });
+
+describe("particulares vs asociaciones", () => {
+  it("una ayuda para personas JURÍDICAS no vale para un particular", () => {
+    // Comparten "QUE NO DESARROLLAN": si no se distingue, se le dice que sí
+    // a alguien que no puede pedirla.
+    const c = conv({ beneficiarios: ["PERSONAS JURÍDICAS QUE NO DESARROLLAN ACTIVIDAD ECONÓMICA"] });
+    const r = evaluarEstructural(c, hechos({ tipo_actividad: "particular" }), HOY);
+    expect(r.resultado).toBe("no");
+    expect(r.motivos.some((m) => m.regla === "beneficiario")).toBe(true);
+  });
+
+  it("y la de personas FÍSICAS sí", () => {
+    const c = conv({ beneficiarios: ["PERSONAS FÍSICAS QUE NO DESARROLLAN ACTIVIDAD ECONÓMICA"] });
+    expect(evaluarEstructural(c, hechos({ tipo_actividad: "particular" }), HOY).resultado).toBe("pasa");
+  });
+});

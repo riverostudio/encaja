@@ -73,6 +73,9 @@ export default function PaginaRadar() {
   const [cp, setCp] = useState("");
   const [zona, setZona] = useState<{ municipio: string; provincia: string } | null>(null);
   const [texto, setTexto] = useState("");
+  // Lo que se manda a buscar: para los atajos lleva sinónimos ("a|b|c"), pero
+  // en la caja se enseña su nombre bonito, no la tripa.
+  const [consulta, setConsulta] = useState("");
   const [estadoFiltro, setEstadoFiltro] = useState("");
   const [instrumento, setInstrumento] = useState("");
   const [paraQuien, setParaQuien] = useState("");
@@ -84,6 +87,7 @@ export default function PaginaRadar() {
     progreso: { completo: boolean; respondidas: number };
   } | null>(null);
   const [prestaciones, setPrestaciones] = useState<PrestacionUi[]>([]);
+  const [relajado, setRelajado] = useState<string | null>(null);
   const [traduciendo, setTraduciendo] = useState(0);
   const pedidas = useRef<Set<string>>(new Set());
   const [filas, setFilas] = useState<ConvUi[]>([]);
@@ -98,7 +102,7 @@ export default function PaginaRadar() {
 
   const cargarLista = useCallback(async () => {
     const q = new URLSearchParams();
-    if (texto) q.set("texto", texto);
+    if (consulta) q.set("texto", consulta);
     if (estadoFiltro) q.set("estado", estadoFiltro);
     if (instrumento) q.set("instrumento", instrumento);
     if (paraQuien) q.set("beneficiario", paraQuien);
@@ -106,12 +110,13 @@ export default function PaginaRadar() {
     if (cp.length === 5) q.set("cp", cp);
     if (soloAplicables) q.set("soloAplicables", "1");
     const r = await fetch(`/api/convocatorias?${q}`);
-    const d = (await r.json()) as { filas: ConvUi[] };
+    const d = (await r.json()) as { filas: ConvUi[]; relajado: string | null };
     setFilas(d.filas ?? []);
+    setRelajado(d.relajado ?? null);
     setVisibles(POR_TANDA);
     pedidas.current.clear();
     setCargando(false);
-  }, [texto, estadoFiltro, instrumento, paraQuien, region, cp, soloAplicables]);
+  }, [consulta, estadoFiltro, instrumento, paraQuien, region, cp, soloAplicables]);
 
   const refrescarSync = useCallback(async () => {
     const d = (await (await fetch("/api/sync")).json()) as Omit<EstadoSync, "horas">;
@@ -307,7 +312,10 @@ export default function PaginaRadar() {
           className="campo display w-full !border-b-0 !text-[28px] leading-tight"
           placeholder="Busca una ayuda…"
           value={texto}
-          onChange={(e) => setTexto(e.target.value)}
+          onChange={(e) => {
+            setTexto(e.target.value);
+            setConsulta(e.target.value);
+          }}
         />
         <div className="h-px w-full bg-[var(--linea)]" />
       </div>
@@ -389,8 +397,12 @@ export default function PaginaRadar() {
         {atajos.map((a) => (
           <button
             key={a.busca}
-            className={`filtro ${texto === a.busca ? "filtro-activo" : ""}`}
-            onClick={() => setTexto(texto === a.busca ? "" : a.busca)}
+            className={`filtro ${consulta === a.busca ? "filtro-activo" : ""}`}
+            onClick={() => {
+              const quitar = consulta === a.busca;
+              setTexto(quitar ? "" : a.texto);
+              setConsulta(quitar ? "" : a.busca);
+            }}
           >
             {a.texto}
           </button>
@@ -527,6 +539,30 @@ export default function PaginaRadar() {
               </button>
             )}
           </div>
+        </div>
+      )}
+
+      {/* ——— por qué estás viendo esto y no otra cosa ——— */}
+      {relajado && filas.length > 0 && (
+        <div
+          className="sube mt-5 rounded-lg border p-4"
+          style={{ borderColor: "var(--ocre)", background: "var(--lienzo-alto)" }}
+        >
+          <p className="text-[13.5px] leading-relaxed">
+            <strong className="display text-[15px]">
+              {relajado === "perfil" && "Con tu perfil exacto no encaja ninguna"}
+              {relajado === "beneficiario" && "Ninguna de estas va dirigida a particulares"}
+              {relajado === "plazo" && "Todas las de esta búsqueda han cerrado ya"}
+            </strong>
+            <span className="mt-1 block text-[var(--grafito)]">
+              {relajado === "perfil" &&
+                "Te enseño igualmente las que hay, por si alguna te sirve. Entra en cualquiera y pulsa «¿Encajo?» para saber por qué se descartaba."}
+              {relajado === "beneficiario" &&
+                "Suelen concederse a asociaciones o a autónomos, que después atienden a las personas. Te las enseño por si conoces alguna entidad, o por si te interesa como autónomo."}
+              {relajado === "plazo" &&
+                "Te las enseño marcadas como cerradas porque casi todas se repiten cada año: sirven para saber qué pedir y cuándo estar atento."}
+            </span>
+          </p>
         </div>
       )}
 
