@@ -40,7 +40,9 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# Radar de Ayudas
-data/
-expedientes/
+# Radar de Ayudas — anclados con "/" para que solo afecten a la raíz.
+# Sin la barra, "expedientes/" también ignoraba app/expedientes/ y la
+# sección entera de la app se quedaba fuera del repositorio.
+/data/
+/expedientes/
 .env.local
