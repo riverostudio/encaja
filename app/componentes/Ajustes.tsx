@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Aviso, ElegirModelo, type ProveedorUi } from "./Bienvenida";
+import Trabajos from "./Trabajos";
 
 interface Estado {
   configurada: boolean;
@@ -171,7 +172,12 @@ export default function Ajustes({ onCerrar }: { onCerrar: () => void }) {
             {guardando ? "Comprobando…" : guardado ? "Guardado" : "Guardar"}
           </button>
 
-          <p className="nota mt-6">
+          <div className="filete mt-10 pt-6">
+            <p className="rotulo mb-4">Trabajo en lote</p>
+            <Trabajos />
+          </div>
+
+          <p className="nota mt-8">
             La clave se guarda solo en este ordenador y nunca viaja al navegador ni al repositorio.
             Antes de guardarla se prueba con una llamada real, así que si no funciona te lo digo
             aquí y no después.

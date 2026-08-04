@@ -35,6 +35,9 @@ interface FilaDb {
   detalle_at: string | null;
   resumen_ia: string | null;
   resumen_at: string | null;
+  fechas_del_pdf: number | null;
+  sin_fechas_confirmado: number | null;
+  plazo_relativo: string | null;
 }
 
 function aConvocatoria(f: FilaDb): Convocatoria {
@@ -63,6 +66,9 @@ function aConvocatoria(f: FilaDb): Convocatoria {
     detalleJson: f.detalle_json,
     resumenIa: f.resumen_ia,
     resumenAt: f.resumen_at,
+    fechasDelPdf: Boolean(f.fechas_del_pdf),
+    sinFechasConfirmado: Boolean(f.sin_fechas_confirmado),
+    plazoRelativo: f.plazo_relativo,
   };
 }
 
@@ -231,6 +237,25 @@ export function crearRepo(db: Database.Database) {
         ahora(),
         codigo,
       );
+    },
+
+    /** Plazo leído del PDF de las bases, no publicado en la BDNS. */
+    guardarFechasRescatadas(
+      codigo: string,
+      inicio: string | null,
+      fin: string | null,
+      relativo: string | null,
+    ): void {
+      db.prepare(
+        `UPDATE convocatorias SET fecha_inicio_sol=coalesce(?, fecha_inicio_sol),
+           fecha_fin_sol=coalesce(?, fecha_fin_sol), plazo_relativo=?, fechas_del_pdf=1
+         WHERE codigo_bdns=?`,
+      ).run(inicio, fin, relativo, codigo);
+    },
+
+    /** Ya se miró el PDF y tampoco estaban: no se vuelve a intentar. */
+    marcarSinFechas(codigo: string): void {
+      db.prepare(`UPDATE convocatorias SET sin_fechas_confirmado=1 WHERE codigo_bdns=?`).run(codigo);
     },
 
     setHecho(perfilId: number, clave: string, valor: string, fuente: string): void {

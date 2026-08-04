@@ -88,6 +88,10 @@ CREATE TABLE IF NOT EXISTS ajustes (
 const COLUMNAS_NUEVAS: { tabla: string; columna: string; tipo: string }[] = [
   { tabla: "convocatorias", columna: "resumen_ia", tipo: "TEXT" },
   { tabla: "convocatorias", columna: "resumen_at", tipo: "TEXT" },
+  // Plazos rescatados del PDF cuando la BDNS no los publica.
+  { tabla: "convocatorias", columna: "fechas_del_pdf", tipo: "INTEGER" },
+  { tabla: "convocatorias", columna: "sin_fechas_confirmado", tipo: "INTEGER" },
+  { tabla: "convocatorias", columna: "plazo_relativo", tipo: "TEXT" },
 ];
 
 function migrarColumnas(db: Database.Database): void {

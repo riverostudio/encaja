@@ -27,6 +27,12 @@ export interface Convocatoria {
   /** Resumen en cristiano escrito por la IA (JSON de ResumenIA), si ya se pidió. */
   resumenIa?: string | null;
   resumenAt?: string | null;
+  /** El plazo se rescató del PDF porque la BDNS no lo publicaba. */
+  fechasDelPdf?: boolean;
+  /** Se miró el PDF y tampoco estaban: no reintentar. */
+  sinFechasConfirmado?: boolean;
+  /** Regla del plazo cuando no hay fechas: "un mes desde la publicación". */
+  plazoRelativo?: string | null;
 }
 
 /** Lo que la IA escribe sobre una convocatoria, en lenguaje llano. */

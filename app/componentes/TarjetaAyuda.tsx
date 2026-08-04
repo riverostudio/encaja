@@ -46,10 +46,14 @@ export default function TarjetaAyuda({
           </span>
           <span className="rotulo mt-1.5 block" style={{ color: p.color, opacity: 0.85 }}>
             {p.pie}
+            {conv.fechasDelPdf ? " · fecha leída de las bases" : ""}
           </span>
         </span>
         <span className="flex shrink-0 flex-col items-end gap-1.5 pt-0.5">
           <span className="rotulo">{nivelBonito(conv.nivel1)}</span>
+          {(conv.hermanas ?? 1) > 1 && (
+            <span className="rotulo">{conv.hermanas} convocatorias iguales</span>
+          )}
           {sello && (
             <span
               className="rotulo rounded-full px-2 py-0.5"

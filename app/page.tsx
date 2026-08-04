@@ -19,6 +19,15 @@ interface Ccaa {
   nombre: string;
 }
 
+interface PrestacionUi {
+  id: string;
+  titular: string;
+  que: string;
+  quien: string;
+  organismo: string;
+  url: string;
+}
+
 const POR_TANDA = 60;
 
 const ESTADOS = [
@@ -74,6 +83,7 @@ export default function PaginaRadar() {
     resumen: string;
     progreso: { completo: boolean; respondidas: number };
   } | null>(null);
+  const [prestaciones, setPrestaciones] = useState<PrestacionUi[]>([]);
   const [filas, setFilas] = useState<ConvUi[]>([]);
   const [visibles, setVisibles] = useState(POR_TANDA);
   const [cargando, setCargando] = useState(true);
@@ -138,6 +148,7 @@ export default function PaginaRadar() {
           beneficiario: string | null;
           resumen: string;
           atajos: { texto: string; busca: string }[];
+          prestaciones: PrestacionUi[];
           progreso: { completo: boolean; respondidas: number };
         }>,
       ]);
@@ -147,6 +158,7 @@ export default function PaginaRadar() {
       if (datosPerfil.beneficiario) setParaQuien(datosPerfil.beneficiario);
       setPerfil(datosPerfil);
       if (datosPerfil.atajos?.length) setAtajos(datosPerfil.atajos);
+      if (datosPerfil.prestaciones?.length) setPrestaciones(datosPerfil.prestaciones);
       // Solo se sincroniza si el archivo está vacío. A partir de ahí, manda
       // el botón: nada de re-descargar (ni de gastar IA) sin pedirlo.
       const s = await refrescarSync();
@@ -183,10 +195,30 @@ export default function PaginaRadar() {
     return () => obs.disconnect();
   }, [filas.length]);
 
+  async function sincronizarEspana() {
+    setSincronizando(true);
+    try {
+      await fetch("/api/sync", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ todaEspana: true }),
+      });
+    } finally {
+      setSincronizando(false);
+      await refrescarSync();
+      await cargarLista();
+    }
+  }
+
   async function cambiarRegion(valor: string) {
     const nueva = valor === "" ? "" : Number(valor);
     setRegion(nueva);
-    if (nueva !== "") {
+    if (nueva === "") {
+      // "Toda España" solo sirve si están las 19 comunidades traídas.
+      void sincronizarEspana();
+      return;
+    }
+    {
       await fetch("/api/ajustes", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -363,6 +395,39 @@ export default function PaginaRadar() {
           )}
         </p>
       </div>
+
+      {/* ——— lo que NO está en la BDNS pero te puede tocar ——— */}
+      {prestaciones.length > 0 && !texto && (
+        <div className="mt-6">
+          <p className="rotulo mb-1">Además, esto te puede corresponder por derecho</p>
+          <p className="nota mb-3 max-w-2xl">
+            No son convocatorias con plazo, así que no salen en el radar: son prestaciones que se
+            piden cuando cumples los requisitos, sin fecha límite.
+          </p>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {prestaciones.map((p, i) => (
+              <a
+                key={p.id}
+                href={p.url}
+                target="_blank"
+                rel="noreferrer"
+                className="tarjeta entra !p-4"
+                style={{ "--acento": "var(--bosque)", "--i": i } as React.CSSProperties}
+              >
+                <span className="rotulo">{p.organismo}</span>
+                <span className="display mt-2 block text-[16px] leading-snug">{p.titular}</span>
+                <span className="mt-1.5 line-clamp-3 block text-[12.5px] leading-relaxed text-[var(--grafito)]">
+                  {p.que}
+                </span>
+                <span className="mt-auto flex items-baseline justify-between pt-3">
+                  <span className="rotulo">sin plazo</span>
+                  <span className="flecha text-[13px] text-[var(--grafito)]">ir ↗</span>
+                </span>
+              </a>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* ——— filtros, plegados para no hacer ruido ——— */}
       {filtrosAbiertos && (

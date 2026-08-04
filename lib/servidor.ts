@@ -34,7 +34,49 @@ export type ConvocatoriaConPlazo = Convocatoria & {
   resumen: ResumenIA | null;
   /** Veredicto de encaje ya emitido para el perfil, si lo hay. */
   veredicto: DictamenValor | null;
+  /** Cuántas convocatorias hermanas se han plegado bajo esta (1 = ninguna). */
+  hermanas: number;
+  /** Los códigos de las hermanas, para poder abrirlas. */
+  codigosHermanas: string[];
 };
+
+const ORDEN_ESTADO: Record<string, number> = {
+  urgente: 0,
+  aviso: 1,
+  abierta: 2,
+  proxima: 3,
+  sin_fechas: 4,
+  cerrada: 5,
+};
+
+/**
+ * La BDNS registra cada línea de un mismo decreto por separado: 60 fichas
+ * idénticas de "AYUDAS PARA INSERCIÓN LABORAL" llenan la pantalla. Se pliegan
+ * bajo una sola, quedándose con la de plazo más cercano.
+ */
+export function agruparHermanas(filas: ConvocatoriaConPlazo[]): ConvocatoriaConPlazo[] {
+  const grupos = new Map<string, ConvocatoriaConPlazo[]>();
+  for (const c of filas) {
+    const llave = `${c.titulo.trim().toLowerCase()}|${(c.nivel3 ?? c.nivel2).toLowerCase()}`;
+    const grupo = grupos.get(llave);
+    if (grupo) grupo.push(c);
+    else grupos.set(llave, [c]);
+  }
+
+  const salida: ConvocatoriaConPlazo[] = [];
+  for (const grupo of grupos.values()) {
+    // Se enseña la que antes cierra: es la que corre prisa.
+    const cabeza = grupo.reduce((mejor, c) =>
+      ORDEN_ESTADO[c.plazo.estado] < ORDEN_ESTADO[mejor.plazo.estado] ? c : mejor,
+    );
+    salida.push({
+      ...cabeza,
+      hermanas: grupo.length,
+      codigosHermanas: grupo.map((c) => c.codigoBdns),
+    });
+  }
+  return salida;
+}
 
 function leerResumen(json?: string | null): ResumenIA | null {
   if (!json) return null;
@@ -57,15 +99,6 @@ export interface FiltrosRadar {
   soloAplicables?: boolean;
 }
 
-const ORDEN_ESTADO: Record<string, number> = {
-  urgente: 0,
-  aviso: 1,
-  abierta: 2,
-  proxima: 3,
-  sin_fechas: 4,
-  cerrada: 5,
-};
-
 /** Búsqueda del radar: filtros + semáforo + prioridad por cierre de plazo. */
 export function buscarRadar(repo: Repo, f: FiltrosRadar): ConvocatoriaConPlazo[] {
   const zona = f.cp ? resolverCP(f.cp) : null;
@@ -81,10 +114,17 @@ export function buscarRadar(repo: Repo, f: FiltrosRadar): ConvocatoriaConPlazo[]
   const conPlazo: ConvocatoriaConPlazo[] = filas.map((c) => ({
     ...c,
     plazo: estadoPlazo(c.fechaInicioSol, c.fechaFinSol),
-    rangoFechas: formatoRango(c.fechaInicioSol, c.fechaFinSol),
+    rangoFechas:
+      !c.fechaInicioSol && !c.fechaFinSol && c.plazoRelativo
+        ? c.plazoRelativo.length > 46
+          ? `${c.plazoRelativo.slice(0, 46)}…`
+          : c.plazoRelativo
+        : formatoRango(c.fechaInicioSol, c.fechaFinSol),
     llano: resumirEstructural(c),
     resumen: leerResumen(c.resumenIa),
     veredicto: repo.getEvaluacion(c.codigoBdns, 1)?.dictamen ?? null,
+    hermanas: 1,
+    codigosHermanas: [c.codigoBdns],
   }));
 
   let filtradas = conPlazo;
@@ -123,6 +163,8 @@ export function buscarRadar(repo: Repo, f: FiltrosRadar): ConvocatoriaConPlazo[]
       // Por defecto fuera las cerradas
       filtradas = filtradas.filter((c) => c.plazo.estado !== "cerrada");
   }
+
+  filtradas = agruparHermanas(filtradas);
 
   filtradas.sort((a, b) => {
     const orden = ORDEN_ESTADO[a.plazo.estado] - ORDEN_ESTADO[b.plazo.estado];

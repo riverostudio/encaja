@@ -35,6 +35,11 @@ export interface ConvUi {
   llano: ResumenLlanoUi;
   resumen?: ResumenIaUi | null;
   veredicto?: VeredictoUi | null;
+  /** Cuántas convocatorias iguales se han plegado bajo esta. */
+  hermanas?: number;
+  /** El plazo se rescató del PDF porque la BDNS no lo publicaba. */
+  fechasDelPdf?: boolean;
+  plazoRelativo?: string | null;
   tituloCoof?: string | null;
   nivel1: string;
   nivel2: string;

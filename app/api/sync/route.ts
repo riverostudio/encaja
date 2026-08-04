@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getRepo, errorJson } from "@/lib/servidor";
 import { syncLista, syncEstatal, syncDetalles, refrescarAbiertas } from "@/lib/sync";
+import { CCAAS } from "@/lib/territorio";
 
 export const dynamic = "force-dynamic";
 
@@ -15,8 +16,33 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   try {
-    const { regionId } = (await req.json()) as { regionId?: number };
+    const { regionId, todaEspana } = (await req.json()) as {
+      regionId?: number;
+      todaEspana?: boolean;
+    };
     const repo = getRepo();
+
+    // España entera: las 19 comunidades, una a una. Solo la lista — el detalle
+    // lo va vaciando la cola después, para no tener esto media hora parado.
+    if (todaEspana) {
+      let nuevas = 0;
+      const hechas: string[] = [];
+      for (const c of CCAAS) {
+        const r = await syncLista(repo, c.id);
+        nuevas += r.nuevas;
+        hechas.push(c.nombre);
+      }
+      const estatal = await syncEstatal(repo);
+      const detalles = await syncDetalles(repo, { limite: 400 });
+      return NextResponse.json({
+        nuevas: nuevas + estatal.nuevas,
+        comunidades: hechas.length,
+        delEstado: estatal.nuevas,
+        detalles,
+        pendientesDetalle: repo.contarPendientes(),
+      });
+    }
+
     const region = regionId ?? 54;
     const lista = await syncLista(repo, region);
     // Lo del Estado sirve vivas donde vivas: siempre se trae también.

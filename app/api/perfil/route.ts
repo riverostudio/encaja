@@ -10,6 +10,7 @@ import {
   siguientePreguntaPerfil,
 } from "@/lib/perfil";
 import { resolverCP } from "@/lib/territorio";
+import { prestacionesParaPerfil } from "@/lib/prestaciones";
 
 export const dynamic = "force-dynamic";
 const PERFIL = 1;
@@ -34,6 +35,8 @@ function estado() {
     resumen: resumenPerfil(hechos),
     beneficiario: beneficiarioDesdePerfil(hechos),
     atajos: atajosParaPerfil(hechos),
+    // Lo que NO está en la BDNS: paro, IMV, bono social… (ver lib/prestaciones)
+    prestaciones: prestacionesParaPerfil(hechos),
     zona: cp ? resolverCP(cp) : null,
     preguntas: preguntasAplicables(hechos).map((p) => ({
       clave: p.clave,
