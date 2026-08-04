@@ -49,3 +49,6 @@ next-env.d.ts
 
 # El enlace de Vercel es de esta maquina, no del repositorio.
 /web/.vercel/
+
+# La base publicada se genera; no se versiona (29 MB).
+/data/radar-publico.db

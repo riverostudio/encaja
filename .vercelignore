@@ -1,0 +1,9 @@
+# Se despliega la base LIMPIA, nunca la de trabajo (lleva perfil y clave).
+data/radar.db
+data/radar.db-shm
+data/radar.db-wal
+expedientes/
+web/
+docs/
+tests/
+.env.local

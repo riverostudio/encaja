@@ -113,9 +113,13 @@ function rutaPorDefecto(): string {
   const empaquetada = path.join(process.cwd(), "data", "radar.db");
   if (process.env.ENCAJA_PUBLICO !== "1") return empaquetada;
 
+  // La que se publica va limpia de datos personales; se genera aparte.
+  const publica = path.join(process.cwd(), "data", "radar-publico.db");
+  const origen = fs.existsSync(publica) ? publica : empaquetada;
+
   const trabajo = path.join("/tmp", "radar.db");
-  if (!fs.existsSync(trabajo) && fs.existsSync(empaquetada)) {
-    fs.copyFileSync(empaquetada, trabajo);
+  if (!fs.existsSync(trabajo) && fs.existsSync(origen)) {
+    fs.copyFileSync(origen, trabajo);
   }
   return trabajo;
 }
