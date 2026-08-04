@@ -67,13 +67,19 @@ npm run sync -- 49    # otra región BDNS (49 = Cataluña)
 
 ## Dónde está cada cosa
 
-- `lib/` — toda la lógica, pura y con tests (`npm test`, 60 tests)
+- `lib/` — toda la lógica, pura y con tests (`npm test`, 104 tests)
 - `app/api/` — capa fina HTTP · `app/` — interfaz
 - `data/radar.db` — SQLite local (gitignored)
 - `expedientes/` — tus expedientes (gitignored)
 - `datasets/` — CP→municipio (14.270 códigos postales, fuentes abiertas) e ids
   del árbol de regiones BDNS; regenerables con `node scripts/generar-datasets.mjs`
 - `docs/superpowers/` — spec y plan de diseño
+
+## Estado y siguientes pasos
+
+Ver [`docs/AUDITORIA.md`](docs/AUDITORIA.md): qué hay construido, los seis
+agujeros reales (solo una comunidad sincronizada, el paro no está en la BDNS,
+249 fichas duplicadas…) y las once mejoras ordenadas por impacto.
 
 ## Límites a propósito
 
