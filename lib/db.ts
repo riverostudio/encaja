@@ -104,11 +104,28 @@ function migrarColumnas(db: Database.Database): void {
 }
 
 /**
+ * Dónde vive la base. En un servidor de los de ahora el disco del despliegue
+ * es de solo lectura, así que en modo público la copiamos una vez a la carpeta
+ * temporal y trabajamos ahí: las convocatorias siguen intactas y las
+ * traducciones nuevas se aprovechan mientras la instancia viva.
+ */
+function rutaPorDefecto(): string {
+  const empaquetada = path.join(process.cwd(), "data", "radar.db");
+  if (process.env.ENCAJA_PUBLICO !== "1") return empaquetada;
+
+  const trabajo = path.join("/tmp", "radar.db");
+  if (!fs.existsSync(trabajo) && fs.existsSync(empaquetada)) {
+    fs.copyFileSync(empaquetada, trabajo);
+  }
+  return trabajo;
+}
+
+/**
  * Abre (creando si hace falta) la base de datos y aplica el esquema.
  * La migración es idempotente: CREATE IF NOT EXISTS + columnas comprobadas.
  */
 export function abrirDb(ruta?: string): Database.Database {
-  const destino = ruta ?? path.join(process.cwd(), "data", "radar.db");
+  const destino = ruta ?? rutaPorDefecto();
   if (destino !== ":memory:") {
     fs.mkdirSync(path.dirname(destino), { recursive: true });
   }

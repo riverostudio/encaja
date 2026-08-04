@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Aviso, ElegirModelo, type ProveedorUi } from "./Bienvenida";
 import Trabajos from "./Trabajos";
+import { guardarIaLocal } from "./Sesion";
 
 interface Estado {
   configurada: boolean;
@@ -57,10 +58,19 @@ export default function Ajustes({ onCerrar }: { onCerrar: () => void }) {
           cp,
         }),
       });
-      const d = (await r.json()) as { error?: string };
+      const d = (await r.json()) as {
+        error?: string;
+        guardarEnNavegador?: { proveedor: string; modelo: string; clave: string };
+      };
       if (!r.ok) {
         setError(d.error ?? "No se ha podido guardar.");
         return;
+      }
+      // En la app pública el servidor comprueba la clave pero no se la queda:
+      // la devuelve para que viva solo en este navegador.
+      if (d.guardarEnNavegador) {
+        const { proveedor: p, modelo: m, clave: c } = d.guardarEnNavegador;
+        guardarIaLocal(p, m, c);
       }
       setGuardado(true);
       setClave("");

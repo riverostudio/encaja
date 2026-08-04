@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Newsreader, Inter } from "next/font/google";
 import "./globals.css";
 import Shell from "./componentes/Shell";
+import Sesion from "./componentes/Sesion";
 
 const display = Newsreader({
   variable: "--font-display",
@@ -37,6 +38,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <script dangerouslySetInnerHTML={{ __html: GUION_TEMA }} />
       </head>
       <body className="min-h-full flex flex-col">
+        <Sesion />
         <Shell>{children}</Shell>
       </body>
     </html>
