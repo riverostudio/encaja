@@ -21,6 +21,9 @@ echo "[$(/bin/date -Iseconds)] Sincronización diaria"
 /opt/homebrew/bin/npm run test:links
 /opt/homebrew/bin/npm run build:public
 /opt/homebrew/bin/npx vercel deploy --prod --yes
+# El alias personalizado no forma parte de los dominios automáticos del
+# proyecto; se vuelve a apuntar a su alias estable de producción.
+/opt/homebrew/bin/npx vercel alias set encaja-app-xi.vercel.app usar-encaja.vercel.app
 /opt/homebrew/bin/npm run test:prod
 
 ENCAJA_TMP=$(/usr/bin/mktemp -d /tmp/encaja-publicar.XXXXXX)
