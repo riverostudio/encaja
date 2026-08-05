@@ -2,6 +2,7 @@
 // sobre los requisitos de las bases. Determinista y citando siempre fuentes.
 import type { Requisito, ResultadoDictamen, Veredicto, Motivo } from "./tipos";
 import type { ResultadoEstructural } from "./encaje";
+import { requisitosEvaluables } from "./requisitos";
 
 /** Reconoce las dudas que la IA justifica como "esto pasa después". */
 function esPosterior(motivo: string): boolean {
@@ -30,7 +31,7 @@ export function dictaminar(
   }
 
   const porId = new Map(requisitos.map((r) => [r.id, r]));
-  const evaluables = requisitos.filter((r) => r.tipo !== "documento");
+  const evaluables = requisitosEvaluables(requisitos);
 
   let hayDuda = estructural.resultado === "duda";
   let hayNo = false;

@@ -81,7 +81,9 @@ declarados por el solicitante. Devuelve SOLO un JSON:
 
 Reglas:
 - "duda" cuando el dato no baste para decidir. NUNCA adivines.
-- Los requisitos tipo "documento" no se evalúan aquí (van a la checklist).`;
+- Los requisitos tipo "documento" no se evalúan aquí (van a la checklist).
+- Devuelve EXACTAMENTE un veredicto por cada requisito recibido. Conserva su id
+  literalmente y no omitas ninguno.`;
 
 function extraerJson(texto: string): unknown | null {
   const sinFences = texto.replace(/```json/gi, "```").split("```");
@@ -163,6 +165,40 @@ export function siguientePregunta(
 /** Tope duro: nadie contesta 21 preguntas, por muy bien extraídas que estén. */
 export const MAX_PREGUNTAS = 8;
 
+/** Los requisitos que el flujo puede preguntar y, por tanto, dictaminar. */
+export function requisitosEvaluables(requisitos: Requisito[]): Requisito[] {
+  return requisitos
+    .filter((r) => r.tipo !== "documento" && Boolean(r.clave) && Boolean(r.pregunta))
+    .slice(0, MAX_PREGUNTAS);
+}
+
+/**
+ * Cierra una respuesta parcial del modelo con dudas explícitas. Solo se usa
+ * después de reintentar los ids omitidos: un dictamen final nunca debe volver
+ * a la pantalla contradictoria de «entrevista sin terminar».
+ */
+export function completarVeredictos(
+  requisitos: Requisito[],
+  veredictos: Veredicto[],
+): Veredicto[] {
+  const evaluables = requisitosEvaluables(requisitos);
+  const ids = new Set(evaluables.map((r) => r.id));
+  const porId = new Map<string, Veredicto>();
+  for (const veredicto of veredictos) {
+    if (ids.has(veredicto.id) && !porId.has(veredicto.id)) porId.set(veredicto.id, veredicto);
+  }
+  for (const requisito of evaluables) {
+    if (!porId.has(requisito.id)) {
+      porId.set(requisito.id, {
+        id: requisito.id,
+        veredicto: "duda",
+        motivo: "No he podido confirmar automáticamente este requisito con tus respuestas; compruébalo en las bases.",
+      });
+    }
+  }
+  return evaluables.map((requisito) => porId.get(requisito.id)!);
+}
+
 /**
  * Las preguntas que quedan por hacer, ya recortadas. El tope se aplica aquí
  * y no solo en el prompt, para no depender de que la IA obedezca.
@@ -173,8 +209,6 @@ export function preguntables(
 ): Requisito[] {
   // El recorte se hace ANTES de descartar las respondidas: si no, cada
   // respuesta destaparía una nueva y la entrevista no acabaría nunca.
-  return requisitos
-    .filter((r) => r.tipo !== "documento" && r.clave && r.pregunta)
-    .slice(0, MAX_PREGUNTAS)
+  return requisitosEvaluables(requisitos)
     .filter((r) => !hechos.has(r.clave!));
 }

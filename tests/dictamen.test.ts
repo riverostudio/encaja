@@ -54,6 +54,15 @@ describe("dictaminar", () => {
     const soloDocs: Requisito[] = [{ id: "r2", literal: "Memoria", tipo: "documento" }];
     expect(dictaminar(estructuralPasa, soloDocs, []).dictamen).toBe("encaja");
   });
+
+  it("ignora condiciones que no se pudieron convertir en pregunta", () => {
+    const conClausulaIncompleta: Requisito[] = [
+      ...reqs,
+      { id: "r3", literal: "Cumplir todas las condiciones", tipo: "condicion" },
+    ];
+    const v: Veredicto[] = [{ id: "r1", veredicto: "cumple", motivo: "Al corriente" }];
+    expect(dictaminar(estructuralPasa, conClausulaIncompleta, v).dictamen).toBe("encaja");
+  });
 });
 
 describe("compromisos posteriores a la concesión", () => {

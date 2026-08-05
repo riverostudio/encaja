@@ -1,8 +1,10 @@
 import { describe, it, expect } from "vitest";
 import {
+  completarVeredictos,
   parsearRequisitos,
   parsearVeredictos,
   preguntables,
+  requisitosEvaluables,
   siguientePregunta,
 } from "../lib/requisitos";
 import type { Requisito } from "../lib/tipos";
@@ -126,5 +128,25 @@ describe("parsearVeredictos", () => {
     );
     expect(v).toHaveLength(1);
     expect(v[0].veredicto).toBe("cumple");
+  });
+});
+
+describe("cierre del dictamen", () => {
+  const reqs: Requisito[] = [
+    { id: "r1", literal: "L1", tipo: "condicion", clave: "k1", pregunta: "¿Uno?" },
+    { id: "r2", literal: "L2", tipo: "dato", clave: "k2", pregunta: "¿Dos?" },
+    { id: "r3", literal: "L3", tipo: "condicion" },
+  ];
+
+  it("evalúa exactamente lo que la entrevista puede preguntar", () => {
+    expect(requisitosEvaluables(reqs).map((r) => r.id)).toEqual(["r1", "r2"]);
+  });
+
+  it("convierte una omisión persistente del modelo en una duda explícita", () => {
+    const salida = completarVeredictos(reqs, [
+      { id: "r1", veredicto: "cumple", motivo: "Confirmado" },
+    ]);
+    expect(salida).toHaveLength(2);
+    expect(salida[1]).toMatchObject({ id: "r2", veredicto: "duda" });
   });
 });

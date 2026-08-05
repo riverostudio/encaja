@@ -8,7 +8,9 @@ import { dictaminar } from "@/lib/dictamen";
 import { generar, hayClave } from "@/lib/ia";
 import {
   PROMPT_VEREDICTO,
+  completarVeredictos,
   parsearVeredictos,
+  requisitosEvaluables,
   siguientePregunta,
   preguntables } from "@/lib/requisitos";
 import { protegerApi } from "@/lib/seguridad";
@@ -82,17 +84,31 @@ export async function POST(
 
     if (cuerpo.accion === "dictaminar") {
       const lineasHechos = [...hechos.entries()].map(([k, v]) => `- ${k}: ${v}`).join("\n");
-      const respuesta = await generar(
-        repo,
-        [
-          {
-            texto: `${PROMPT_VEREDICTO}\n\nREQUISITOS:\n${JSON.stringify(
-              requisitos.filter((r) => r.tipo !== "documento"),
-            )}\n\nDATOS DEL SOLICITANTE:\n${lineasHechos}` },
-        ],
-        { esperaJson: true, credenciales: cred },
-      );
-      const veredictos = parsearVeredictos(respuesta);
+      const evaluables = requisitosEvaluables(requisitos);
+      const pedirVeredictos = async (lista: typeof evaluables, aviso = "") => {
+        const respuesta = await generar(
+          repo,
+          [
+            {
+              texto: `${PROMPT_VEREDICTO}${aviso}\n\nREQUISITOS:\n${JSON.stringify(
+                lista,
+              )}\n\nDATOS DEL SOLICITANTE:\n${lineasHechos}` },
+          ],
+          { esperaJson: true, credenciales: cred },
+        );
+        return parsearVeredictos(respuesta);
+      };
+      let veredictos = evaluables.length > 0 ? await pedirVeredictos(evaluables) : [];
+      const recibidos = new Set(veredictos.map((veredicto) => veredicto.id));
+      const omitidos = evaluables.filter((requisito) => !recibidos.has(requisito.id));
+      if (omitidos.length > 0) {
+        const segundoIntento = await pedirVeredictos(
+          omitidos,
+          `\nIMPORTANTE: antes omitiste estos ids. Devuelve los ${omitidos.length} sin excepción: ${omitidos.map((r) => r.id).join(", ")}.`,
+        );
+        veredictos = [...veredictos, ...segundoIntento];
+      }
+      veredictos = completarVeredictos(requisitos, veredictos);
       const resultado = dictaminar(estructural, requisitos, veredictos);
       if (guardar) repo.guardarEvaluacion(codigo, perfil, {
         dictamen: resultado.dictamen,
@@ -104,8 +120,8 @@ export async function POST(
     const pregunta = siguientePregunta(requisitos, hechos);
     // El total que se enseña es el que de verdad se va a preguntar.
     const quedan = preguntables(requisitos, hechos).length;
-    const yaRespondidas = requisitos.filter(
-      (r) => r.tipo !== "documento" && r.clave && hechos.has(r.clave),
+    const yaRespondidas = requisitosEvaluables(requisitos).filter(
+      (r) => hechos.has(r.clave!),
     ).length;
     return NextResponse.json({
       fase: pregunta ? "entrevista" : "listo_para_dictamen",
