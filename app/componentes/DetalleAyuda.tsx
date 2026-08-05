@@ -92,7 +92,10 @@ export default function DetalleAyuda({
   const alExpediente = useCallback(async () => {
     setCreandoExp(true);
     if (APP_PUBLICA && d) {
-      crearExpedientePublico(d.conv, d.urlFicha);
+      crearExpedientePublico(
+        { ...d.conv, resumen: resumen ?? d.conv.resumen },
+        d.urlFicha,
+      );
       router.push(`/expedientes/${codigo}`);
       setCreandoExp(false);
       return;
@@ -104,7 +107,7 @@ export default function DetalleAyuda({
     });
     if (r.ok) router.push(`/expedientes/${codigo}`);
     setCreandoExp(false);
-  }, [codigo, d, router]);
+  }, [codigo, d, resumen, router]);
 
   if (cuestionario && d) {
     return (

@@ -154,7 +154,14 @@ test("el veredicto permanece visible tras actualizar la ficha", async ({ page })
     await route.fulfill({
       status: 200,
       contentType: "application/json",
-      body: JSON.stringify({ sinClave: true, resumen: null }),
+      body: JSON.stringify({
+        resumen: {
+          titular: "Premio explicado en cristiano",
+          que: "Una ayuda pública de prueba.",
+          consigues: "Apoyo económico.",
+          aQuien: "Personas físicas.",
+        },
+      }),
     });
   });
   await page.route("**/api/encaje/999999", async (route) => {
@@ -173,6 +180,7 @@ test("el veredicto permanece visible tras actualizar la ficha", async ({ page })
 
   await entrarSinClave(page);
   await page.getByRole("button").filter({ hasText: "Ayuda pública de prueba" }).click();
+  await expect(page.getByRole("heading", { name: "Premio explicado en cristiano" })).toBeVisible();
   await page.getByRole("button", { name: "Empezar el cuestionario" }).click();
   await page.getByRole("button", { name: "Ver el veredicto" }).click();
 
@@ -180,4 +188,9 @@ test("el veredicto permanece visible tras actualizar la ficha", async ({ page })
   await page.waitForTimeout(300);
   await expect(page.getByText("Sí, encajas", { exact: true })).toBeVisible();
   expect(inicios).toBe(1);
+
+  await page.getByRole("button", { name: "Preparar el expediente" }).click();
+  await page.getByRole("button", { name: "Preparar el expediente" }).click();
+  await expect(page).toHaveURL(/\/expedientes\/999999$/);
+  await expect(page.getByRole("heading", { name: "Premio explicado en cristiano" })).toBeVisible();
 });
