@@ -17,6 +17,7 @@ export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest) {
   const repo = getRepo();
+  const publica = esPublico();
   const propia = credencialesDe(req);
   const cp = repo.getAjuste("cp");
   const proveedor = proveedorActual(repo);
@@ -28,7 +29,9 @@ export async function GET(req: NextRequest) {
     : proveedor;
   return NextResponse.json({
     // La clave JAMÁS viaja al navegador: solo si existe o no.
-    configurada: configuradaVisitante || Boolean(propia) || hayClave(repo),
+    // Una instancia pública jamás hereda la clave del servidor/ordenador. Solo
+    // cuenta la que trae este navegador en su propia petición.
+    configurada: configuradaVisitante || Boolean(propia) || (!publica && hayClave(repo)),
     proveedor: propia?.proveedor ?? proveedorSeguro,
     proveedorNombre: fichaDe(propia?.proveedor ?? proveedorSeguro).nombre,
     modelo: modeloVisitante ?? modeloActual(repo),

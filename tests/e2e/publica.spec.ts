@@ -3,8 +3,12 @@ import { expect, test } from "@playwright/test";
 async function entrarSinClave(page: import("@playwright/test").Page) {
   await page.goto("/");
   const invitado = page.getByRole("button", { name: /Entrar sin clave/ });
+  const radar = page.getByPlaceholder("Busca una ayuda…");
+  // Shell resuelve el estado de IA de forma asíncrona: espera a que aparezca
+  // la puerta o el radar si este navegador ya había entrado.
+  await expect(invitado.or(radar)).toBeVisible({ timeout: 15_000 });
   if (await invitado.isVisible()) await invitado.click();
-  await expect(page.getByPlaceholder("Busca una ayuda…")).toBeVisible();
+  await expect(radar).toBeVisible();
 }
 
 test("el perfil público persiste al recargar", async ({ page }) => {
@@ -23,9 +27,7 @@ test("el código postal selecciona su comunidad", async ({ page }) => {
       JSON.stringify({ perfil: "particular", cp: "28013" }),
     );
   });
-  await page.reload();
-  const invitado = page.getByRole("button", { name: /Entrar sin clave/ });
-  if (await invitado.isVisible()) await invitado.click();
+  await entrarSinClave(page);
   await expect(page.locator("select").first()).toHaveValue("26");
 });
 
@@ -91,9 +93,8 @@ test("los expedientes públicos se leen solo desde este navegador", async ({ pag
       }),
     );
   });
+  await entrarSinClave(page);
   await page.goto("/expedientes");
-  const invitado = page.getByRole("button", { name: /Entrar sin clave/ });
-  if (await invitado.isVisible()) await invitado.click();
   await expect(page.getByText("Ayuda de prueba")).toBeVisible();
 });
 
