@@ -3,7 +3,7 @@ import type { Plazo } from "./tipos";
 const DIA_MS = 24 * 60 * 60 * 1000;
 const ZONA_HORARIA = "Europe/Madrid";
 
-function fechaCalendarioMadrid(fecha: Date): string {
+export function fechaCalendarioMadrid(fecha: Date): string {
   const partes = new Intl.DateTimeFormat("en-CA", {
     timeZone: ZONA_HORARIA,
     year: "numeric",

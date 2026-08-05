@@ -1,6 +1,8 @@
 import { describe, it, expect } from "vitest";
 import {
+  avisoResumenVigente,
   completarVeredictos,
+  contextoTemporalResumen,
   parsearRequisitos,
   parsearVeredictos,
   preguntables,
@@ -8,6 +10,31 @@ import {
   siguientePregunta,
 } from "../lib/requisitos";
 import type { Requisito } from "../lib/tipos";
+
+describe("resumen temporal", () => {
+  const hoy = new Date("2026-08-06T10:00:00+02:00");
+
+  it("da a la IA el día y el estado calculados desde las fechas oficiales", () => {
+    expect(contextoTemporalResumen("2026-07-15", "2026-09-01", hoy)).toContain(
+      "Estado oficial del plazo hoy: abierta",
+    );
+  });
+
+  it("oculta un aviso antiguo que contradice una convocatoria abierta", () => {
+    expect(
+      avisoResumenVigente(
+        "La convocatoria no se abre hasta el 15 de julio de 2026; guarda la fecha.",
+        "abierta",
+      ),
+    ).toBeUndefined();
+  });
+
+  it("conserva una advertencia que no contradice las fechas", () => {
+    expect(avisoResumenVigente("El trabajo debe estar anonimizado.", "abierta")).toBe(
+      "El trabajo debe estar anonimizado.",
+    );
+  });
+});
 
 describe("parsearRequisitos", () => {
   it("parsea JSON limpio", () => {

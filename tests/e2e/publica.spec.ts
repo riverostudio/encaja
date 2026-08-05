@@ -160,6 +160,7 @@ test("el veredicto permanece visible tras actualizar la ficha", async ({ page })
           que: "Una ayuda pública de prueba.",
           consigues: "Apoyo económico.",
           aQuien: "Personas físicas.",
+          ojo: "La convocatoria no se abre hasta el 1 de enero de 2026; guarda la fecha.",
         },
       }),
     });
@@ -181,6 +182,7 @@ test("el veredicto permanece visible tras actualizar la ficha", async ({ page })
   await entrarSinClave(page);
   await page.getByRole("button").filter({ hasText: "Ayuda pública de prueba" }).click();
   await expect(page.getByRole("heading", { name: "Premio explicado en cristiano" })).toBeVisible();
+  await expect(page.getByText(/La convocatoria no se abre/)).toHaveCount(0);
   await page.getByRole("button", { name: "Empezar el cuestionario" }).click();
   await page.getByRole("button", { name: "Ver el veredicto" }).click();
 

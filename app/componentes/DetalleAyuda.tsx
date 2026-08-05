@@ -21,6 +21,7 @@ import {
   type ResumenIaUi,
   type VeredictoUi,
 } from "./tipos-ui";
+import { avisoResumenVigente } from "@/lib/requisitos";
 
 interface Detalle {
   conv: ConvUi;
@@ -109,6 +110,8 @@ export default function DetalleAyuda({
     setCreandoExp(false);
   }, [codigo, d, resumen, router]);
 
+  const ojo = avisoResumenVigente(resumen?.ojo, d?.conv.plazo.estado);
+
   if (cuestionario && d) {
     return (
       <Cuestionario
@@ -120,7 +123,7 @@ export default function DetalleAyuda({
           `Plazo: ${d.conv.rangoFechas}. ${fraseP1azo(d.conv.plazo)}.`,
           d.conv.llano.consigues,
           `La convoca ${d.conv.nivel3 ?? d.conv.nivel2}.`,
-          ...(resumen?.ojo ? [`Ojo: ${resumen.ojo}`] : []),
+          ...(ojo ? [`Ojo: ${ojo}`] : []),
         ]}
         onVeredicto={(v) => setVeredicto(v as VeredictoUi)}
         onCerrar={() => setCuestionario(false)}
@@ -179,7 +182,7 @@ export default function DetalleAyuda({
                   {resumen.aQuien}
                 </p>
               )}
-              {resumen?.ojo && (
+              {ojo && (
                 <p
                   className="mt-3 border-l-2 pl-3 text-[13.5px] leading-relaxed"
                   style={{ borderColor: "var(--ocre)", color: "var(--ocre)" }}
@@ -187,7 +190,7 @@ export default function DetalleAyuda({
                   <span className="rotulo" style={{ color: "var(--ocre)" }}>
                     Ojo ·{" "}
                   </span>
-                  {resumen.ojo}
+                  {ojo}
                 </p>
               )}
               {resumiendo && !resumen && (

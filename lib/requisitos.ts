@@ -1,7 +1,8 @@
 // Extracción de requisitos de las bases reguladoras + motor de entrevista.
 // Los prompts piden SIEMPRE el literal de las bases: el dictamen nunca se
 // apoya en texto que no pueda enseñarse.
-import type { Requisito, ResumenIA, Veredicto } from "./tipos";
+import { estadoPlazo, fechaCalendarioMadrid } from "./plazos";
+import type { EstadoPlazo, Requisito, ResumenIA, Veredicto } from "./tipos";
 
 export const PROMPT_RESUMEN = `Eres quien traduce el BOE a lenguaje de la calle.
 Te doy el título oficial y los datos de una convocatoria de ayuda pública española.
@@ -21,7 +22,67 @@ Reglas:
   "bases reguladoras" ni "en el marco del programa operativo".
 - Tutea. Frases cortas. Cero adjetivos de folleto.
 - No inventes cifras ni plazos: si no te los doy, no los menciones.
+- Las fechas, el día de hoy y el estado del plazo de la ficha son datos
+  oficiales. Nunca presentes como futura una fecha anterior a hoy ni digas
+  que una convocatoria abierta todavía no se ha abierto.
 - Si el presupuesto es la bolsa total del programa, dilo así, no como si fuera para uno.`;
+
+/** Contexto oficial para que el resumen no improvise el estado del plazo. */
+export function contextoTemporalResumen(
+  inicio: string | null | undefined,
+  fin: string | null | undefined,
+  hoy: Date = new Date(),
+): string {
+  const plazo = estadoPlazo(inicio, fin, hoy);
+  return [
+    `Hoy en España: ${fechaCalendarioMadrid(hoy)}`,
+    inicio || fin ? `Plazo oficial: ${inicio ?? "?"} a ${fin ?? "?"}` : "Plazo oficial: no publicado",
+    `Estado oficial del plazo hoy: ${plazo.estado}`,
+  ].join("\n");
+}
+
+/**
+ * La IA puede escribir una advertencia útil, pero nunca puede contradecir el
+ * semáforo calculado desde las fechas oficiales. También protege resúmenes
+ * antiguos que ya estuvieran guardados en el navegador o en la base local.
+ */
+export function avisoResumenVigente(
+  aviso: string | undefined,
+  estado: EstadoPlazo | undefined,
+): string | undefined {
+  if (!aviso || !estado) return aviso;
+  const texto = aviso
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+  const diceQueAunNoAbre = [
+    "no se abre",
+    "aun no se ha abierto",
+    "todavia no se ha abierto",
+    "todavia no esta abierta",
+    "aun no esta abierta",
+    "se abrira",
+    "guardar la fecha",
+    "guarda la fecha",
+  ].some((frase) => texto.includes(frase));
+  const diceQueYaCerro = [
+    "plazo ha terminado",
+    "plazo ya termino",
+    "plazo esta cerrado",
+    "convocatoria esta cerrada",
+    "ya no puedes solicitar",
+  ].some((frase) => texto.includes(frase));
+  const diceQueEstaAbierta = [
+    "ya esta abierta",
+    "plazo esta abierto",
+    "convocatoria esta abierta",
+  ].some((frase) => texto.includes(frase));
+
+  if (estado !== "proxima" && diceQueAunNoAbre) return undefined;
+  if (estado !== "cerrada" && diceQueYaCerro) return undefined;
+  if ((estado === "proxima" || estado === "cerrada") && diceQueEstaAbierta) return undefined;
+  return aviso;
+}
 
 export const PROMPT_EXTRACCION = `Eres un técnico experto en subvenciones públicas españolas.
 Lee las bases reguladoras adjuntas y extrae TODOS los requisitos que un
@@ -51,6 +112,9 @@ Reglas:
 - No inventes requisitos: si no está en el texto, no existe.
 - **Máximo 8 requisitos CON pregunta**, y que sean los que de verdad deciden
   si alguien puede pedirla o no. El resto, si los incluyes, sin pregunta.
+- No hagas dos preguntas binarias para alternativas excluyentes (por ejemplo,
+  una para TFG/TFM y otra para tesis). Combínalas en una sola pregunta que
+  permita confirmar la condición aplicable al caso del solicitante.
 - Formula una pregunta reutilizable para cada condición comprobable. La app
   omitirá automáticamente las que ya conozca del perfil.
 - Nada de preguntas obvias ni de trámite ("¿va a presentar la solicitud?").

@@ -2,7 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { credencialesDe, esPublico } from "@/lib/sesion";
 import { getRepo, errorJson } from "@/lib/servidor";
 import { generar, hayClave } from "@/lib/ia";
-import { PROMPT_RESUMEN, parsearResumen } from "@/lib/requisitos";
+import {
+  avisoResumenVigente,
+  contextoTemporalResumen,
+  PROMPT_RESUMEN,
+  parsearResumen,
+} from "@/lib/requisitos";
+import { estadoPlazo } from "@/lib/plazos";
 import { importeCorto } from "@/lib/resumen";
 import type { Convocatoria, ResumenIA } from "@/lib/tipos";
 import { protegerApi } from "@/lib/seguridad";
@@ -22,6 +28,7 @@ function ficha(conv: Convocatoria): string {
     conv.beneficiarios.length ? `Beneficiarios: ${conv.beneficiarios.join("; ")}` : null,
     conv.instrumentos.length ? `Instrumento: ${conv.instrumentos.join("; ")}` : null,
     bolsa ? `Presupuesto TOTAL del programa: ${bolsa}` : null,
+    contextoTemporalResumen(conv.fechaInicioSol, conv.fechaFinSol),
   ]
     .filter(Boolean)
     .join("\n");
@@ -51,7 +58,14 @@ export async function POST(req: NextRequest) {
       if (conv.resumenIa) {
         // Ya estaba: sale de la base, coste cero.
         try {
-          resumenes[codigo] = JSON.parse(conv.resumenIa) as ResumenIA;
+          const guardado = JSON.parse(conv.resumenIa) as ResumenIA;
+          resumenes[codigo] = {
+            ...guardado,
+            ojo: avisoResumenVigente(
+              guardado.ojo,
+              estadoPlazo(conv.fechaInicioSol, conv.fechaFinSol).estado,
+            ),
+          };
         } catch {
           porTraducir.push(conv);
         }
@@ -70,7 +84,16 @@ export async function POST(req: NextRequest) {
       tanda.map(async (conv) => {
         try {
           const texto = await generar(repo, [{ texto: `${PROMPT_RESUMEN}\n\n${ficha(conv)}` }], { esperaJson: true, credenciales: cred });
-          const resumen = parsearResumen(texto);
+          const resumenCrudo = parsearResumen(texto);
+          const resumen = resumenCrudo
+            ? {
+                ...resumenCrudo,
+                ojo: avisoResumenVigente(
+                  resumenCrudo.ojo,
+                  estadoPlazo(conv.fechaInicioSol, conv.fechaFinSol).estado,
+                ),
+              }
+            : null;
           if (!resumen) return;
           if (!esPublico()) repo.guardarResumen(conv.codigoBdns, JSON.stringify(resumen));
           resumenes[conv.codigoBdns] = resumen;

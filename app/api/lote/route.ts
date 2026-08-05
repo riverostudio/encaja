@@ -2,7 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { credencialesDe, esPublico } from "@/lib/sesion";
 import { getRepo, errorJson } from "@/lib/servidor";
 import { generar, hayClave } from "@/lib/ia";
-import { PROMPT_RESUMEN, parsearResumen } from "@/lib/requisitos";
+import {
+  avisoResumenVigente,
+  contextoTemporalResumen,
+  PROMPT_RESUMEN,
+  parsearResumen,
+} from "@/lib/requisitos";
 import { PROMPT_FECHAS, parsearFechas } from "@/lib/fechas";
 import { descargarBases } from "@/lib/bdns";
 import { importeCorto } from "@/lib/resumen";
@@ -22,9 +27,7 @@ function fichaDe(conv: Convocatoria): string {
     conv.beneficiarios.length ? `Beneficiarios: ${conv.beneficiarios.join("; ")}` : null,
     conv.instrumentos.length ? `Instrumento: ${conv.instrumentos.join("; ")}` : null,
     bolsa ? `Presupuesto TOTAL del programa: ${bolsa}` : null,
-    conv.fechaInicioSol || conv.fechaFinSol
-      ? `Plazo: ${conv.fechaInicioSol ?? "?"} a ${conv.fechaFinSol ?? "?"}`
-      : null,
+    contextoTemporalResumen(conv.fechaInicioSol, conv.fechaFinSol),
   ]
     .filter(Boolean)
     .join("\n");
@@ -75,7 +78,16 @@ export async function POST(req: NextRequest) {
       try {
         if (tarea === "traducir") {
           const texto = await generar(repo, [{ texto: `${PROMPT_RESUMEN}\n\n${fichaDe(conv)}` }], { esperaJson: true, credenciales: cred });
-          const resumen = parsearResumen(texto);
+          const resumenCrudo = parsearResumen(texto);
+          const resumen = resumenCrudo
+            ? {
+                ...resumenCrudo,
+                ojo: avisoResumenVigente(
+                  resumenCrudo.ojo,
+                  estadoPlazo(conv.fechaInicioSol, conv.fechaFinSol).estado,
+                ),
+              }
+            : null;
           if (!resumen) {
             fallos++;
             continue;

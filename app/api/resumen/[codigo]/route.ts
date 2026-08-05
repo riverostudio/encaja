@@ -2,9 +2,15 @@ import { NextRequest, NextResponse } from "next/server";
 import { credencialesDe, esPublico } from "@/lib/sesion";
 import { getRepo, errorJson } from "@/lib/servidor";
 import { generar, hayClave } from "@/lib/ia";
-import { PROMPT_RESUMEN, parsearResumen } from "@/lib/requisitos";
+import {
+  avisoResumenVigente,
+  contextoTemporalResumen,
+  PROMPT_RESUMEN,
+  parsearResumen,
+} from "@/lib/requisitos";
 import { importeCorto } from "@/lib/resumen";
 import { protegerApi } from "@/lib/seguridad";
+import { estadoPlazo } from "@/lib/plazos";
 
 export const dynamic = "force-dynamic";
 
@@ -23,7 +29,19 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ codigo: st
     if (!conv) return NextResponse.json({ error: "Convocatoria no encontrada" }, { status: 404 });
 
     if (conv.resumenIa) {
-      return NextResponse.json({ resumen: JSON.parse(conv.resumenIa), cacheado: true });
+      const guardado = JSON.parse(conv.resumenIa) as ReturnType<typeof parsearResumen>;
+      return NextResponse.json({
+        resumen: guardado
+          ? {
+              ...guardado,
+              ojo: avisoResumenVigente(
+                guardado.ojo,
+                estadoPlazo(conv.fechaInicioSol, conv.fechaFinSol).estado,
+              ),
+            }
+          : null,
+        cacheado: true,
+      });
     }
     if (!cred && !hayClave(repo)) {
       return NextResponse.json({ resumen: null, sinClave: true });
@@ -37,16 +55,23 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ codigo: st
       conv.beneficiarios.length ? `Beneficiarios: ${conv.beneficiarios.join("; ")}` : null,
       conv.instrumentos.length ? `Instrumento: ${conv.instrumentos.join("; ")}` : null,
       bolsa ? `Presupuesto TOTAL del programa: ${bolsa}` : null,
-      conv.fechaInicioSol || conv.fechaFinSol
-        ? `Plazo: ${conv.fechaInicioSol ?? "?"} a ${conv.fechaFinSol ?? "?"}`
-        : null,
+      contextoTemporalResumen(conv.fechaInicioSol, conv.fechaFinSol),
       conv.fondos.length ? `Fondos: ${conv.fondos.join("; ")}` : null,
     ]
       .filter(Boolean)
       .join("\n");
 
     const respuesta = await generar(repo, [{ texto: `${PROMPT_RESUMEN}\n\n${ficha}` }], { esperaJson: true, credenciales: cred });
-    const resumen = parsearResumen(respuesta);
+    const resumenCrudo = parsearResumen(respuesta);
+    const resumen = resumenCrudo
+      ? {
+          ...resumenCrudo,
+          ojo: avisoResumenVigente(
+            resumenCrudo.ojo,
+            estadoPlazo(conv.fechaInicioSol, conv.fechaFinSol).estado,
+          ),
+        }
+      : null;
     if (!resumen) return NextResponse.json({ resumen: null, error: "Respuesta ilegible" });
 
     if (!esPublico()) repo.guardarResumen(codigo, JSON.stringify(resumen));
