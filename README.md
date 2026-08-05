@@ -1,6 +1,6 @@
 # Encaja
 
-**Todas las ayudas públicas de España, explicadas en cristiano — y si encajas en ellas.**
+**Miles de ayudas públicas de España, explicadas en lenguaje claro — y si encajas en ellas.**
 
 👉 **[Pruébala aquí](https://usar-encaja.vercel.app)** · [De qué va](https://encaja-ayudas.vercel.app)
 
@@ -20,10 +20,8 @@ Y no era culpa mía. Esto es un título real, tal cual lo publicó el organismo:
 
 Traducido: **dinero para estudiar. Abierto hasta el 31 de agosto.**
 
-Eso es lo que hace Encaja. Coge las miles de convocatorias repartidas por decenas de
-boletines, las pone en un sitio, las traduce, y te dice si puedes pedirlas.
-
-Ahora mismo tiene **4.114 convocatorias** y **609 abiertas**.
+Eso es lo que hace Encaja. Coge miles de convocatorias repartidas por decenas de
+boletines, las pone en un sitio, las explica y te ayuda a comprobar si puedes pedirlas.
 
 ![El radar, con convocatorias reales](docs/capturas/radar.png)
 
@@ -31,12 +29,12 @@ Ahora mismo tiene **4.114 convocatorias** y **609 abiertas**.
 
 ## Qué hace, en cuatro pasos
 
-**1. Te pregunta quién eres.** Ocho preguntas normales: si pides como persona o como
+**1. Te pregunta quién eres.** Unas preguntas normales: si pides como persona o como
 negocio, qué te vendría bien ahora, en qué situación estás, cuánto entra en casa, tu
 código postal. Nada de formularios con jerga.
 
 **2. Busca por ti.** Se conecta a la Base de Datos Nacional de Subvenciones, que es
-donde por ley acaba toda ayuda pública de España. Con el código postal salen también
+que reúne la publicidad oficial de subvenciones. Con el código postal salen también
 las de tu ayuntamiento y tu diputación, que no aparecen en ningún buscador.
 
 **3. Te dice si encajas.** Descarta lo imposible con los datos oficiales, y para el
@@ -93,11 +91,13 @@ conceden directamente, sin plazo de solicitud. Me pasé un rato buscando cómo
 ### La versión de internet
 
 [usar-encaja.vercel.app](https://usar-encaja.vercel.app). Entras y ya. Sin cuenta, sin
-registro, sin instalar nada. Las 609 ayudas abiertas están ya traducidas, así que se lee
-todo sin poner ninguna clave.
+registro y sin instalar nada. El resumen estructural y las traducciones ya preparadas se
+leen sin poner ninguna clave.
 
-Solo hace falta una clave de IA propia para la parte del «¿encajo?», que es la que se lee
-las bases y te entrevista. Esa clave se guarda **en tu navegador**, no en mi servidor.
+Solo hace falta una clave de IA propia para la parte del «¿encajo?», que lee las bases y
+te entrevista. La clave se guarda **en tu navegador** y se transmite cifrada únicamente
+al solicitar una operación de IA; Encaja no la conserva en el servidor. Perfil,
+entrevistas y expedientes permanecen en ese navegador y se pueden exportar o borrar.
 
 ### En tu ordenador
 
@@ -116,7 +116,7 @@ Claude o GPT, la que quieras. Se comprueba contra el proveedor antes de guardarl
 que si te equivocas al pegarla te enteras en el momento y no tres pantallas después.
 
 Aquí sí se guarda todo en tu equipo: perfil, expedientes y traducciones, en un SQLite
-dentro de `data/`. Nada sale de tu máquina salvo las llamadas a la IA que tú elijas.
+dentro de `data/`. La clave se guarda en el Llavero de macOS.
 
 ### Los comandos
 
@@ -124,9 +124,12 @@ dentro de `data/`. Nada sale de tu máquina salvo las llamadas a la IA que tú e
 npm run dev      # desarrollo, puerto 3002
 npm run build    # compilar
 npm run start    # producción
-npm test         # las 169 pruebas
+npm test         # pruebas unitarias
 npm run lint     # eslint
 npm run sync     # traer convocatorias nuevas de la BDNS
+npm run sync:espana # sincronizar Estado y los 19 territorios
+npm run public:db   # generar una base pública sin datos personales ni claves
+npm run test:e2e    # pruebas completas de la versión pública
 ```
 
 ---
@@ -139,7 +142,7 @@ el mismo proceso y no necesita servidor aparte. Vitest para las pruebas.
 ```
 lib/     la lógica: BDNS, encaje, requisitos, dictamen, expedientes, IA
 app/     las pantallas y las rutas de API
-tests/   169 pruebas
+tests/   pruebas unitarias y de navegador
 web/     la página de presentación (estática, se despliega aparte)
 ```
 
@@ -149,17 +152,18 @@ Tres decisiones que igual no son obvias:
 el detalle de cada convocatoria una por una. Así que la sincronización va en dos niveles:
 primero la lista, luego una cola de detalles.
 
-**Se traduce solo lo que miras.** Traducir 4.114 convocatorias de golpe sería tirar el
+**Se traduce solo lo que miras.** Traducir todo el archivo de golpe sería tirar el
 dinero. Se traducen las que tienes en pantalla, y lo traducido queda guardado para
-siempre. Cuanto más se usa, menos trabajo queda. (Para la versión pública sí traduje las
-609 abiertas de una vez, para que se pueda leer sin clave.)
+siempre en local. La versión pública incluye lo ya preparado y siempre ofrece un resumen
+estructural gratuito.
 
 **La IA es la que tú elijas.** Gemini, Claude o GPT, cuatro modelos de cada: dos potentes
 y dos baratos. La clave se valida con una llamada real antes de guardarse.
 
-Y una más, para la versión de internet: **el servidor no guarda nada tuyo**. Tu perfil y
-tu clave viven en tu navegador y viajan en tus peticiones. La base que se publica va
-limpia de datos personales.
+Y una más, para la versión de internet: **el servidor no conserva nada tuyo**. Tu perfil,
+tu clave y tus expedientes viven en tu navegador. Los datos necesarios viajan mediante
+HTTPS solo durante cada petición. La base publicada se genera con una comprobación que
+elimina perfiles, expedientes y claves.
 
 ---
 
@@ -183,8 +187,8 @@ Se agradece. Sobre todo:
 - **Datos mal.** Si ves un plazo raro, una traducción que dice algo que no es o un enlace
   roto, abre una incidencia con el código de la convocatoria. Eso es lo más útil de todo.
 - **Prestaciones que faltan.** El listado a mano tiene ocho. Seguro que faltan.
-- **Otras comunidades.** Está probado a fondo en la Valenciana, que es donde vivo. Si algo
-  se comporta raro en la tuya, cuéntamelo.
+- **Cobertura territorial.** Se sincronizan los 19 territorios y el Estado. Si un órgano
+  local aparece donde no corresponde, abre una incidencia con el código postal usado.
 
 Si vas a tocar código, mira [CONTRIBUTING.md](CONTRIBUTING.md).
 

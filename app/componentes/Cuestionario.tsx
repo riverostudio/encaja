@@ -129,7 +129,7 @@ export default function Cuestionario({
         : 0;
 
   return (
-    <div className="escenario">
+    <div className="escenario" role="dialog" aria-modal="true" aria-label={`Cuestionario de ${titulo}`}>
       {/* ——— barra superior ——— */}
       <div className="escenario-barra">
         <div className="mx-auto flex max-w-2xl items-center gap-4 px-6 py-4">

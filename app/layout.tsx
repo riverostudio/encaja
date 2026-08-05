@@ -18,7 +18,7 @@ const texto = Inter({
 export const metadata: Metadata = {
   title: "Encaja · ayudas públicas explicadas",
   description:
-    "Todas las ayudas públicas de España, explicadas en cristiano. Te decimos si encajas y cómo pedirlas. Fuente oficial: BDNS.",
+    "Miles de ayudas públicas de España, explicadas en lenguaje claro. Comprueba si encajas y cómo pedirlas. Fuente oficial: BDNS.",
   // El icono sale de app/icon.svg y app/apple-icon.png: la bandera.
 };
 

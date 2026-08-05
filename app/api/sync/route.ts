@@ -3,6 +3,7 @@ import { getRepo, errorJson } from "@/lib/servidor";
 import { syncLista, syncEstatal, syncDetalles, refrescarAbiertas } from "@/lib/sync";
 import { CCAAS } from "@/lib/territorio";
 import { mantenimientoAutorizado } from "@/lib/seguridad";
+import { esPublico } from "@/lib/sesion";
 
 export const dynamic = "force-dynamic";
 
@@ -18,6 +19,12 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   try {
+    if (esPublico()) {
+      return NextResponse.json(
+        { error: "La base pública se actualiza antes del despliegue." },
+        { status: 405 },
+      );
+    }
     if (!mantenimientoAutorizado(req)) {
       return NextResponse.json({ error: "Ruta de mantenimiento protegida" }, { status: 403 });
     }

@@ -7,7 +7,13 @@ import DetalleAyuda from "./componentes/DetalleAyuda";
 import Esperando, { MENSAJES_RADAR, MENSAJES_SYNC } from "./componentes/Esperando";
 import type { ConvUi, ResumenIaUi } from "./componentes/tipos-ui";
 import { APP_PUBLICA } from "./componentes/Sesion";
-import { getRegionPublica, guardarRegionPublica } from "./lib/estado-publico";
+import {
+  getRegionPublica,
+  getResumenPublico,
+  guardarRegionPublica,
+  guardarResumenPublico,
+  leerPerfilPublico,
+} from "./lib/estado-publico";
 
 interface EstadoSync {
   ultimo: string | null;
@@ -118,7 +124,12 @@ export default function PaginaRadar() {
       relajado: string | null;
       prestaciones?: PrestacionUi[];
     };
-    setFilas(d.filas ?? []);
+    setFilas(
+      (d.filas ?? []).map((c) => ({
+        ...c,
+        resumen: c.resumen ?? (APP_PUBLICA ? getResumenPublico(c.codigoBdns) : null),
+      })),
+    );
     setRelajado(d.relajado ?? null);
     setPrestacionesBusqueda(d.prestaciones ?? []);
     setVisibles(POR_TANDA);
@@ -170,12 +181,14 @@ export default function PaginaRadar() {
           zona: { municipio: string; provincia: string; regionIds: number[] } | null;
         }>,
       ]);
-      const cpPerfil = datosPerfil.respuestas?.cp ?? aj.cp;
+      const cpPerfil = APP_PUBLICA
+        ? leerPerfilPublico().cp ?? datosPerfil.respuestas?.cp
+        : datosPerfil.respuestas?.cp ?? aj.cp;
       if (cpPerfil) setCp(cpPerfil);
       if (APP_PUBLICA) {
         const guardada = getRegionPublica();
         const detectada = datosPerfil.zona?.regionIds?.[0];
-        const inicial = guardada ?? detectada ?? 54;
+        const inicial = detectada ?? guardada ?? 54;
         setRegion(inicial);
         guardarRegionPublica(inicial);
       } else if (aj.ccaa) setRegion(aj.ccaa);
@@ -246,6 +259,11 @@ export default function PaginaRadar() {
           });
           const d = (await r.json()) as { resumenes: Record<string, ResumenIaUi> };
           if (cancelado) return;
+          if (APP_PUBLICA) {
+            for (const [codigo, resumen] of Object.entries(d.resumenes ?? {})) {
+              guardarResumenPublico(codigo, resumen);
+            }
+          }
           setFilas((antes) =>
             antes.map((c) => (d.resumenes[c.codigoBdns] ? { ...c, resumen: d.resumenes[c.codigoBdns] } : c)),
           );
@@ -329,7 +347,7 @@ export default function PaginaRadar() {
       frases.push(`${locales} las convoca tu propio ayuntamiento o tu diputación en ${zona.municipio}.`);
     }
     frases.push(
-      "Por ley, toda ayuda pública de España pasa por la Base de Datos Nacional de Subvenciones antes de abrir plazo. Por eso no se escapa ninguna.",
+      "El radar se alimenta de la publicidad oficial de subvenciones del Estado, las comunidades y los órganos locales.",
       "El importe que ves es la bolsa de todo el programa, no lo que te llevarías tú.",
       "Cuando una te interese, pulsa «¿Encajo?»: leo las bases y te digo si cumples, citando el texto legal.",
       "Lo que respondas se guarda en tu perfil, así que cada ayuda nueva te pregunta menos que la anterior.",
@@ -410,8 +428,8 @@ export default function PaginaRadar() {
                 : "Te falta terminar tu perfil"}
             </strong>
             <span className="mt-1 block text-[var(--grafito)]">
-              Contéstame ocho preguntas y el radar te enseña solo las ayudas que tú puedes pedir, y
-              con los atajos que te sirven a ti.
+              Completa las preguntas que te correspondan y el radar priorizará las ayudas que
+              mejor encajan contigo, con atajos útiles para tu situación.
             </span>
           </span>
           <Link href="/ficha" className="btn shrink-0">

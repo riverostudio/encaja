@@ -54,9 +54,11 @@ export async function obtenerRequisitos(
   const requisitos = parsearRequisitos(respuesta);
   if (requisitos.length === 0) return { requisitos: [], motivo: "ilegible" };
 
-  repo.guardarEvaluacion(conv.codigoBdns, perfilId, {
-    requisitosJson: JSON.stringify(requisitos),
-  });
+  if (process.env.ENCAJA_PUBLICO !== "1") {
+    repo.guardarEvaluacion(conv.codigoBdns, perfilId, {
+      requisitosJson: JSON.stringify(requisitos),
+    });
+  }
   return { requisitos };
 }
 

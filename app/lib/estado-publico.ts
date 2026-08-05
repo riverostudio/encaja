@@ -5,12 +5,14 @@ import type {
   MotivoUi,
   RequisitoUi,
   VeredictoUi,
+  ResumenIaUi,
 } from "../componentes/tipos-ui";
 
 const LLAVE_PERFIL = "encaja.perfil";
 const LLAVE_EVALUACIONES = "encaja.evaluaciones";
 const LLAVE_EXPEDIENTES = "encaja.expedientes";
 const LLAVE_REGION = "encaja.region";
+const LLAVE_RESUMENES = "encaja.resumenes";
 
 export type EstadoExpedientePublico =
   | "interesa"
@@ -129,6 +131,16 @@ export function guardarResultadoEncaje(
   guardar(LLAVE_EVALUACIONES, todas);
 }
 
+export function getResumenPublico(codigo: string): ResumenIaUi | null {
+  return leer<Record<string, ResumenIaUi>>(LLAVE_RESUMENES, {})[codigo] ?? null;
+}
+
+export function guardarResumenPublico(codigo: string, resumen: ResumenIaUi): void {
+  const todos = leer<Record<string, ResumenIaUi>>(LLAVE_RESUMENES, {});
+  todos[codigo] = resumen;
+  guardar(LLAVE_RESUMENES, todos);
+}
+
 function expedientes(): Record<string, ExpedientePublico> {
   return leer<Record<string, ExpedientePublico>>(LLAVE_EXPEDIENTES, {});
 }
@@ -140,8 +152,20 @@ export function getExpedientePublico(codigo: string): ExpedientePublico | null {
 export function crearExpedientePublico(conv: ConvUi, urlFicha: string): ExpedientePublico {
   const todos = expedientes();
   const previo = todos[conv.codigoBdns];
-  if (previo) return previo;
   const requisitos = getEvaluacionPublica(conv.codigoBdns)?.requisitos ?? [];
+  if (previo) {
+    previo.conv = conv;
+    previo.urlFicha = urlFicha;
+    for (const requisito of requisitos.filter((r) => r.tipo === "documento")) {
+      if (!previo.checklist.some((i) => i.id === requisito.id)) {
+        previo.checklist.push({ id: requisito.id, texto: requisito.literal, estado: "pendiente" });
+      }
+    }
+    previo.updatedAt = new Date().toISOString();
+    todos[conv.codigoBdns] = previo;
+    guardar(LLAVE_EXPEDIENTES, todos);
+    return previo;
+  }
   const ahora = new Date().toISOString();
   const expediente: ExpedientePublico = {
     codigoBdns: conv.codigoBdns,
@@ -274,4 +298,6 @@ export function borrarDatosPublicos(): void {
   localStorage.removeItem(LLAVE_EVALUACIONES);
   localStorage.removeItem(LLAVE_EXPEDIENTES);
   localStorage.removeItem(LLAVE_REGION);
+  localStorage.removeItem(LLAVE_RESUMENES);
+  localStorage.removeItem("encaja.entrada");
 }

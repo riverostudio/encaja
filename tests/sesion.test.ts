@@ -73,6 +73,13 @@ describe("hechosDe", () => {
     expect(h?.get("situacion")).toBe("desempleado");
   });
 
+  it("lee sin truncar un perfil Unicode codificado para cabeceras HTTP", () => {
+    const cabecera = encodeURIComponent(JSON.stringify({ empadronado: "sí", situacion: "autónomo" }));
+    const h = hechosDe(pedir({ "x-perfil": cabecera }));
+    expect(h?.get("empadronado")).toBe("sí");
+    expect(h?.get("situacion")).toBe("autónomo");
+  });
+
   it("sin cabecera devuelve null, y quien llama usa la base local", () => {
     expect(hechosDe(pedir({}))).toBeNull();
   });

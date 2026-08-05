@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { credencialesDe } from "@/lib/sesion";
+import { credencialesDe, esPublico } from "@/lib/sesion";
 import { getRepo, errorJson } from "@/lib/servidor";
 import { generar, hayClave } from "@/lib/ia";
 import { PROMPT_RESUMEN, parsearResumen } from "@/lib/requisitos";
@@ -49,7 +49,7 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ codigo: st
     const resumen = parsearResumen(respuesta);
     if (!resumen) return NextResponse.json({ resumen: null, error: "Respuesta ilegible" });
 
-    repo.guardarResumen(codigo, JSON.stringify(resumen));
+    if (!esPublico()) repo.guardarResumen(codigo, JSON.stringify(resumen));
     return NextResponse.json({ resumen, cacheado: false });
   } catch (e) {
     return NextResponse.json(errorJson(e), { status: 500 });

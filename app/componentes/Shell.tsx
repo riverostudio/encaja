@@ -6,6 +6,9 @@ import { useEffect, useState, type ReactNode } from "react";
 import Ajustes from "./Ajustes";
 import Tema from "./Tema";
 import Bienvenida, { type ProveedorUi } from "./Bienvenida";
+import { APP_PUBLICA } from "./Sesion";
+
+const LLAVE_ENTRADA = "encaja.entrada";
 
 const PESTANAS = [
   { href: "/", etiqueta: "Radar" },
@@ -26,7 +29,10 @@ export default function Shell({ children }: { children: ReactNode }) {
   useEffect(() => {
     fetch("/api/ajustes")
       .then((r) => r.json())
-      .then((d: EstadoIa) => setIa(d))
+      .then((d: EstadoIa) => {
+        const yaEntro = APP_PUBLICA && localStorage.getItem(LLAVE_ENTRADA) === "1";
+        setIa(yaEntro ? { ...d, configurada: true } : d);
+      })
       .catch(() => setIa({ configurada: true, proveedores: [] }));
   }, []);
 
@@ -38,7 +44,10 @@ export default function Shell({ children }: { children: ReactNode }) {
     return (
       <Bienvenida
         proveedores={ia.proveedores}
-        onListo={() => setIa({ ...ia, configurada: true })}
+        onListo={() => {
+          if (APP_PUBLICA) localStorage.setItem(LLAVE_ENTRADA, "1");
+          setIa({ ...ia, configurada: true });
+        }}
       />
     );
   }

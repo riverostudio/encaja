@@ -24,6 +24,8 @@ export interface Convocatoria {
   fondos: string[];
   detalleAt?: string | null;
   detalleJson?: string | null;
+  /** Identificador del PDF oficial; permite publicar sin conservar el JSON crudo. */
+  documentoId?: number | null;
   /** Resumen en cristiano escrito por la IA (JSON de ResumenIA), si ya se pidió. */
   resumenIa?: string | null;
   resumenAt?: string | null;

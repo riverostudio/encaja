@@ -126,7 +126,7 @@ export default function Bienvenida({
         <div className="sube">
           <p className="rotulo">Encaja · ayudas públicas de España</p>
           <h1 className="display mt-3 text-[38px] leading-[1.1]">
-            Todas las subvenciones públicas de España, explicadas en cristiano.
+            Miles de subvenciones públicas de España, explicadas en lenguaje claro.
           </h1>
           <p className="mt-4 max-w-lg text-[15px] leading-relaxed text-[var(--grafito)]">
             {APP_PUBLICA ? (

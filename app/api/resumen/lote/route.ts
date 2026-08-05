@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { credencialesDe } from "@/lib/sesion";
+import { credencialesDe, esPublico } from "@/lib/sesion";
 import { getRepo, errorJson } from "@/lib/servidor";
 import { generar, hayClave } from "@/lib/ia";
 import { PROMPT_RESUMEN, parsearResumen } from "@/lib/requisitos";
@@ -72,7 +72,7 @@ export async function POST(req: NextRequest) {
           const texto = await generar(repo, [{ texto: `${PROMPT_RESUMEN}\n\n${ficha(conv)}` }], { esperaJson: true, credenciales: cred });
           const resumen = parsearResumen(texto);
           if (!resumen) return;
-          repo.guardarResumen(conv.codigoBdns, JSON.stringify(resumen));
+          if (!esPublico()) repo.guardarResumen(conv.codigoBdns, JSON.stringify(resumen));
           resumenes[conv.codigoBdns] = resumen;
         } catch {
           // Una que falle no tumba la tanda: se reintentará al volver a verla.

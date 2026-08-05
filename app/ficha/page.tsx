@@ -77,8 +77,8 @@ export default function PaginaPerfil() {
         <p className="rotulo">Tu perfil</p>
         <h1 className="display mt-1 text-[32px] leading-tight">{e.resumen}</h1>
         <p className="nota mt-3 max-w-lg">
-          Con esto el radar ya te enseña solo lo que te sirve, y los cuestionarios de cada ayuda no
-          te vuelven a preguntar lo que ya sabes. Toca cualquier respuesta para cambiarla.
+          Con esto el radar prioriza y descarta lo que los datos oficiales permiten comprobar, y
+          los cuestionarios no te vuelven a preguntar lo que ya saben. Toca una respuesta para cambiarla.
         </p>
 
         <div className="mt-9">
@@ -113,8 +113,8 @@ export default function PaginaPerfil() {
 
         {e.zona && (
           <p className="nota mt-6">
-            Tu zona: <strong>{e.zona.municipio}</strong>, {e.zona.provincia}. Ya se incluyen las
-            ayudas de tu ayuntamiento y tu diputación.
+            Tu zona: <strong>{e.zona.municipio}</strong>, {e.zona.provincia}. El radar tendrá en
+            cuenta las convocatorias locales que consten en la fuente oficial.
           </p>
         )}
 
@@ -229,7 +229,8 @@ export default function PaginaPerfil() {
         </div>
 
         <p className="nota mt-10">
-          Esto se queda en tu Mac. No sale de aquí, y puedes cambiarlo cuando quieras.
+          Se guarda en este navegador. Encaja lo procesa temporalmente para filtrar el radar y no
+          lo conserva en una base de usuarios. Puedes cambiarlo cuando quieras.
         </p>
       </div>
     </div>

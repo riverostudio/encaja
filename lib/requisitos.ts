@@ -51,8 +51,8 @@ Reglas:
 - No inventes requisitos: si no está en el texto, no existe.
 - **Máximo 8 requisitos CON pregunta**, y que sean los que de verdad deciden
   si alguien puede pedirla o no. El resto, si los incluyes, sin pregunta.
-- **No preguntes lo que ya te digo que sé del solicitante**: esos requisitos
-  van sin "pregunta", solo con su literal.
+- Formula una pregunta reutilizable para cada condición comprobable. La app
+  omitirá automáticamente las que ya conozca del perfil.
 - Nada de preguntas obvias ni de trámite ("¿va a presentar la solicitud?").
 - **No extraigas cláusulas paraguas** del tipo "cumplir todos los requisitos
   exigidos", "reunir las condiciones a la fecha de fin de plazo" o "no estar

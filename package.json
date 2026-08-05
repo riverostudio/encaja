@@ -5,12 +5,17 @@
   "scripts": {
     "dev": "next dev --turbopack -p 3002",
     "build": "next build",
+    "build:public": "ENCAJA_PUBLICO=1 NEXT_PUBLIC_ENCAJA_PUBLICO=1 next build",
     "start": "next start -p 3002",
+    "start:e2e": "ENCAJA_PUBLICO=1 NEXT_PUBLIC_ENCAJA_PUBLICO=1 next start -p 3102",
     "lint": "eslint",
     "test": "vitest run",
+    "test:e2e": "npm run build:public && playwright test",
     "sync": "tsx scripts/sync.ts",
     "sync:espana": "tsx scripts/sync-toda-espana.ts",
-    "public:db": "tsx scripts/generar-publica.ts"
+    "public:db": "tsx scripts/generar-publica.ts",
+    "test:links": "tsx scripts/comprobar-enlaces.ts",
+    "test:prod": "tsx scripts/comprobar-produccion.ts"
   },
   "dependencies": {
     "better-sqlite3": "^13.0.2",
@@ -20,6 +25,7 @@
     "react-dom": "19.2.8"
   },
   "devDependencies": {
+    "@playwright/test": "^1.62.1",
     "@tailwindcss/postcss": "^4",
     "@types/better-sqlite3": "^9.6.0",
     "@types/node": "^20",

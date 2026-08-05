@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { credencialesDe, hechosDe, idDeSesion } from "@/lib/sesion";
+import { credencialesDe, esPublico, hechosDe, idDeSesion, validarRequisitos } from "@/lib/sesion";
 import { getRepo, errorJson } from "@/lib/servidor";
 import { detalle } from "@/lib/bdns";
 import { obtenerRequisitos, EXPLICACION_SIN_BASES } from "@/lib/bases";
@@ -28,6 +28,7 @@ export async function POST(
       accion: "iniciar" | "responder" | "dictaminar";
       clave?: string;
       valor?: string;
+      requisitos?: unknown;
     };
     const repo = getRepo();
     // Si el navegador trae su perfil, es un visitante: nada suyo se guarda aquí.
@@ -37,8 +38,9 @@ export async function POST(
     const cred = credencialesDe(req);
     let conv = repo.getConvocatoria(codigo);
     if (!conv || !conv.detalleAt) {
-      repo.upsertDetalle(await detalle(codigo));
-      conv = repo.getConvocatoria(codigo)!;
+      const vivo = await detalle(codigo);
+      if (!esPublico()) repo.upsertDetalle(vivo);
+      conv = esPublico() ? vivo : repo.getConvocatoria(codigo)!;
     }
 
     const hechos = propios ?? repo.getHechos(perfil);
@@ -64,7 +66,10 @@ export async function POST(
           "Sin clave de IA solo puedo hacer el filtro con los datos oficiales. Pon tu clave en Ajustes para que además lea las bases y te entreviste." });
     }
 
-    const lectura = await obtenerRequisitos(repo, conv, perfil, cred);
+    const propiosRequisitos = validarRequisitos(cuerpo.requisitos);
+    const lectura = propiosRequisitos
+      ? { requisitos: propiosRequisitos }
+      : await obtenerRequisitos(repo, conv, perfil, cred);
     const requisitos = lectura.requisitos;
     if (requisitos.length === 0) {
       return NextResponse.json({

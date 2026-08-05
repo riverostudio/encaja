@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { credencialesDe } from "@/lib/sesion";
+import { credencialesDe, esPublico } from "@/lib/sesion";
 import { getRepo, errorJson } from "@/lib/servidor";
 import { generar, hayClave } from "@/lib/ia";
 import { PROMPT_RESUMEN, parsearResumen } from "@/lib/requisitos";
@@ -37,6 +37,12 @@ function fichaDe(conv: Convocatoria): string {
  */
 export async function POST(req: NextRequest) {
   try {
+    if (esPublico()) {
+      return NextResponse.json(
+        { error: "El trabajo en lote solo está disponible en la app local." },
+        { status: 405 },
+      );
+    }
     if (!mantenimientoAutorizado(req)) {
       return NextResponse.json({ error: "Ruta de mantenimiento protegida" }, { status: 403 });
     }

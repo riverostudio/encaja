@@ -20,8 +20,8 @@ export async function GET(
     if (!conv || !conv.detalleAt) {
       // fetch-through: si no tenemos el detalle, se pide en vivo a la BDNS
       const vivo = await detalle(codigo);
-      repo.upsertDetalle(vivo);
-      conv = repo.getConvocatoria(codigo) ?? vivo;
+      if (!esPublico()) repo.upsertDetalle(vivo);
+      conv = esPublico() ? vivo : (repo.getConvocatoria(codigo) ?? vivo);
     }
     const perfil = idDeSesion(req);
     const evaluacion = esPublico() ? null : repo.getEvaluacion(codigo, perfil);

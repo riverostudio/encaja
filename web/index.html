@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Encaja · ayudas públicas de España, explicadas</title>
-<meta name="description" content="Todas las ayudas públicas de España reunidas, traducidas a lenguaje llano — y si encajas en ellas.">
+<meta name="description" content="Miles de ayudas públicas de España reunidas y explicadas en lenguaje llano — con herramientas para comprobar si encajas.">
 <link rel="canonical" href="https://encaja-ayudas.vercel.app/">
 
 <meta property="og:type" content="website">
@@ -14,7 +14,7 @@
 <meta property="og:image" content="https://encaja-ayudas.vercel.app/portada.png">
 <meta property="og:image:width" content="2400">
 <meta property="og:image:height" content="1254">
-<meta property="og:image:alt" content="Encaja: miles de ayudas públicas que casi nadie pide porque están escritas para juristas. Las traduce y te dice si encajas. 4.114 convocatorias, 609 abiertas.">
+<meta property="og:image:alt" content="Encaja: miles de ayudas públicas explicadas con sus fuentes oficiales y una entrevista para comprobar si encajas.">
 <meta property="og:locale" content="es_ES">
 <meta property="og:site_name" content="Encaja">
 <meta name="twitter:card" content="summary_large_image">
@@ -220,10 +220,10 @@ img{max-width:100%;display:block;height:auto}
   <header>
     <p class="rotulo">Ayudas públicas · España</p>
     <p class="marca">Encaja<span>.</span></p>
-    <h1>Todas las ayudas del Estado, tu comunidad y tu pueblo — <b>y si encajas en ellas</b>.</h1>
+    <h1>Miles de ayudas del Estado, tu comunidad y tu pueblo — <b>y si encajas en ellas</b>.</h1>
     <p class="entradilla">
       Cada año se convocan miles de ayudas públicas que casi nadie pide, porque están escritas
-      para juristas y repartidas por decenas de boletines. Encaja las reúne todas, las traduce, y
+      para juristas y repartidas por decenas de boletines. Encaja las reúne, las explica y
       te dice si puedes pedirlas antes de que pierdas la tarde leyendo un PDF.
     </p>
   </header>
@@ -244,8 +244,8 @@ img{max-width:100%;display:block;height:auto}
   </div>
 
   <div class="cifras">
-    <div><div class="n">4.114</div><div class="t">convocatorias en el archivo</div></div>
-    <div><div class="n">609</div><div class="t">abiertas ahora mismo</div></div>
+    <div><div class="n">Miles</div><div class="t">de convocatorias oficiales en el archivo</div></div>
+    <div><div class="n">24 h</div><div class="t">objetivo máximo de antigüedad de los datos</div></div>
     <div><div class="n">19</div><div class="t">comunidades y ciudades autónomas, más el Estado y tu ayuntamiento</div></div>
     <div><div class="n" style="color:var(--senal)">0</div><div class="t">datos inventados: todo enlaza su fuente oficial</div></div>
   </div>
@@ -258,7 +258,7 @@ img{max-width:100%;display:block;height:auto}
         <span class="num">1</span>
         <div>
           <b>Te pregunta quién eres</b>
-          <p>Ocho preguntas en cristiano: si pides como persona o como negocio, qué te vendría bien
+          <p>Unas preguntas en cristiano: si pides como persona o como negocio, qué te vendría bien
             ahora (formarte, salir de un apuro, encontrar trabajo), en qué situación estás, cuánto
             entra en casa y tu código postal. Nada de formularios con jerga.</p>
         </div>
@@ -267,8 +267,7 @@ img{max-width:100%;display:block;height:auto}
         <span class="num">2</span>
         <div>
           <b>Busca por ti en la fuente oficial</b>
-          <p>Se conecta a la Base de Datos Nacional de Subvenciones, donde por ley se publica toda
-            ayuda pública de España. Con tu código postal aparecen también las de tu ayuntamiento y
+          <p>Se conecta al sistema oficial de publicidad de subvenciones. Con tu código postal aparecen también las de tu ayuntamiento y
             tu diputación, que no salen en ningún buscador.</p>
         </div>
       </li>
@@ -285,8 +284,8 @@ img{max-width:100%;display:block;height:auto}
         <span class="num">4</span>
         <div>
           <b>Te deja el expediente listo</b>
-          <p>Una carpeta real con lo que debes cumplir, lo que hay que aportar, borradores redactados
-            y el enlace a la sede donde se presenta. Te recuerda que necesitas DNI electrónico,
+          <p>Un expediente privado en tu navegador, descargable, con lo que debes cumplir, lo que hay que aportar, borradores redactados
+            y el enlace a la sede donde se presenta. En el Mac también crea una carpeta real. Te recuerda que necesitas DNI electrónico,
             certificado o Cl@ve, y que guardes el justificante.</p>
         </div>
       </li>
@@ -313,8 +312,7 @@ img{max-width:100%;display:block;height:auto}
       Probarla ahora
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
     </a>
-    <p class="bajo-boton">Se abre y funciona: sin cuenta, sin registro y sin instalar nada.
-      Las 609 ayudas abiertas están ya traducidas.</p>
+    <p class="bajo-boton">Se abre y funciona: sin cuenta, sin registro y sin instalar nada.</p>
   </section>
 
   <section>
@@ -356,9 +354,9 @@ img{max-width:100%;display:block;height:auto}
 
   <section>
     <h2>Cómo está hecho</h2>
-    <p class="sub">Aplicación local en Next.js con base de datos en tu propio ordenador. La
-      inteligencia artificial es la que tú elijas —Gemini, Claude o GPT— con tu clave, que se
-      comprueba antes de guardarse y nunca sale de tu máquina. 150 pruebas automáticas.</p>
+    <p class="sub">Aplicación en Next.js con una base pública limpia y una versión local en SQLite.
+      La inteligencia artificial es la que tú elijas —Gemini, Claude o GPT—. La clave se comprueba
+      antes de guardarse y Encaja no la conserva en el servidor. Incluye pruebas unitarias y de navegador.</p>
     <div class="rejilla">
       <div class="caja">
         <h4>Se traduce lo que miras</h4>
@@ -406,11 +404,10 @@ img{max-width:100%;display:block;height:auto}
       <dd>Esta página es estática: no usa cookies, no lleva analítica ni rastreadores, y no hay
         formularios ni registro. No se recoge ningún dato personal. El alojamiento
         (Vercel) guarda registros técnicos de las peticiones, como cualquier servidor web.</dd>
-      <dd>La aplicación tampoco pide registro. Lo que respondes en la entrevista y la clave de IA
-        que quieras usar para el «¿encajo?» se guardan en tu propio navegador y viajan solo en tus
-        peticiones: el servidor no los almacena y ningún visitante ve nada de otro. La base que se
-        publica va limpia de datos personales, y puedes borrar lo tuyo vaciando los datos del sitio
-        en tu navegador.</dd>
+      <dd>La aplicación tampoco pide registro. Perfil, entrevistas, expedientes y clave se guardan
+        en tu navegador. Los datos estrictamente necesarios viajan cifrados durante cada petición;
+        al usar IA también se envían al proveedor elegido. Encaja no los conserva en una base de
+        usuarios. Puedes exportarlos o borrarlos desde Ajustes.</dd>
 
       <dt>El código</dt>
       <dd>Es abierto, con licencia MIT: cualquiera puede leerlo, copiarlo, modificarlo y usarlo,

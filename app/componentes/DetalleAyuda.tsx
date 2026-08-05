@@ -8,6 +8,8 @@ import {
   crearExpedientePublico,
   getEvaluacionPublica,
   getExpedientePublico,
+  getResumenPublico,
+  guardarResumenPublico,
 } from "../lib/estado-publico";
 import {
   colorPlazo,
@@ -57,7 +59,7 @@ export default function DetalleAyuda({
             : null;
         }
         setD(datos);
-        setResumen(datos.conv?.resumen ?? null);
+        setResumen(datos.conv?.resumen ?? (APP_PUBLICA ? getResumenPublico(codigo) : null));
         setVeredicto(datos.evaluacion?.dictamen ?? null);
       });
   }, [codigo]);
@@ -69,7 +71,10 @@ export default function DetalleAyuda({
     fetch(`/api/resumen/${codigo}`, { method: "POST" })
       .then((r) => r.json())
       .then((x: { resumen: ResumenIaUi | null; sinClave?: boolean }) => {
-        if (x.resumen) setResumen(x.resumen);
+        if (x.resumen) {
+          setResumen(x.resumen);
+          if (APP_PUBLICA) guardarResumenPublico(codigo, x.resumen);
+        }
         else if (x.sinClave) setSinClave(true);
         else setFalloResumen(true);
       })
@@ -133,6 +138,7 @@ export default function DetalleAyuda({
           <button
             className="text-[18px] leading-none text-[var(--niebla)] transition-colors hover:text-[var(--tinta)]"
             onClick={onCerrar}
+            aria-label="Cerrar detalle"
           >
             ✕
           </button>

@@ -174,6 +174,7 @@ export async function detalle(
     regiones: (d.regiones ?? []).map((r) => (r.descripcion ?? "").trim()).filter(Boolean),
     fondos: (d.fondos ?? []).map((f) => (f.descripcion ?? "").trim()).filter(Boolean),
     detalleAt: new Date().toISOString(),
+    documentoId: d.documentos?.find((doc) => doc.id)?.id ?? null,
     detalleJson: JSON.stringify(d),
   };
 }
@@ -187,10 +188,10 @@ export async function descargarBases(
   fetchFn: FetchFn = fetch,
 ): Promise<{ tipo: "pdf" | "url"; datos: Buffer | string } | null> {
   const crudo = conv.detalleJson ? (JSON.parse(conv.detalleJson) as DetalleCrudo) : null;
-  const doc = crudo?.documentos?.find((x) => x.id);
-  if (doc?.id) {
+  const documentoId = conv.documentoId ?? crudo?.documentos?.find((x) => x.id)?.id;
+  if (documentoId) {
     const buf = (await pedir(
-      `${BASE}/convocatorias/documentos?idDocumento=${doc.id}`,
+      `${BASE}/convocatorias/documentos?idDocumento=${documentoId}`,
       fetchFn,
       true,
     )) as ArrayBuffer;

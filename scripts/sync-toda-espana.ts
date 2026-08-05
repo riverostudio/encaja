@@ -21,7 +21,14 @@ async function main() {
   let descargados = 0;
   for (let tanda = 1; tanda <= 100 && repo.contarPendientes() > 0; tanda++) {
     const antes = repo.contarPendientes();
-    const hechos = await syncDetalles(repo, { limite: 600, concurrencia: 6 });
+    const hechos = await syncDetalles(repo, {
+      // La BDNS empieza a cortar peticiones si se le abre demasiado tráfico.
+      // Tandas conservadoras tardan algo más, pero terminan con muchos menos
+      // huecos y son apropiadas para la actualización automática diaria.
+      limite: 600,
+      concurrencia: 6,
+      reintentoMs: 2_000,
+    });
     descargados += hechos;
     console.log(`Detalles ${tanda}: ${hechos} descargados, ${repo.contarPendientes()} pendientes`);
     if (hechos === 0 || repo.contarPendientes() >= antes) break;

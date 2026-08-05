@@ -52,6 +52,7 @@ describe("detalle", () => {
     expect(c.urlBases).toContain("ribarroja.es");
     expect(c.presupuesto).toBe(0);
     expect(c.detalleJson).toBeTruthy();
+    expect(c.documentoId).toBe(1419175);
   });
 });
 

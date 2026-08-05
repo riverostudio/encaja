@@ -102,6 +102,7 @@ const COLUMNAS_NUEVAS: { tabla: string; columna: string; tipo: string }[] = [
   { tabla: "convocatorias", columna: "fechas_del_pdf", tipo: "INTEGER" },
   { tabla: "convocatorias", columna: "sin_fechas_confirmado", tipo: "INTEGER" },
   { tabla: "convocatorias", columna: "plazo_relativo", tipo: "TEXT" },
+  { tabla: "convocatorias", columna: "documento_id", tipo: "INTEGER" },
 ];
 
 function migrarColumnas(db: Database.Database): void {
@@ -114,10 +115,9 @@ function migrarColumnas(db: Database.Database): void {
 }
 
 /**
- * Dónde vive la base. En un servidor de los de ahora el disco del despliegue
- * es de solo lectura, así que en modo público la copiamos una vez a la carpeta
- * temporal y trabajamos ahí: las convocatorias siguen intactas y las
- * traducciones nuevas se aprovechan mientras la instancia viva.
+ * Dónde vive la base. La versión pública se abre en solo lectura: todo el estado
+ * personal vive en el navegador y los trabajos de mantenimiento se hacen antes
+ * de desplegar, nunca dentro de una petición de un visitante.
  */
 function rutaPorDefecto(): string {
   const empaquetada = path.join(process.cwd(), "data", "radar.db");
@@ -125,13 +125,7 @@ function rutaPorDefecto(): string {
 
   // La que se publica va limpia de datos personales; se genera aparte.
   const publica = path.join(process.cwd(), "data", "radar-publico.db");
-  const origen = fs.existsSync(publica) ? publica : empaquetada;
-
-  const trabajo = path.join("/tmp", "radar.db");
-  if (!fs.existsSync(trabajo) && fs.existsSync(origen)) {
-    fs.copyFileSync(origen, trabajo);
-  }
-  return trabajo;
+  return publica;
 }
 
 /**
@@ -140,9 +134,11 @@ function rutaPorDefecto(): string {
  */
 export function abrirDb(ruta?: string): Database.Database {
   const destino = ruta ?? rutaPorDefecto();
-  if (destino !== ":memory:") {
-    fs.mkdirSync(path.dirname(destino), { recursive: true });
+  const soloLecturaPublica = !ruta && process.env.ENCAJA_PUBLICO === "1";
+  if (soloLecturaPublica) {
+    return new Database(destino, { readonly: true, fileMustExist: true });
   }
+  if (destino !== ":memory:") fs.mkdirSync(path.dirname(destino), { recursive: true });
   const db = new Database(destino);
   db.pragma("journal_mode = WAL");
   db.exec(ESQUEMA);
@@ -151,5 +147,13 @@ export function abrirDb(ruta?: string): Database.Database {
     SELECT codigo_bdns, region_sync FROM convocatorias WHERE region_sync IS NOT NULL
   `);
   migrarColumnas(db);
+  db.exec(`
+    UPDATE convocatorias
+    SET documento_id = CAST(json_extract(detalle_json, '$.documentos[0].id') AS INTEGER)
+    WHERE documento_id IS NULL
+      AND detalle_json IS NOT NULL
+      AND json_valid(detalle_json)
+      AND json_extract(detalle_json, '$.documentos[0].id') IS NOT NULL
+  `);
   return db;
 }

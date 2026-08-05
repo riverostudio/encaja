@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect } from "react";
+import { useLayoutEffect } from "react";
 import {
   borrarHechoPublico,
   guardarHechoPublico,
   guardarResultadoEncaje,
+  getEvaluacionPublica,
   perfilPublicoConDerivados,
 } from "../lib/estado-publico";
 
@@ -50,7 +51,10 @@ function idSesion(): string {
 }
 
 export default function Sesion() {
-  useEffect(() => {
+  // Debe instalarse antes de los useEffect de las pantallas: esas pantallas
+  // hacen sus primeras llamadas al montar y ya tienen que llevar el estado
+  // aislado de este navegador.
+  useLayoutEffect(() => {
     if (!PUBLICO) return;
     const original = window.fetch;
 
@@ -64,6 +68,7 @@ export default function Sesion() {
       if (!url.includes("/api/")) return original(entrada, init);
 
       const metodo = (init?.method ?? "GET").toUpperCase();
+      let initFinal = init;
 
       // Las respuestas se guardan antes de salir para que esta misma petición
       // ya lleve el perfil actualizado. Las entrevistas alimentan la ficha.
@@ -89,19 +94,30 @@ export default function Sesion() {
           if (cuerpo.accion === "responder" && cuerpo.clave) {
             guardarHechoPublico(cuerpo.clave, cuerpo.valor ?? "");
           }
+          const codigo = new URL(url, window.location.origin).pathname.split("/").pop();
+          const requisitos = codigo ? getEvaluacionPublica(codigo)?.requisitos : null;
+          if (requisitos?.length) {
+            initFinal = { ...init, body: JSON.stringify({ ...cuerpo, requisitos }) };
+          }
         } catch {
           // El servidor validará el cuerpo.
         }
       }
 
-      const cab = new Headers(init?.headers);
+      const cab = new Headers(initFinal?.headers);
       const necesitaPerfil =
         url.includes("/api/perfil") ||
         url.includes("/api/encaje/") ||
         url.includes("/api/convocatorias") ||
         url.includes("/api/borrador/");
-      if (necesitaPerfil) cab.set("x-perfil", JSON.stringify(perfilPublicoConDerivados()));
-      if (url.includes("/api/encaje/")) cab.set("x-sesion", idSesion());
+      // Las cabeceras HTTP son bytes, no Unicode libre. Se codifica para que
+      // respuestas como «sí» no queden truncadas al atravesar el proxy.
+      if (necesitaPerfil) {
+        cab.set("x-perfil", encodeURIComponent(JSON.stringify(perfilPublicoConDerivados())));
+      }
+      if (url.includes("/api/encaje/")) {
+        cab.set("x-sesion", idSesion());
+      }
 
       const ia = leer<{ proveedor?: string; modelo?: string; clave?: string }>(LLAVE_IA, {});
       const pruebaAjustes = url.includes("/api/ajustes") && metodo === "POST";
@@ -120,7 +136,7 @@ export default function Sesion() {
         cab.set("x-ia-clave", ia.clave);
         if (ia.modelo) cab.set("x-ia-modelo", ia.modelo);
       }
-      const respuesta = await original(entrada, { ...init, headers: cab });
+      const respuesta = await original(entrada, { ...initFinal, headers: cab });
       if (url.includes("/api/encaje/") && metodo === "POST" && respuesta.ok) {
         try {
           const codigo = new URL(url, window.location.origin).pathname.split("/").pop();

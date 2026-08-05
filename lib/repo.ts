@@ -39,6 +39,7 @@ interface FilaDb {
   fechas_del_pdf: number | null;
   sin_fechas_confirmado: number | null;
   plazo_relativo: string | null;
+  documento_id: number | null;
 }
 
 function aConvocatoria(f: FilaDb): Convocatoria {
@@ -70,6 +71,7 @@ function aConvocatoria(f: FilaDb): Convocatoria {
     fechasDelPdf: Boolean(f.fechas_del_pdf),
     sinFechasConfirmado: Boolean(f.sin_fechas_confirmado),
     plazoRelativo: f.plazo_relativo,
+    documentoId: f.documento_id,
   };
 }
 
@@ -106,7 +108,8 @@ export function crearRepo(db: Database.Database) {
       abierta_flag=@abiertaFlag, presupuesto=@presupuesto, url_bases=@urlBases,
       sede=@sede, finalidad=@finalidad, beneficiarios=@beneficiarios,
       instrumentos=@instrumentos, sectores=@sectores, regiones=@regiones,
-      fondos=@fondos, detalle_json=@detalleJson, detalle_at=@detalleAt
+      fondos=@fondos, detalle_json=@detalleJson, detalle_at=@detalleAt,
+      documento_id=@documentoId
     WHERE codigo_bdns=@codigoBdns
   `);
 
@@ -163,6 +166,7 @@ export function crearRepo(db: Database.Database) {
         fondos: JSON.stringify(c.fondos ?? []),
         detalleJson: c.detalleJson ?? JSON.stringify({}),
         detalleAt: c.detalleAt ?? ahora(),
+        documentoId: c.documentoId ?? null,
       });
     },
 

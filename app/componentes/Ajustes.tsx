@@ -95,12 +95,13 @@ export default function Ajustes({ onCerrar }: { onCerrar: () => void }) {
   return (
     <>
       <div className="telon" onClick={onCerrar} />
-      <div className="cajon">
+      <div className="cajon" role="dialog" aria-modal="true" aria-label="Ajustes de Encaja">
         <div className="sticky top-0 flex items-center justify-between border-b border-[var(--linea)] bg-[var(--lienzo)] px-8 py-4">
           <span className="rotulo">Ajustes</span>
           <button
             className="text-[18px] leading-none text-[var(--niebla)] transition-colors hover:text-[var(--tinta)]"
             onClick={onCerrar}
+            aria-label="Cerrar ajustes"
           >
             ✕
           </button>
