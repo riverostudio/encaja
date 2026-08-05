@@ -1,14 +1,26 @@
 import type { Plazo } from "./tipos";
 
 const DIA_MS = 24 * 60 * 60 * 1000;
+const ZONA_HORARIA = "Europe/Madrid";
 
-function aFecha(iso: string): Date {
-  return new Date(`${iso}T00:00:00`);
+function fechaCalendarioMadrid(fecha: Date): string {
+  const partes = new Intl.DateTimeFormat("en-CA", {
+    timeZone: ZONA_HORARIA,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(fecha);
+  const valor = (tipo: Intl.DateTimeFormatPartTypes) =>
+    partes.find((parte) => parte.type === tipo)?.value ?? "";
+  return `${valor("year")}-${valor("month")}-${valor("day")}`;
 }
 
 function diasEntre(desde: Date, hastaIso: string): number {
-  const medianoche = new Date(desde.getFullYear(), desde.getMonth(), desde.getDate());
-  return Math.round((aFecha(hastaIso).getTime() - medianoche.getTime()) / DIA_MS);
+  const comoUtc = (iso: string) => {
+    const [anio, mes, dia] = iso.split("-").map(Number);
+    return Date.UTC(anio, mes - 1, dia);
+  };
+  return Math.round((comoUtc(hastaIso) - comoUtc(fechaCalendarioMadrid(desde))) / DIA_MS);
 }
 
 const MESES = [
@@ -42,7 +54,7 @@ export function formatoRango(
   hoy: Date = new Date(),
 ): string {
   if (!inicio && !fin) return "sin fechas";
-  const anioActual = String(hoy.getFullYear());
+  const anioActual = fechaCalendarioMadrid(hoy).slice(0, 4);
   const otroAnio = [inicio, fin].some((f) => f && f.slice(0, 4) !== anioActual);
 
   if (inicio && fin) {

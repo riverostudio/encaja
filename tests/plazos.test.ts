@@ -51,6 +51,18 @@ describe("estadoPlazo", () => {
     expect(estadoPlazo(null, "2026-08-02", HOY).estado).toBe("cerrada");
   });
 
+  it("usa el día civil de Madrid aunque el servidor siga en UTC", () => {
+    const medianocheMadrid = new Date("2026-08-05T22:30:00.000Z");
+    expect(estadoPlazo(null, "2026-08-05", medianocheMadrid)).toEqual({
+      estado: "cerrada",
+      dias: -1,
+    });
+    expect(estadoPlazo(null, "2026-08-06", medianocheMadrid)).toEqual({
+      estado: "urgente",
+      dias: 0,
+    });
+  });
+
   it("sin fechas", () => {
     expect(estadoPlazo(null, null, HOY)).toEqual({ estado: "sin_fechas", dias: null });
     expect(estadoPlazo(undefined, undefined, HOY)).toEqual({ estado: "sin_fechas", dias: null });

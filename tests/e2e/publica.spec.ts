@@ -112,3 +112,72 @@ test("mantenimiento público protegido y cabeceras activas", async ({ page }) =>
   expect(respuesta.headers()["x-content-type-options"]).toBe("nosniff");
   expect(respuesta.headers()["content-security-policy"]).toContain("frame-ancestors 'none'");
 });
+
+test("el veredicto permanece visible tras actualizar la ficha", async ({ page }) => {
+  let inicios = 0;
+  const convocatoria = {
+    codigoBdns: "999999",
+    titulo: "Ayuda pública de prueba",
+    nivel1: "ESTADO",
+    nivel2: "Administración General del Estado",
+    fechaRegistro: "2026-08-05",
+    mrr: false,
+    beneficiarios: ["PERSONAS FÍSICAS"],
+    instrumentos: ["SUBVENCIÓN"],
+    sectores: [],
+    regiones: ["ES"],
+    fondos: [],
+    rangoFechas: "1 ene 2026 — 31 dic 2027",
+    plazo: { estado: "abierta", dias: 512 },
+    llano: { que: "Ayuda pública de prueba", quien: "personas", consigues: "apoyo" },
+  };
+  await page.route(/\/api\/convocatorias(?:\?.*)?$/, async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ filas: [convocatoria], relajado: null, prestaciones: [] }),
+    });
+  });
+  await page.route("**/api/convocatorias/999999", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        conv: convocatoria,
+        urlFicha: "https://www.infosubvenciones.es/bdnstrans/GE/es/convocatoria/999999",
+        evaluacion: null,
+        expediente: null,
+      }),
+    });
+  });
+  await page.route("**/api/resumen/999999", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ sinClave: true, resumen: null }),
+    });
+  });
+  await page.route("**/api/encaje/999999", async (route) => {
+    const cuerpo = route.request().postDataJSON() as { accion: string };
+    if (cuerpo.accion === "iniciar") inicios++;
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify(
+        cuerpo.accion === "dictaminar"
+          ? { fase: "dictamen", dictamen: "encaja", motivos: [], requisitos: [] }
+          : { fase: "listo_para_dictamen", progreso: { respondidas: 1, total: 1 }, requisitos: [] },
+      ),
+    });
+  });
+
+  await entrarSinClave(page);
+  await page.getByRole("button").filter({ hasText: "Ayuda pública de prueba" }).click();
+  await page.getByRole("button", { name: "Empezar el cuestionario" }).click();
+  await page.getByRole("button", { name: "Ver el veredicto" }).click();
+
+  await expect(page.getByText("Sí, encajas", { exact: true })).toBeVisible();
+  await page.waitForTimeout(300);
+  await expect(page.getByText("Sí, encajas", { exact: true })).toBeVisible();
+  expect(inicios).toBe(1);
+});

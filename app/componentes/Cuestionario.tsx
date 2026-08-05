@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import EsperaLectura, { PASOS_ENCAJE } from "./EsperaLectura";
 import type { MotivoUi, RequisitoUi } from "./tipos-ui";
 
@@ -67,6 +67,11 @@ export default function Cuestionario({
   const [texto, setTexto] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [paso, setPaso] = useState(0); // fuerza la animación en cada pregunta
+  const onVeredictoRef = useRef(onVeredicto);
+
+  useEffect(() => {
+    onVeredictoRef.current = onVeredicto;
+  }, [onVeredicto]);
 
   const llamar = useCallback(
     async (cuerpo: Record<string, string>) => {
@@ -83,7 +88,7 @@ export default function Cuestionario({
         else {
           setEstado(d);
           setPaso((p) => p + 1);
-          if (d.fase === "dictamen" && d.dictamen) onVeredicto?.(d.dictamen);
+          if (d.fase === "dictamen" && d.dictamen) onVeredictoRef.current?.(d.dictamen);
         }
       } catch (e) {
         setError(e instanceof Error ? e.message : String(e));
@@ -92,7 +97,7 @@ export default function Cuestionario({
         setTexto("");
       }
     },
-    [codigo, onVeredicto],
+    [codigo],
   );
 
   useEffect(() => {
@@ -106,11 +111,11 @@ export default function Cuestionario({
         if (!r.ok) setError(d.error ?? "Error inesperado");
         else {
           setEstado(d);
-          if (d.fase === "dictamen" && d.dictamen) onVeredicto?.(d.dictamen);
+          if (d.fase === "dictamen" && d.dictamen) onVeredictoRef.current?.(d.dictamen);
         }
       })
       .catch((e) => setError(e instanceof Error ? e.message : String(e)));
-  }, [codigo, onVeredicto]);
+  }, [codigo]);
 
   useEffect(() => {
     const alPulsar = (e: KeyboardEvent) => {
