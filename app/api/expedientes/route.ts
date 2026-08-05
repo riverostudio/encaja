@@ -5,10 +5,17 @@ import { crearCarpetaExpediente, escribirInstrucciones, montarChecklist } from "
 import { obtenerRequisitos, EXPLICACION_SIN_BASES } from "@/lib/bases";
 import { estadoPlazo } from "@/lib/plazos";
 import type { Requisito } from "@/lib/tipos";
+import { esPublico } from "@/lib/sesion";
 
 export const dynamic = "force-dynamic";
 
 export async function GET() {
+  if (esPublico()) {
+    return NextResponse.json(
+      { error: "Los expedientes públicos se guardan de forma privada en el navegador." },
+      { status: 405 },
+    );
+  }
   const repo = getRepo();
   const filas = repo.listarExpedientes().map((e) => {
     const conv = repo.getConvocatoria(e.codigoBdns);
@@ -23,6 +30,12 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   try {
+    if (esPublico()) {
+      return NextResponse.json(
+        { error: "Los expedientes públicos se crean en el navegador." },
+        { status: 405 },
+      );
+    }
     const perfil = idDeSesion(req);
     const cred = credencialesDe(req);
     const { codigo } = (await req.json()) as { codigo: string };

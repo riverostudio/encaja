@@ -3,6 +3,12 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Cuestionario from "./Cuestionario";
+import { APP_PUBLICA } from "./Sesion";
+import {
+  crearExpedientePublico,
+  getEvaluacionPublica,
+  getExpedientePublico,
+} from "../lib/estado-publico";
 import {
   colorPlazo,
   euros,
@@ -43,6 +49,13 @@ export default function DetalleAyuda({
     fetch(`/api/convocatorias/${codigo}`)
       .then((r) => r.json())
       .then((datos: Detalle) => {
+        if (APP_PUBLICA) {
+          const evaluacion = getEvaluacionPublica(codigo);
+          datos.evaluacion = evaluacion?.dictamen ? { dictamen: evaluacion.dictamen } : null;
+          datos.expediente = getExpedientePublico(codigo)
+            ? { codigoBdns: codigo }
+            : null;
+        }
         setD(datos);
         setResumen(datos.conv?.resumen ?? null);
         setVeredicto(datos.evaluacion?.dictamen ?? null);
@@ -73,6 +86,12 @@ export default function DetalleAyuda({
 
   const alExpediente = useCallback(async () => {
     setCreandoExp(true);
+    if (APP_PUBLICA && d) {
+      crearExpedientePublico(d.conv, d.urlFicha);
+      router.push(`/expedientes/${codigo}`);
+      setCreandoExp(false);
+      return;
+    }
     const r = await fetch("/api/expedientes", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -80,7 +99,7 @@ export default function DetalleAyuda({
     });
     if (r.ok) router.push(`/expedientes/${codigo}`);
     setCreandoExp(false);
-  }, [codigo, router]);
+  }, [codigo, d, router]);
 
   if (cuestionario && d) {
     return (
@@ -108,7 +127,7 @@ export default function DetalleAyuda({
   return (
     <>
       <div className="telon" onClick={onCerrar} />
-      <aside className="cajon">
+      <aside className="cajon" role="dialog" aria-modal="true" aria-label={`Ayuda BDNS ${codigo}`}>
         <div className="sticky top-0 z-10 flex items-center justify-between border-b border-[var(--linea)] bg-[var(--lienzo)] px-8 py-4">
           <span className="rotulo cifra">BDNS {codigo}</span>
           <button

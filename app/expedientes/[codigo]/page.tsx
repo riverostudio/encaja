@@ -3,6 +3,12 @@
 import Link from "next/link";
 import { use, useEffect, useState } from "react";
 import { colorPlazo, fraseP1azo, SELLO, type ConvUi, type VeredictoUi } from "../../componentes/tipos-ui";
+import { APP_PUBLICA } from "../../componentes/Sesion";
+import {
+  actualizarExpedientePublico,
+  datosExpedientePublico,
+  descargarExpedientePublico,
+} from "../../lib/estado-publico";
 
 interface ItemChecklist {
   id: string;
@@ -51,17 +57,34 @@ export default function PaginaExpediente({ params }: { params: Promise<{ codigo:
   const [confirmando, setConfirmando] = useState(false);
 
   useEffect(() => {
+    if (APP_PUBLICA) {
+      queueMicrotask(() => {
+        const local = datosExpedientePublico(codigo);
+        setDatos((local ?? { error: "No existe el expediente" }) as Datos);
+      });
+      return;
+    }
     fetch(`/api/expedientes/${codigo}`)
       .then((r) => r.json())
       .then((d: Datos) => setDatos(d));
   }, [codigo]);
 
   async function recargar() {
+    if (APP_PUBLICA) {
+      const local = datosExpedientePublico(codigo);
+      setDatos((local ?? { error: "No existe el expediente" }) as Datos);
+      return;
+    }
     const r = await fetch(`/api/expedientes/${codigo}`);
     setDatos((await r.json()) as Datos);
   }
 
   async function patch(cuerpo: object) {
+    if (APP_PUBLICA) {
+      actualizarExpedientePublico(codigo, cuerpo as Parameters<typeof actualizarExpedientePublico>[1]);
+      await recargar();
+      return;
+    }
     await fetch(`/api/expedientes/${codigo}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
@@ -75,6 +98,35 @@ export default function PaginaExpediente({ params }: { params: Promise<{ codigo:
     setError(null);
     setRutaGenerada(null);
     try {
+      if (APP_PUBLICA) {
+        const peticion = cuerpo as { accion?: string; tipo?: "memoria" | "declaracion" };
+        if (peticion.accion === "abrir_carpeta") {
+          descargarExpedientePublico(codigo);
+          setRutaGenerada("Descargas");
+          return;
+        }
+        if (peticion.accion === "borrador") {
+          const r = await fetch(`/api/borrador/${codigo}`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ tipo: peticion.tipo }),
+          });
+          if (!r.ok) {
+            const d = (await r.json()) as { error?: string };
+            setError(d.error ?? "No se ha podido generar el borrador.");
+            return;
+          }
+          const blob = await r.blob();
+          const url = URL.createObjectURL(blob);
+          const enlace = document.createElement("a");
+          enlace.href = url;
+          enlace.download = `encaja-${codigo}-${peticion.tipo ?? "borrador"}.docx`;
+          enlace.click();
+          setTimeout(() => URL.revokeObjectURL(url), 1000);
+          setRutaGenerada("Descargas");
+          return;
+        }
+      }
       const r = await fetch(`/api/expedientes/${codigo}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -84,7 +136,7 @@ export default function PaginaExpediente({ params }: { params: Promise<{ codigo:
       if (!r.ok) {
         setError(
           d.error?.includes("SIN_CLAVE_GEMINI")
-            ? "Falta la clave de Gemini: pégala en Ajustes para redactar borradores."
+            ? "Falta una clave de IA: pégala en Ajustes para redactar borradores."
             : (d.error ?? "Error"),
         );
       } else if (d.ruta) setRutaGenerada(d.ruta);
@@ -333,12 +385,12 @@ export default function PaginaExpediente({ params }: { params: Promise<{ codigo:
             className="btn btn-linea"
             onClick={() => void accion({ accion: "abrir_carpeta" }, "carpeta")}
           >
-            Abrir carpeta
+            {APP_PUBLICA ? "Descargar expediente" : "Abrir carpeta"}
           </button>
         </div>
         {rutaGenerada && (
           <p className="nota mt-3" style={{ color: "var(--bosque)" }}>
-            Borrador generado en <span className="cifra break-all">{rutaGenerada}</span>. Revísalo
+            Archivo generado en <span className="cifra break-all">{rutaGenerada}</span>. Revísalo
             antes de usarlo.
           </p>
         )}

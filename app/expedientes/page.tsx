@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { colorPlazo, fraseP1azo, type PlazoUi } from "../componentes/tipos-ui";
+import { APP_PUBLICA } from "../componentes/Sesion";
+import { listarExpedientesPublicos } from "../lib/estado-publico";
 
 interface ExpedienteFila {
   codigoBdns: string;
@@ -25,6 +27,23 @@ export default function PaginaExpedientes() {
   const [cargado, setCargado] = useState(false);
 
   useEffect(() => {
+    if (APP_PUBLICA) {
+      // El navegador ya tiene los datos: se leen en un microtask para no
+      // encadenar un render dentro del efecto que acaba de pintar.
+      queueMicrotask(() => {
+        setFilas(
+          listarExpedientesPublicos().map((e) => ({
+            codigoBdns: e.codigoBdns,
+            estado: e.estado,
+            titulo: e.conv.resumen?.titular ?? e.conv.llano.que ?? e.conv.titulo,
+            organo: e.conv.nivel3 ?? e.conv.nivel2,
+            plazo: e.conv.plazo,
+          })),
+        );
+        setCargado(true);
+      });
+      return;
+    }
     fetch("/api/expedientes")
       .then((r) => r.json())
       .then((d: { filas: ExpedienteFila[] }) => {
@@ -38,8 +57,9 @@ export default function PaginaExpedientes() {
       <div className="py-24 text-center">
         <h1 className="display text-[26px]">Aún no hay expedientes</h1>
         <p className="nota mx-auto mt-2 max-w-sm">
-          En el radar, abre una ayuda y pulsa «Abrir expediente». Se creará una carpeta real en tu
-          disco con los enlaces oficiales y las instrucciones.
+          En el radar, abre una ayuda y pulsa «Abrir expediente». {APP_PUBLICA
+            ? "Se guardará de forma privada en este navegador y podrás descargarla."
+            : "Se creará una carpeta real en tu disco con los enlaces oficiales y las instrucciones."}
         </p>
         <Link href="/" className="btn mt-7 inline-block">
           Ir al radar

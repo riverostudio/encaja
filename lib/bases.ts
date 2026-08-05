@@ -4,7 +4,7 @@ import type { Repo } from "./repo";
 import type { Convocatoria, Requisito } from "./tipos";
 import { descargarBases } from "./bdns";
 import { generar, hayClave, type CredencialesIA } from "./ia";
-import { PROMPT_EXTRACCION, bloqueLoQueYaSe, parsearRequisitos } from "./requisitos";
+import { PROMPT_EXTRACCION, parsearRequisitos } from "./requisitos";
 
 export type MotivoSinBases = "sin_clave" | "sin_documento" | "ilegible";
 
@@ -29,13 +29,12 @@ export async function obtenerRequisitos(
     const guardados = JSON.parse(previa.requisitosJson) as Requisito[];
     if (guardados.length > 0) return { requisitos: guardados };
   }
-  if (!hayClave(repo)) return { requisitos: [], motivo: "sin_clave" };
+  if (!credenciales && !hayClave(repo)) return { requisitos: [], motivo: "sin_clave" };
 
   const bases = await descargarBases(conv);
-  // Se le dice lo que ya sabemos para que no repregunte lo del perfil.
-  const partes: Parameters<typeof generar>[1] = [
-    { texto: `${PROMPT_EXTRACCION}\n\n${bloqueLoQueYaSe(repo.getHechos(perfilId))}` },
-  ];
+  // La extracción describe la convocatoria, no a la persona: así se puede
+  // reutilizar sin enviar datos privados al proveedor.
+  const partes: Parameters<typeof generar>[1] = [{ texto: PROMPT_EXTRACCION }];
 
   if (bases?.tipo === "pdf") {
     partes.push({ pdf: bases.datos as Buffer });

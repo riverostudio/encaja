@@ -94,6 +94,10 @@ export default function Shell({ children }: { children: ReactNode }) {
             </a>
             , de naturaleza dinámica: verifica siempre contra la convocatoria oficial antes de
             presentar. Esta herramienta no firma ni presenta solicitudes.
+            {" · "}
+            <Link className="enlace" href="/privacidad">
+              Privacidad y uso responsable
+            </Link>
           </p>
         </div>
       </footer>

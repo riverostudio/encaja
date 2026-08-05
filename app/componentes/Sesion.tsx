@@ -1,6 +1,12 @@
 "use client";
 
 import { useEffect } from "react";
+import {
+  borrarHechoPublico,
+  guardarHechoPublico,
+  guardarResultadoEncaje,
+  perfilPublicoConDerivados,
+} from "../lib/estado-publico";
 
 /**
  * En la app pública nada tuyo se guarda en el servidor: tu perfil y tu clave
@@ -16,7 +22,6 @@ import { useEffect } from "react";
 
 const PUBLICO = process.env.NEXT_PUBLIC_ENCAJA_PUBLICO === "1";
 const LLAVE_SESION = "encaja.sesion";
-const LLAVE_PERFIL = "encaja.perfil";
 const LLAVE_IA = "encaja.ia";
 
 function leer<T>(llave: string, porDefecto: T): T {
@@ -58,32 +63,73 @@ export default function Sesion() {
             : entrada.url;
       if (!url.includes("/api/")) return original(entrada, init);
 
-      // Una respuesta del perfil se guarda AQUÍ antes de salir, para que la
-      // cabecera que acompaña a esta misma petición ya la incluya.
+      const metodo = (init?.method ?? "GET").toUpperCase();
+
+      // Las respuestas se guardan antes de salir para que esta misma petición
+      // ya lleve el perfil actualizado. Las entrevistas alimentan la ficha.
       if (url.includes("/api/perfil") && init?.method === "POST" && typeof init.body === "string") {
         try {
           const { clave, valor } = JSON.parse(init.body) as { clave?: string; valor?: string };
-          if (clave) {
-            const perfil = leer<Record<string, string>>(LLAVE_PERFIL, {});
-            perfil[clave] = valor ?? "";
-            localStorage.setItem(LLAVE_PERFIL, JSON.stringify(perfil));
-          }
+          if (clave) guardarHechoPublico(clave, valor ?? "");
         } catch {
           // Cuerpo inesperado: se envía tal cual y el servidor decidirá.
         }
       }
+      if (url.includes("/api/perfil") && metodo === "DELETE") {
+        try {
+          const clave = new URL(url, window.location.origin).searchParams.get("clave");
+          if (clave) borrarHechoPublico(clave);
+        } catch {
+          // Una URL inesperada la resolverá el servidor.
+        }
+      }
+      if (url.includes("/api/encaje/") && metodo === "POST" && typeof init?.body === "string") {
+        try {
+          const cuerpo = JSON.parse(init.body) as { accion?: string; clave?: string; valor?: string };
+          if (cuerpo.accion === "responder" && cuerpo.clave) {
+            guardarHechoPublico(cuerpo.clave, cuerpo.valor ?? "");
+          }
+        } catch {
+          // El servidor validará el cuerpo.
+        }
+      }
 
       const cab = new Headers(init?.headers);
-      cab.set("x-sesion", idSesion());
-      cab.set("x-perfil", JSON.stringify(leer<Record<string, string>>(LLAVE_PERFIL, {})));
+      const necesitaPerfil =
+        url.includes("/api/perfil") ||
+        url.includes("/api/encaje/") ||
+        url.includes("/api/convocatorias") ||
+        url.includes("/api/borrador/");
+      if (necesitaPerfil) cab.set("x-perfil", JSON.stringify(perfilPublicoConDerivados()));
+      if (url.includes("/api/encaje/")) cab.set("x-sesion", idSesion());
 
       const ia = leer<{ proveedor?: string; modelo?: string; clave?: string }>(LLAVE_IA, {});
-      if (ia.proveedor && ia.clave) {
+      const pruebaAjustes = url.includes("/api/ajustes") && metodo === "POST";
+      const necesitaIa =
+        pruebaAjustes ||
+        url.includes("/api/resumen/") ||
+        url.includes("/api/encaje/") ||
+        url.includes("/api/borrador/");
+      if (url.includes("/api/ajustes") && ia.proveedor) {
+        cab.set("x-ia-configurada", ia.clave ? "1" : "0");
+        cab.set("x-ia-proveedor", ia.proveedor);
+        if (ia.modelo) cab.set("x-ia-modelo", ia.modelo);
+      }
+      if (necesitaIa && ia.proveedor && ia.clave) {
         cab.set("x-ia-proveedor", ia.proveedor);
         cab.set("x-ia-clave", ia.clave);
         if (ia.modelo) cab.set("x-ia-modelo", ia.modelo);
       }
-      return original(entrada, { ...init, headers: cab });
+      const respuesta = await original(entrada, { ...init, headers: cab });
+      if (url.includes("/api/encaje/") && metodo === "POST" && respuesta.ok) {
+        try {
+          const codigo = new URL(url, window.location.origin).pathname.split("/").pop();
+          if (codigo) guardarResultadoEncaje(codigo, await respuesta.clone().json());
+        } catch {
+          // La llamada sigue siendo válida aunque no se pueda cachear su resultado.
+        }
+      }
+      return respuesta;
     };
 
     return () => {

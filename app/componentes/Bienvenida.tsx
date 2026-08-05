@@ -131,10 +131,9 @@ export default function Bienvenida({
           <p className="mt-4 max-w-lg text-[15px] leading-relaxed text-[var(--grafito)]">
             {APP_PUBLICA ? (
               <>
-                Las 609 ayudas abiertas ya están traducidas: puedes entrar y leerlas todas sin
-                poner nada. La clave solo hace falta para el «¿encajo?», que se lee las bases de
-                una convocatoria y te entrevista. Vale la de la IA que ya uses, y se guarda solo
-                en este navegador.
+                Puedes entrar y consultar el radar sin poner nada. La clave solo hace falta para
+                traducir una ficha que aún no esté preparada, leer sus bases y usar «¿Encajo?». Se
+                guarda en este navegador y Encaja no la conserva en su servidor.
               </>
             ) : (
               <>
@@ -204,7 +203,7 @@ export default function Bienvenida({
             <a className="enlace" href={elegido.dondeSacarla} target="_blank" rel="noreferrer">
               Sácala aquí ↗
             </a>{" "}
-            · Se guarda solo en este ordenador y nunca sale de él.
+            · En la web se transmite cifrada solo al pedir una operación de IA.
           </p>
         </div>
 

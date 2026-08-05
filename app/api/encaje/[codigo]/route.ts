@@ -11,6 +11,7 @@ import {
   parsearVeredictos,
   siguientePregunta,
   preguntables } from "@/lib/requisitos";
+import { protegerApi } from "@/lib/seguridad";
 
 
 export const dynamic = "force-dynamic";
@@ -20,6 +21,8 @@ export async function POST(
   ctx: { params: Promise<{ codigo: string }> },
 ) {
   try {
+    const bloqueo = protegerApi(req, "encaje", 80);
+    if (bloqueo) return bloqueo;
     const { codigo } = await ctx.params;
     const cuerpo = (await req.json()) as {
       accion: "iniciar" | "responder" | "dictaminar";

@@ -7,6 +7,7 @@ import { generar, hayClave } from "@/lib/ia";
 import { estadoPlazo, formatoRango } from "@/lib/plazos";
 import { resumirEstructural } from "@/lib/resumen";
 import type { ItemChecklist, Requisito, ResumenIA } from "@/lib/tipos";
+import { esPublico } from "@/lib/sesion";
 
 function leerResumenIa(json?: string | null): ResumenIA | null {
   if (!json) return null;
@@ -23,6 +24,12 @@ export async function GET(
   req: NextRequest,
   ctx: { params: Promise<{ codigo: string }> },
 ) {
+  if (esPublico()) {
+    return NextResponse.json(
+      { error: "El expediente público pertenece al navegador que lo creó." },
+      { status: 405 },
+    );
+  }
   const perfil = idDeSesion(req);
   const { codigo } = await ctx.params;
   const repo = getRepo();
@@ -58,6 +65,9 @@ export async function PATCH(
   ctx: { params: Promise<{ codigo: string }> },
 ) {
   try {
+    if (esPublico()) {
+      return NextResponse.json({ error: "Operación local no disponible en la web." }, { status: 405 });
+    }
     const { codigo } = await ctx.params;
     const cuerpo = (await req.json()) as {
       estado?: string;
@@ -88,6 +98,9 @@ export async function POST(
   ctx: { params: Promise<{ codigo: string }> },
 ) {
   try {
+    if (esPublico()) {
+      return NextResponse.json({ error: "Operación local no disponible en la web." }, { status: 405 });
+    }
     const perfil = idDeSesion(req);
     const cred = credencialesDe(req);
     const { codigo } = await ctx.params;

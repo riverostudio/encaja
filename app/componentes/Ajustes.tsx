@@ -1,9 +1,16 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Aviso, ElegirModelo, type ProveedorUi } from "./Bienvenida";
 import Trabajos from "./Trabajos";
-import { guardarIaLocal } from "./Sesion";
+import { APP_PUBLICA, guardarIaLocal, olvidarIaLocal } from "./Sesion";
+import {
+  borrarDatosPublicos,
+  exportarDatosPublicos,
+  guardarHechoPublico,
+  leerPerfilPublico,
+} from "../lib/estado-publico";
 
 interface Estado {
   configurada: boolean;
@@ -16,6 +23,7 @@ interface Estado {
 }
 
 export default function Ajustes({ onCerrar }: { onCerrar: () => void }) {
+  const router = useRouter();
   const [estado, setEstado] = useState<Estado | null>(null);
   const [proveedor, setProveedor] = useState("");
   const [clave, setClave] = useState("");
@@ -30,7 +38,7 @@ export default function Ajustes({ onCerrar }: { onCerrar: () => void }) {
       .then((r) => r.json())
       .then((d: Estado) => {
         setEstado(d);
-        setCp(d.cp ?? "");
+        setCp(APP_PUBLICA ? (leerPerfilPublico().cp ?? "") : (d.cp ?? ""));
         setProveedor(d.proveedor);
         setModelo(d.modelo);
       });
@@ -72,6 +80,7 @@ export default function Ajustes({ onCerrar }: { onCerrar: () => void }) {
         const { proveedor: p, modelo: m, clave: c } = d.guardarEnNavegador;
         guardarIaLocal(p, m, c);
       }
+      if (APP_PUBLICA && cp) guardarHechoPublico("cp", cp);
       setGuardado(true);
       setClave("");
       setEstado((await (await fetch("/api/ajustes")).json()) as Estado);
@@ -182,15 +191,45 @@ export default function Ajustes({ onCerrar }: { onCerrar: () => void }) {
             {guardando ? "Comprobando…" : guardado ? "Guardado" : "Guardar"}
           </button>
 
-          <div className="filete mt-10 pt-6">
-            <p className="rotulo mb-4">Trabajo en lote</p>
-            <Trabajos />
-          </div>
+          {!APP_PUBLICA && (
+            <div className="filete mt-10 pt-6">
+              <p className="rotulo mb-4">Trabajo en lote</p>
+              <Trabajos />
+            </div>
+          )}
+
+          {APP_PUBLICA && (
+            <div className="filete mt-10 pt-6">
+              <p className="rotulo mb-3">Tus datos en este navegador</p>
+              <p className="nota mb-4">
+                Puedes descargar una copia de tu perfil y expedientes o borrarlos de este
+                navegador cuando quieras.
+              </p>
+              <div className="flex flex-wrap gap-3">
+                <button className="btn btn-linea" onClick={exportarDatosPublicos}>
+                  Descargar mis datos
+                </button>
+                <button
+                  className="btn btn-linea"
+                  onClick={() => {
+                    if (!window.confirm("¿Borrar perfil, entrevistas, expedientes y clave de este navegador?")) return;
+                    borrarDatosPublicos();
+                    olvidarIaLocal();
+                    router.push("/");
+                    router.refresh();
+                  }}
+                >
+                  Borrar mis datos
+                </button>
+              </div>
+            </div>
+          )}
 
           <p className="nota mt-8">
-            La clave se guarda solo en este ordenador y nunca viaja al navegador ni al repositorio.
-            Antes de guardarla se prueba con una llamada real, así que si no funciona te lo digo
-            aquí y no después.
+            {APP_PUBLICA
+              ? "La clave se guarda en este navegador y se transmite cifrada solo cuando pides una operación de IA. Encaja no la conserva en su servidor."
+              : "La clave se guarda en el Llavero de este Mac, no en el código ni en las copias de seguridad."}{" "}
+            Antes de guardarla se prueba con una llamada real.
           </p>
         </div>
       </div>

@@ -6,6 +6,8 @@ import TarjetaAyuda from "./componentes/TarjetaAyuda";
 import DetalleAyuda from "./componentes/DetalleAyuda";
 import Esperando, { MENSAJES_RADAR, MENSAJES_SYNC } from "./componentes/Esperando";
 import type { ConvUi, ResumenIaUi } from "./componentes/tipos-ui";
+import { APP_PUBLICA } from "./componentes/Sesion";
+import { getRegionPublica, guardarRegionPublica } from "./lib/estado-publico";
 
 interface EstadoSync {
   ultimo: string | null;
@@ -87,6 +89,7 @@ export default function PaginaRadar() {
     progreso: { completo: boolean; respondidas: number };
   } | null>(null);
   const [prestaciones, setPrestaciones] = useState<PrestacionUi[]>([]);
+  const [prestacionesBusqueda, setPrestacionesBusqueda] = useState<PrestacionUi[]>([]);
   const [relajado, setRelajado] = useState<string | null>(null);
   const [traduciendo, setTraduciendo] = useState(0);
   const pedidas = useRef<Set<string>>(new Set());
@@ -110,9 +113,14 @@ export default function PaginaRadar() {
     if (cp.length === 5) q.set("cp", cp);
     if (soloAplicables) q.set("soloAplicables", "1");
     const r = await fetch(`/api/convocatorias?${q}`);
-    const d = (await r.json()) as { filas: ConvUi[]; relajado: string | null };
+    const d = (await r.json()) as {
+      filas: ConvUi[];
+      relajado: string | null;
+      prestaciones?: PrestacionUi[];
+    };
     setFilas(d.filas ?? []);
     setRelajado(d.relajado ?? null);
+    setPrestacionesBusqueda(d.prestaciones ?? []);
     setVisibles(POR_TANDA);
     pedidas.current.clear();
     setCargando(false);
@@ -158,10 +166,19 @@ export default function PaginaRadar() {
           atajos: { texto: string; busca: string }[];
           prestaciones: PrestacionUi[];
           progreso: { completo: boolean; respondidas: number };
+          respuestas: Record<string, string>;
+          zona: { municipio: string; provincia: string; regionIds: number[] } | null;
         }>,
       ]);
-      if (aj.cp) setCp(aj.cp);
-      if (aj.ccaa) setRegion(aj.ccaa);
+      const cpPerfil = datosPerfil.respuestas?.cp ?? aj.cp;
+      if (cpPerfil) setCp(cpPerfil);
+      if (APP_PUBLICA) {
+        const guardada = getRegionPublica();
+        const detectada = datosPerfil.zona?.regionIds?.[0];
+        const inicial = guardada ?? detectada ?? 54;
+        setRegion(inicial);
+        guardarRegionPublica(inicial);
+      } else if (aj.ccaa) setRegion(aj.ccaa);
       // El perfil manda: el radar arranca filtrado a lo que le sirve a esta persona.
       if (datosPerfil.beneficiario) setParaQuien(datosPerfil.beneficiario);
       setPerfil(datosPerfil);
@@ -170,7 +187,7 @@ export default function PaginaRadar() {
       // Solo se sincroniza si el archivo está vacío. A partir de ahí, manda
       // el botón: nada de re-descargar (ni de gastar IA) sin pedirlo.
       const s = await refrescarSync();
-      if (s.total === 0) void sincronizar(aj.ccaa || 54);
+      if (!APP_PUBLICA && s.total === 0) void sincronizar(aj.ccaa || 54);
     })();
   }, [refrescarSync, sincronizar]);
 
@@ -186,7 +203,23 @@ export default function PaginaRadar() {
     if (cp.length !== 5) return;
     fetch(`/api/territorio?cp=${cp}`)
       .then((r) => r.json())
-      .then((d: { zona: { municipio: string; provincia: string } | null }) => setZona(d.zona));
+      .then(
+        (d: {
+          zona: { municipio: string; provincia: string; regionIds: number[] } | null;
+        }) => {
+          setZona(d.zona);
+          if (APP_PUBLICA && d.zona?.regionIds?.[0]) {
+            const detectada = d.zona.regionIds[0];
+            setRegion(detectada);
+            guardarRegionPublica(detectada);
+            void fetch("/api/perfil", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ clave: "cp", valor: cp }),
+            });
+          }
+        },
+      );
   }, [cp]);
 
   // Se traduce SOLO lo que tienes delante. Lo traducido queda guardado en tu
@@ -261,6 +294,10 @@ export default function PaginaRadar() {
   async function cambiarRegion(valor: string) {
     const nueva = valor === "" ? "" : Number(valor);
     setRegion(nueva);
+    if (APP_PUBLICA) {
+      guardarRegionPublica(nueva);
+      return;
+    }
     if (nueva === "") {
       // "Toda España" solo sirve si están las 19 comunidades traídas.
       void sincronizarEspana();
@@ -303,6 +340,7 @@ export default function PaginaRadar() {
   const zonaVisible = cp.length === 5 ? zona : null;
   const desactualizado = sync?.horas != null && sync.horas > 168;
   const enPantalla = filas.slice(0, visibles);
+  const prestacionesVisibles = texto ? prestacionesBusqueda : prestaciones;
 
   return (
     <div>
@@ -418,7 +456,10 @@ export default function PaginaRadar() {
             </span>
           ) : (
             <>
-              <span className="cifra text-[var(--grafito)]">{filas.length}</span> ayudas · las que
+              <span className="cifra text-[var(--grafito)]">
+                {filas.length === 400 ? "400+" : filas.length}
+              </span>{" "}
+              ayudas · las que
               antes cierran, primero
               {traduciendo > 0 && (
                 <span className="ml-3 inline-flex items-center gap-2">
@@ -445,19 +486,21 @@ export default function PaginaRadar() {
                     }`
                   : "archivo vacío"}
               </span>{" "}
-              <button
-                className="btn-texto ml-2"
-                onClick={() => void sincronizar(region === "" ? 54 : region)}
-              >
-                Actualizar
-              </button>
+              {!APP_PUBLICA && (
+                <button
+                  className="btn-texto ml-2"
+                  onClick={() => void sincronizar(region === "" ? 54 : region)}
+                >
+                  Actualizar
+                </button>
+              )}
             </>
           )}
         </p>
       </div>
 
       {/* ——— lo que NO está en la BDNS pero te puede tocar ——— */}
-      {prestaciones.length > 0 && !texto && (
+      {prestacionesVisibles.length > 0 && (
         <div className="mt-6">
           <p className="rotulo mb-1">Además, esto te puede corresponder por derecho</p>
           <p className="nota mb-3 max-w-2xl">
@@ -465,7 +508,7 @@ export default function PaginaRadar() {
             piden cuando cumples los requisitos, sin fecha límite.
           </p>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {prestaciones.map((p, i) => (
+            {prestacionesVisibles.map((p, i) => (
               <a
                 key={p.id}
                 href={p.url}

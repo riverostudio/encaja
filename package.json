@@ -8,7 +8,9 @@
     "start": "next start -p 3002",
     "lint": "eslint",
     "test": "vitest run",
-    "sync": "tsx scripts/sync.ts"
+    "sync": "tsx scripts/sync.ts",
+    "sync:espana": "tsx scripts/sync-toda-espana.ts",
+    "public:db": "tsx scripts/generar-publica.ts"
   },
   "dependencies": {
     "better-sqlite3": "^13.0.2",

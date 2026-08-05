@@ -5,11 +5,12 @@ import { estadoPlazo, formatoRango } from "@/lib/plazos";
 import { urlFichaBdns } from "@/lib/expediente";
 import { resumirEstructural } from "@/lib/resumen";
 import type { ResumenIA } from "@/lib/tipos";
+import { esPublico, idDeSesion } from "@/lib/sesion";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(
-  _req: NextRequest,
+  req: NextRequest,
   ctx: { params: Promise<{ codigo: string }> },
 ) {
   try {
@@ -22,8 +23,9 @@ export async function GET(
       repo.upsertDetalle(vivo);
       conv = repo.getConvocatoria(codigo) ?? vivo;
     }
-    const evaluacion = repo.getEvaluacion(codigo, 1);
-    const expediente = repo.getExpediente(codigo);
+    const perfil = idDeSesion(req);
+    const evaluacion = esPublico() ? null : repo.getEvaluacion(codigo, perfil);
+    const expediente = esPublico() ? null : repo.getExpediente(codigo);
     let resumen: ResumenIA | null = null;
     try {
       resumen = conv.resumenIa ? (JSON.parse(conv.resumenIa) as ResumenIA) : null;

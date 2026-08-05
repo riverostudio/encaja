@@ -97,6 +97,8 @@ export interface FiltrosRadar {
   cp?: string;
   /** Con perfil completo, esconde lo que el filtro oficial ya descarta. */
   soloAplicables?: boolean;
+  /** Perfil que viaja con un visitante público; en local se usa SQLite. */
+  hechos?: Map<string, string>;
 }
 
 export type Relajado = "perfil" | "beneficiario" | "plazo" | null;
@@ -149,7 +151,8 @@ export function buscarRadar(repo: Repo, f: FiltrosRadar): ConvocatoriaConPlazo[]
     instrumento: f.instrumento,
     beneficiario: f.beneficiario,
     regionSync: f.region,
-    limite: 3000,
+    noCerradas: f.estado !== "todas",
+    limite: 8000,
   });
 
   const conPlazo: ConvocatoriaConPlazo[] = filas.map((c) => ({
@@ -180,7 +183,7 @@ export function buscarRadar(repo: Repo, f: FiltrosRadar): ConvocatoriaConPlazo[]
   // Solo lo que esta persona puede pedir de verdad: fuera lo que el filtro
   // oficial descarta sin lugar a dudas (beneficiario, territorio, plazo).
   if (f.soloAplicables) {
-    const hechos = repo.getHechos(1);
+    const hechos = f.hechos ?? repo.getHechos(1);
     filtradas = filtradas.filter(
       (c) => evaluarEstructural(c, hechos).resultado !== "no",
     );

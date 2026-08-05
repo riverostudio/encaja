@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getRepo, errorJson } from "@/lib/servidor";
 import { syncLista, syncEstatal, syncDetalles, refrescarAbiertas } from "@/lib/sync";
 import { CCAAS } from "@/lib/territorio";
+import { mantenimientoAutorizado } from "@/lib/seguridad";
 
 export const dynamic = "force-dynamic";
 
@@ -10,11 +11,16 @@ export async function GET() {
   return NextResponse.json({
     ultimo: repo.ultimoSyncGlobal()?.ts ?? null,
     total: repo.contar(),
-    pendientesDetalle: repo.contarPendientes() });
+    pendientesDetalle: repo.contarPendientes(),
+    regionesSincronizadas: repo.regionesSincronizadas(),
+    cobertura: `${repo.regionesSincronizadas().length}/${CCAAS.length}` });
 }
 
 export async function POST(req: NextRequest) {
   try {
+    if (!mantenimientoAutorizado(req)) {
+      return NextResponse.json({ error: "Ruta de mantenimiento protegida" }, { status: 403 });
+    }
     const { regionId, todaEspana } = (await req.json()) as {
       regionId?: number;
       todaEspana?: boolean;

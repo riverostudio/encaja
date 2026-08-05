@@ -1,6 +1,6 @@
 # Sin esto Vercel hereda .gitignore, que excluye data/ entera, y la funcion
 # arranca sin base: SQLITE_CANTOPEN.
-expedientes/
+/expedientes/
 docs/
 tests/
 web/

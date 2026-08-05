@@ -5,6 +5,7 @@ import { generar, hayClave } from "@/lib/ia";
 import { PROMPT_RESUMEN, parsearResumen } from "@/lib/requisitos";
 import { importeCorto } from "@/lib/resumen";
 import type { Convocatoria, ResumenIA } from "@/lib/tipos";
+import { protegerApi } from "@/lib/seguridad";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 120;
@@ -33,6 +34,8 @@ function ficha(conv: Convocatoria): string {
  */
 export async function POST(req: NextRequest) {
   try {
+    const bloqueo = protegerApi(req, "resumen-lote", 40);
+    if (bloqueo) return bloqueo;
     const cred = credencialesDe(req);
     const { codigos } = (await req.json()) as { codigos: string[] };
     if (!Array.isArray(codigos) || codigos.length === 0) {

@@ -4,6 +4,7 @@ import { getRepo, errorJson } from "@/lib/servidor";
 import { generar, hayClave } from "@/lib/ia";
 import { PROMPT_RESUMEN, parsearResumen } from "@/lib/requisitos";
 import { importeCorto } from "@/lib/resumen";
+import { protegerApi } from "@/lib/seguridad";
 
 export const dynamic = "force-dynamic";
 
@@ -13,6 +14,8 @@ export const dynamic = "force-dynamic";
  */
 export async function POST(req: NextRequest, ctx: { params: Promise<{ codigo: string }> }) {
   try {
+    const bloqueo = protegerApi(req, "resumen", 80);
+    if (bloqueo) return bloqueo;
     const cred = credencialesDe(req);
     const { codigo } = await ctx.params;
     const repo = getRepo();

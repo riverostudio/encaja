@@ -32,6 +32,16 @@ CREATE INDEX IF NOT EXISTS idx_conv_fin ON convocatorias(fecha_fin_sol);
 CREATE INDEX IF NOT EXISTS idx_conv_registro ON convocatorias(fecha_registro);
 CREATE INDEX IF NOT EXISTS idx_conv_nivel1 ON convocatorias(nivel1);
 
+-- Una convocatoria puede aparecer al sincronizar más de una comunidad. La
+-- columna histórica region_sync se conserva para poder abrir copias antiguas,
+-- pero el filtrado nuevo usa esta relación muchos-a-muchos.
+CREATE TABLE IF NOT EXISTS convocatoria_regiones (
+  codigo_bdns TEXT NOT NULL,
+  region_id INTEGER NOT NULL,
+  PRIMARY KEY (codigo_bdns, region_id)
+);
+CREATE INDEX IF NOT EXISTS idx_conv_regiones_region ON convocatoria_regiones(region_id);
+
 CREATE TABLE IF NOT EXISTS sync_runs (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   territorio INTEGER NOT NULL,
@@ -136,6 +146,10 @@ export function abrirDb(ruta?: string): Database.Database {
   const db = new Database(destino);
   db.pragma("journal_mode = WAL");
   db.exec(ESQUEMA);
+  db.exec(`
+    INSERT OR IGNORE INTO convocatoria_regiones (codigo_bdns, region_id)
+    SELECT codigo_bdns, region_sync FROM convocatorias WHERE region_sync IS NOT NULL
+  `);
   migrarColumnas(db);
   return db;
 }

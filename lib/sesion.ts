@@ -39,12 +39,16 @@ export function credencialesDe(req: Request): Credenciales | null {
 export function hechosDe(req: Request): Map<string, string> | null {
   const crudo = req.headers.get("x-perfil");
   if (!crudo) return null;
+  if (crudo.length > 32_000) return null;
   try {
     const datos = JSON.parse(crudo);
     if (!datos || typeof datos !== "object" || Array.isArray(datos)) return null;
     const hechos = new Map<string, string>();
-    for (const [k, v] of Object.entries(datos)) {
-      if (typeof v === "string" || typeof v === "number") hechos.set(k, String(v));
+    for (const [k, v] of Object.entries(datos).slice(0, 80)) {
+      if (!/^[a-z0-9_]{1,64}$/.test(k)) continue;
+      if (typeof v === "string" || typeof v === "number") {
+        hechos.set(k, String(v).slice(0, 1000));
+      }
     }
     return hechos;
   } catch {
@@ -57,7 +61,7 @@ export function hechosDe(req: Request): Map<string, string> | null {
  * del ordenador, así que los visitantes empiezan en el 2 y nunca lo pisan.
  */
 export function idDeSesion(req: Request): number {
-  const s = req.headers.get("x-sesion")?.trim();
+  const s = req.headers.get("x-sesion")?.trim().slice(0, 128);
   if (!s) return 1;
   // djb2: basta para repartir, no pretende ser criptográfico.
   let h = 5381;

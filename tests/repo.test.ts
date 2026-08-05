@@ -113,6 +113,13 @@ describe("repo", () => {
     expect(cv).not.toContain("B");
   });
 
+  it("una convocatoria compartida aparece en todas sus regiones", () => {
+    repo.upsertLista([fila({ codigoBdns: "MULTI", nivel1: "AUTONOMICA" })], 54);
+    repo.upsertLista([fila({ codigoBdns: "MULTI", nivel1: "AUTONOMICA" })], 49);
+    expect(repo.buscar({ regionSync: 54 }).map((c) => c.codigoBdns)).toContain("MULTI");
+    expect(repo.buscar({ regionSync: 49 }).map((c) => c.codigoBdns)).toContain("MULTI");
+  });
+
   it("ajustes y sync_runs", () => {
     repo.setAjuste("cp", "46183");
     expect(repo.getAjuste("cp")).toBe("46183");

@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getRepo, buscarRadarConRed, errorJson } from "@/lib/servidor";
+import { hechosDe } from "@/lib/sesion";
+import { buscarPrestaciones } from "@/lib/prestaciones";
 
 export const dynamic = "force-dynamic";
 
@@ -14,8 +16,12 @@ export async function GET(req: NextRequest) {
       estado: q.get("estado") ?? undefined,
       region: q.get("region") ? Number(q.get("region")) : undefined,
       cp: q.get("cp") ?? undefined,
-      soloAplicables: q.get("soloAplicables") === "1" });
-    return NextResponse.json(r);
+      soloAplicables: q.get("soloAplicables") === "1",
+      hechos: hechosDe(req) ?? undefined });
+    return NextResponse.json({
+      ...r,
+      prestaciones: q.get("texto") ? buscarPrestaciones(q.get("texto")!) : [],
+    });
   } catch (e) {
     return NextResponse.json(errorJson(e), { status: 500 });
   }

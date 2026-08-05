@@ -8,6 +8,7 @@ import { descargarBases } from "@/lib/bdns";
 import { importeCorto } from "@/lib/resumen";
 import { estadoPlazo } from "@/lib/plazos";
 import type { Convocatoria } from "@/lib/tipos";
+import { mantenimientoAutorizado } from "@/lib/seguridad";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
@@ -36,6 +37,9 @@ function fichaDe(conv: Convocatoria): string {
  */
 export async function POST(req: NextRequest) {
   try {
+    if (!mantenimientoAutorizado(req)) {
+      return NextResponse.json({ error: "Ruta de mantenimiento protegida" }, { status: 403 });
+    }
     const cred = credencialesDe(req);
     const { tarea, tanda = 12 } = (await req.json()) as {
       tarea: "traducir" | "fechas";

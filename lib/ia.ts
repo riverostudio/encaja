@@ -1,6 +1,7 @@
 // Capa de IA con varios proveedores. La clave vive en .env.local o en la
 // tabla ajustes — nunca en el código, nunca en git, nunca en el navegador.
 import type { Repo } from "./repo";
+import { execFileSync } from "node:child_process";
 
 export type Proveedor = "gemini" | "claude" | "openai";
 
@@ -37,7 +38,7 @@ export const PROVEEDORES: FichaProveedor[] = [
       { id: "gemini-2.5-pro", nombre: "Gemini 2.5 Pro", nota: "El que mejor razona", tipo: "potente" },
       { id: "gemini-2.5-flash", nombre: "Gemini 2.5 Flash", nota: "Rápido y muy capaz", tipo: "potente" },
       { id: "gemini-2.5-flash-lite", nombre: "Gemini 2.5 Flash Lite", nota: "El más económico", tipo: "barato" },
-      { id: "gemini-2.0-flash", nombre: "Gemini 2.0 Flash", nota: "Barato y de sobra", tipo: "barato" },
+      { id: "gemini-3.5-flash-lite", nombre: "Gemini 3.5 Flash Lite", nota: "Actual y económico", tipo: "barato" },
     ],
   },
   {
@@ -52,22 +53,22 @@ export const PROVEEDORES: FichaProveedor[] = [
       { id: "claude-opus-5", nombre: "Claude Opus 5", nota: "El más potente", tipo: "potente" },
       { id: "claude-sonnet-5", nombre: "Claude Sonnet 5", nota: "Potente y equilibrado", tipo: "potente" },
       { id: "claude-haiku-4-5-20251001", nombre: "Claude Haiku 4.5", nota: "El más económico", tipo: "barato" },
-      { id: "claude-3-5-haiku-20241022", nombre: "Claude Haiku 3.5", nota: "Barato y veterano", tipo: "barato" },
+      { id: "claude-haiku-4-5", nombre: "Claude Haiku 4.5", nota: "Alias estable", tipo: "barato" },
     ],
   },
   {
     id: "openai",
     nombre: "GPT",
     quien: "OpenAI",
-    modeloDefecto: "gpt-4o-mini",
-    leePdf: false,
+    modeloDefecto: "gpt-5.6-luna",
+    leePdf: true,
     dondeSacarla: "https://platform.openai.com/api-keys",
-    pista: "De pago. No lee los PDF de las bases: solo servirá con las publicadas como página web.",
+    pista: "De pago. Lee directamente los PDF de las bases mediante la Responses API.",
     modelos: [
-      { id: "gpt-4.1", nombre: "GPT-4.1", nota: "El más capaz", tipo: "potente" },
-      { id: "gpt-4o", nombre: "GPT-4o", nota: "Potente y probado", tipo: "potente" },
-      { id: "gpt-4.1-mini", nombre: "GPT-4.1 mini", nota: "El más económico", tipo: "barato" },
-      { id: "gpt-4o-mini", nombre: "GPT-4o mini", nota: "Barato y rápido", tipo: "barato" },
+      { id: "gpt-5.6-sol", nombre: "GPT-5.6 Sol", nota: "Máxima calidad", tipo: "potente" },
+      { id: "gpt-5.6-terra", nombre: "GPT-5.6 Terra", nota: "Equilibrado", tipo: "potente" },
+      { id: "gpt-5.6-luna", nombre: "GPT-5.6 Luna", nota: "Rápido y económico", tipo: "barato" },
+      { id: "gpt-4.1-mini", nombre: "GPT-4.1 mini", nota: "Compatible y económico", tipo: "barato" },
     ],
   },
 ];
@@ -84,6 +85,36 @@ export function proveedorActual(repo: Repo): Proveedor {
   return "gemini";
 }
 
+const SERVICIO_LLAVERO = "Encaja IA";
+
+function claveLlavero(p: Proveedor): string | null {
+  if (process.platform !== "darwin") return null;
+  try {
+    return execFileSync(
+      "/usr/bin/security",
+      ["find-generic-password", "-s", SERVICIO_LLAVERO, "-a", p, "-w"],
+      { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] },
+    ).trim() || null;
+  } catch {
+    return null;
+  }
+}
+
+export function guardarClaveSegura(repo: Repo, p: Proveedor, clave: string): void {
+  if (process.platform === "darwin") {
+    execFileSync(
+      "/usr/bin/security",
+      ["add-generic-password", "-U", "-s", SERVICIO_LLAVERO, "-a", p, "-w", clave],
+      { stdio: "ignore" },
+    );
+    repo.borrarAjuste(`ia_clave_${p}`);
+    return;
+  }
+  // Servidores y otros sistemas deben usar variables de entorno. Este fallback
+  // mantiene la app local compatible cuando no existe un llavero del sistema.
+  repo.setAjuste(`ia_clave_${p}`, clave);
+}
+
 function claveDe(repo: Repo, p: Proveedor): string | null {
   const env =
     p === "gemini"
@@ -91,7 +122,20 @@ function claveDe(repo: Repo, p: Proveedor): string | null {
       : p === "claude"
         ? process.env.ANTHROPIC_API_KEY
         : process.env.OPENAI_API_KEY;
-  return env?.trim() || repo.getAjuste(`ia_clave_${p}`);
+  const entorno = env?.trim();
+  if (entorno) return entorno;
+  const llavero = claveLlavero(p);
+  if (llavero) return llavero;
+  const antigua = repo.getAjuste(`ia_clave_${p}`);
+  if (antigua && process.platform === "darwin") {
+    // Migración transparente de instalaciones anteriores.
+    try {
+      guardarClaveSegura(repo, p, antigua);
+    } catch {
+      return antigua;
+    }
+  }
+  return antigua;
 }
 
 export function hayClave(repo: Repo): boolean {
@@ -168,25 +212,36 @@ async function llamarClaude({ clave, modelo, partes, esperaJson }: Peticion): Pr
 }
 
 async function llamarOpenai({ clave, modelo, partes, esperaJson }: Peticion): Promise<string> {
-  const conPdf = partes.some((p) => "pdf" in p);
-  if (conPdf) {
-    throw new Error(
-      "SIN_PDF: GPT no puede leer el PDF de las bases desde aquí. Cambia a Gemini o Claude en Ajustes.",
-    );
+  const content = partes.map((p) =>
+    "texto" in p
+      ? { type: "input_text", text: p.texto }
+      : {
+          type: "input_file",
+          filename: "bases-reguladoras.pdf",
+          file_data: `data:application/pdf;base64,${p.pdf.toString("base64")}`,
+        },
+  );
+  if (esperaJson) {
+    content.push({ type: "input_text", text: "Responde únicamente con el JSON pedido." });
   }
-  const texto = partes.map((p) => ("texto" in p ? p.texto : "")).join("\n\n");
-  const r = await fetch("https://api.openai.com/v1/chat/completions", {
+  const r = await fetch("https://api.openai.com/v1/responses", {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${clave}` },
     body: JSON.stringify({
       model: modelo,
-      messages: [{ role: "user", content: texto }],
-      ...(esperaJson ? { response_format: { type: "json_object" } } : {}),
+      input: [{ role: "user", content }],
     }),
   });
   if (!r.ok) throw new Error(await mensajeError(r, "GPT"));
-  const data = (await r.json()) as { choices?: Array<{ message?: { content?: string } }> };
-  return data.choices?.[0]?.message?.content ?? "";
+  const data = (await r.json()) as {
+    output_text?: string;
+    output?: Array<{ content?: Array<{ type?: string; text?: string }> }>;
+  };
+  return (
+    data.output_text ??
+    data.output?.flatMap((o) => o.content ?? []).map((c) => c.text ?? "").join("") ??
+    ""
+  );
 }
 
 async function mensajeError(r: Response, quien: string): Promise<string> {

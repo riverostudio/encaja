@@ -96,6 +96,17 @@ export async function generarBorradorDocx(
   titulo: string,
   secciones: { h: string; p: string[] }[],
 ): Promise<string> {
+  const buffer = await generarBorradorDocxBuffer(titulo, secciones);
+  const ruta = path.join(dir, `${slug(titulo, 30) || "borrador"}.docx`);
+  fs.writeFileSync(ruta, buffer);
+  return ruta;
+}
+
+/** El mismo borrador, en memoria, para descargarlo sin guardar datos personales. */
+export async function generarBorradorDocxBuffer(
+  titulo: string,
+  secciones: { h: string; p: string[] }[],
+): Promise<Buffer> {
   const doc = new Document({
     sections: [
       {
@@ -120,7 +131,5 @@ export async function generarBorradorDocx(
       },
     ],
   });
-  const ruta = path.join(dir, `${slug(titulo, 30) || "borrador"}.docx`);
-  fs.writeFileSync(ruta, await Packer.toBuffer(doc));
-  return ruta;
+  return Packer.toBuffer(doc);
 }

@@ -7,6 +7,7 @@ export interface FiltrosBusqueda {
   instrumento?: string;
   beneficiario?: string;
   regionSync?: number;
+  noCerradas?: boolean;
   limite?: number;
 }
 
@@ -92,7 +93,11 @@ export function crearRepo(db: Database.Database) {
       titulo=excluded.titulo, titulo_coof=excluded.titulo_coof,
       nivel1=excluded.nivel1, nivel2=excluded.nivel2, nivel3=excluded.nivel3,
       fecha_registro=excluded.fecha_registro, mrr=excluded.mrr,
-      region_sync=coalesce(excluded.region_sync, convocatorias.region_sync)
+      region_sync=coalesce(convocatorias.region_sync, excluded.region_sync)
+  `);
+  const stExisteConvocatoria = db.prepare(`SELECT 1 FROM convocatorias WHERE codigo_bdns=?`);
+  const stUpsertRegion = db.prepare(`
+    INSERT OR IGNORE INTO convocatoria_regiones (codigo_bdns, region_id) VALUES (?,?)
   `);
 
   const stUpsertDetalle = db.prepare(`
@@ -107,8 +112,10 @@ export function crearRepo(db: Database.Database) {
 
   const repo = {
     upsertLista(filas: Convocatoria[], regionSync?: number): number {
+      let nuevas = 0;
       const tx = db.transaction((fs: Convocatoria[]) => {
         for (const f of fs) {
+          if (!stExisteConvocatoria.get(f.codigoBdns)) nuevas++;
           stUpsertLista.run({
             codigoBdns: f.codigoBdns,
             titulo: f.titulo,
@@ -120,10 +127,11 @@ export function crearRepo(db: Database.Database) {
             mrr: f.mrr ? 1 : 0,
             regionSync: regionSync ?? null,
           });
+          if (regionSync != null) stUpsertRegion.run(f.codigoBdns, regionSync);
         }
       });
       tx(filas);
-      return filas.length;
+      return nuevas;
     },
 
     upsertDetalle(c: Convocatoria): void {
@@ -219,14 +227,30 @@ export function crearRepo(db: Database.Database) {
         params.beneficiario = `%${filtros.beneficiario}%`;
       }
       if (filtros.regionSync != null) {
-        cond.push(`(region_sync=@regionSync OR nivel1='ESTADO')`);
+        cond.push(`(
+          EXISTS (
+            SELECT 1 FROM convocatoria_regiones cr
+            WHERE cr.codigo_bdns=convocatorias.codigo_bdns AND cr.region_id=@regionSync
+          ) OR nivel1='ESTADO'
+        )`);
         params.regionSync = filtros.regionSync;
+      }
+      if (filtros.noCerradas) {
+        cond.push(`(fecha_fin_sol IS NULL OR date(fecha_fin_sol) >= date('now'))`);
       }
       const where = cond.length ? `WHERE ${cond.join(" AND ")}` : "";
       const filas = db
         .prepare(
           `SELECT * FROM convocatorias ${where}
-           ORDER BY fecha_registro DESC LIMIT @limite`,
+           ORDER BY
+             CASE
+               WHEN fecha_fin_sol IS NOT NULL AND date(fecha_fin_sol) >= date('now')
+                 THEN julianday(fecha_fin_sol) - julianday('now')
+               WHEN fecha_fin_sol IS NULL THEN 100000
+               ELSE 200000
+             END ASC,
+             fecha_registro DESC
+           LIMIT @limite`,
         )
         .all({ limite: filtros.limite ?? 500, ...params }) as FilaDb[];
       return filas.map(aConvocatoria);
@@ -242,6 +266,43 @@ export function crearRepo(db: Database.Database) {
         .prepare(`SELECT count(*) n FROM convocatorias WHERE detalle_at IS NULL`)
         .get() as { n: number };
       return r.n;
+    },
+
+    regionesSincronizadas(): number[] {
+      return (
+        db
+          .prepare(`SELECT DISTINCT region_id as id FROM convocatoria_regiones ORDER BY region_id`)
+          .all() as { id: number }[]
+      ).map((r) => r.id);
+    },
+
+    metricasPublicas(): {
+      total: number;
+      conDetalle: number;
+      sinFechas: number;
+      traducidas: number;
+      abiertas: number;
+      abiertasTraducidas: number;
+    } {
+      return db
+        .prepare(
+          `SELECT
+             count(*) AS total,
+             sum(detalle_at IS NOT NULL) AS conDetalle,
+             sum(fecha_inicio_sol IS NULL AND fecha_fin_sol IS NULL) AS sinFechas,
+             sum(resumen_ia IS NOT NULL) AS traducidas,
+             sum(date(fecha_inicio_sol) <= date('now') AND date(fecha_fin_sol) >= date('now')) AS abiertas,
+             sum(date(fecha_inicio_sol) <= date('now') AND date(fecha_fin_sol) >= date('now') AND resumen_ia IS NOT NULL) AS abiertasTraducidas
+           FROM convocatorias`,
+        )
+        .get() as {
+        total: number;
+        conDetalle: number;
+        sinFechas: number;
+        traducidas: number;
+        abiertas: number;
+        abiertasTraducidas: number;
+      };
     },
 
     guardarResumen(codigo: string, resumenJson: string): void {
@@ -395,6 +456,10 @@ export function crearRepo(db: Database.Database) {
         `INSERT INTO ajustes (clave, valor) VALUES (?,?)
          ON CONFLICT(clave) DO UPDATE SET valor=excluded.valor`,
       ).run(clave, valor);
+    },
+
+    borrarAjuste(clave: string): void {
+      db.prepare(`DELETE FROM ajustes WHERE clave=?`).run(clave);
     },
 
     getAjuste(clave: string): string | null {
