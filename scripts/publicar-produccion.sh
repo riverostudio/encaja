@@ -27,7 +27,7 @@ echo "[$(/bin/date -Iseconds)] Sincronización diaria"
 /opt/homebrew/bin/npm run test:prod
 
 ENCAJA_TMP=$(/usr/bin/mktemp -d /tmp/encaja-publicar.XXXXXX)
-trap '/bin/rmdir "$ENCAJA_LOCK" 2>/dev/null || true; /bin/rm -f "$ENCAJA_TMP"/* 2>/dev/null || true; /bin/rmdir "$ENCAJA_TMP" 2>/dev/null || true' EXIT
+trap '/bin/rmdir "$ENCAJA_LOCK" 2>/dev/null || true; /bin/rm -f "$ENCAJA_TMP"/*(N) 2>/dev/null || true; /bin/rmdir "$ENCAJA_TMP" 2>/dev/null || true' EXIT
 
 /usr/bin/gzip -c data/radar-publico.db > "$ENCAJA_TMP/radar-publico.db.gz"
 /usr/bin/gzip -c data/radar.db > "$ENCAJA_TMP/radar.db.gz"
