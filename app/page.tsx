@@ -106,10 +106,12 @@ export default function PaginaRadar() {
   const [sincronizando, setSincronizando] = useState(false);
   const [abierta, setAbierta] = useState<string | null>(null);
   const debounce = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const ultimaCarga = useRef(0);
   const inicializado = useRef(false);
   const centinela = useRef<HTMLDivElement | null>(null);
 
   const cargarLista = useCallback(async () => {
+    const numeroCarga = ++ultimaCarga.current;
     const q = new URLSearchParams();
     if (consulta) q.set("texto", consulta);
     if (estadoFiltro) q.set("estado", estadoFiltro);
@@ -124,6 +126,9 @@ export default function PaginaRadar() {
       relajado: string | null;
       prestaciones?: PrestacionUi[];
     };
+    // El CP puede cambiar la comunidad mientras la primera búsqueda sigue en
+    // vuelo. Una respuesta antigua nunca debe pisar la región ya detectada.
+    if (numeroCarga !== ultimaCarga.current) return;
     setFilas(
       (d.filas ?? []).map((c) => ({
         ...c,

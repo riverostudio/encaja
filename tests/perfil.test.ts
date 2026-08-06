@@ -127,6 +127,27 @@ describe("atajosParaPerfil", () => {
     expect(a).toContain("familia numerosa");
   });
 
+  it("una familia monoparental tiene un atajo explícito", () => {
+    const a = atajosParaPerfil(
+      h({ perfil: "particular", circunstancias: "monoparental" }),
+    ).map((x) => x.busca);
+    expect(a.join(" ")).toContain("familia monoparental");
+  });
+
+  it("las circunstancias críticas no se pierden aunque haya muchos atajos", () => {
+    const textos = atajosParaPerfil(
+      h({
+        perfil: "particular",
+        objetivo: "familia",
+        situacion: "desempleado",
+        ingresos: "menos_12000",
+        menores_cargo: "2",
+        circunstancias: "monoparental",
+      }),
+    ).map((x) => x.texto);
+    expect(textos).toContain("Familia monoparental");
+  });
+
   it("nunca se repiten ni se desbordan", () => {
     const a = atajosParaPerfil(
       h({

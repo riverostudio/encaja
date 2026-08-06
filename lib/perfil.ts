@@ -330,6 +330,23 @@ export function atajosParaPerfil(hechos: Map<string, string>): Atajo[] {
     return atajos.slice(0, 6);
   }
 
+  // Las circunstancias reconocidas son muy específicas: deben entrar antes
+  // que los atajos genéricos para que nunca se pierdan por el límite visual.
+  const circunstancias = (hechos.get("circunstancias") ?? "").split(",");
+  if (circunstancias.includes("discapacidad") || circunstancias.includes("dependencia")) {
+    añadir({ texto: "Discapacidad y dependencia", busca: "discapacidad|dependencia|diversidad funcional" });
+  }
+  if (circunstancias.includes("familia_numerosa")) {
+    añadir({ texto: "Familia numerosa", busca: "familia numerosa" });
+  }
+  if (circunstancias.includes("monoparental")) {
+    añadir({ texto: "Familia monoparental", busca: "familia monoparental|madre soltera|padre soltero" });
+  }
+  if (circunstancias.includes("victima_violencia")) {
+    añadir({ texto: "Violencia de género", busca: "violencia" });
+  }
+  if (circunstancias.includes("menor_30")) añadir({ texto: "Gente joven", busca: "jóvenes" });
+
   // Persona: primero lo que le toca por su situación.
   const situacion = hechos.get("situacion");
   if (situacion === "desempleado") ATAJOS_SIN_TRABAJO.forEach(añadir);
@@ -346,18 +363,6 @@ export function atajosParaPerfil(hechos: Map<string, string>): Atajo[] {
     añadir({ texto: "Comedor y libros", busca: "comedor|material escolar|libros de texto" });
     añadir({ texto: "Familia e infancia", busca: "familia|infancia|menores|conciliación" });
   }
-
-  const circunstancias = (hechos.get("circunstancias") ?? "").split(",");
-  if (circunstancias.includes("discapacidad") || circunstancias.includes("dependencia")) {
-    añadir({ texto: "Discapacidad y dependencia", busca: "discapacidad|dependencia|diversidad funcional" });
-  }
-  if (circunstancias.includes("familia_numerosa")) {
-    añadir({ texto: "Familia numerosa", busca: "familia numerosa" });
-  }
-  if (circunstancias.includes("victima_violencia")) {
-    añadir({ texto: "Violencia de género", busca: "violencia" });
-  }
-  if (circunstancias.includes("menor_30")) añadir({ texto: "Gente joven", busca: "jóvenes" });
 
   // Relleno con lo que le sirve a casi todo el mundo.
   añadir({ texto: "Becas y estudios", busca: "beca|becas|ayudas al estudio" });

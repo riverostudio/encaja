@@ -31,6 +31,50 @@ test("el código postal selecciona su comunidad", async ({ page }) => {
   await expect(page.locator("select").first()).toHaveValue("26");
 });
 
+test("una respuesta antigua no pisa las ayudas de la comunidad detectada", async ({ page }) => {
+  const convocatoria = (titulo: string, nivel2: string) => ({
+    codigoBdns: titulo === "Ayuda de Madrid" ? "260001" : "540001",
+    titulo,
+    nivel1: "AUTONOMICA",
+    nivel2,
+    fechaRegistro: "2026-08-05",
+    mrr: false,
+    beneficiarios: ["PERSONAS FÍSICAS"],
+    instrumentos: ["SUBVENCIÓN"],
+    sectores: [],
+    regiones: ["ES"],
+    fondos: [],
+    rangoFechas: "1 ago — 30 sep",
+    plazo: { estado: "abierta", dias: 54 },
+    llano: { que: titulo, quien: "personas", consigues: "apoyo" },
+  });
+  await page.route(/\/api\/convocatorias(?:\?.*)?$/, async (route) => {
+    const region = new URL(route.request().url()).searchParams.get("region");
+    if (region === "54") await new Promise((resolve) => setTimeout(resolve, 700));
+    const fila = region === "26"
+      ? convocatoria("Ayuda de Madrid", "COMUNIDAD DE MADRID")
+      : convocatoria("Ayuda de Valencia", "COMUNITAT VALENCIANA");
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ filas: [fila], relajado: null, prestaciones: [] }),
+    });
+  });
+  await page.goto("/");
+  await page.evaluate(() => {
+    localStorage.setItem(
+      "encaja.perfil",
+      JSON.stringify({ perfil: "particular", cp: "28013" }),
+    );
+  });
+  await entrarSinClave(page);
+  await expect(page.locator("select").first()).toHaveValue("26");
+  await expect(page.getByText("Ayuda de Madrid", { exact: true }).first()).toBeVisible();
+  await page.waitForTimeout(900);
+  await expect(page.getByText("Ayuda de Valencia", { exact: true })).toHaveCount(0);
+  await expect(page.getByText("Ayuda de Madrid", { exact: true }).first()).toBeVisible();
+});
+
 test("una respuesta de Encajo viaja en la siguiente petición", async ({ page }) => {
   let perfilSegunda = "";
   let llamadas = 0;

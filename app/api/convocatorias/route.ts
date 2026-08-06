@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getRepo, buscarRadarConRed, errorJson } from "@/lib/servidor";
-import { hechosDe } from "@/lib/sesion";
+import { hechosDe, idDeSesion } from "@/lib/sesion";
 import { buscarPrestaciones } from "@/lib/prestaciones";
 
 export const dynamic = "force-dynamic";
@@ -8,7 +8,9 @@ export const dynamic = "force-dynamic";
 export async function GET(req: NextRequest) {
   try {
     const q = req.nextUrl.searchParams;
-    const r = buscarRadarConRed(getRepo(), {
+    const repo = getRepo();
+    const hechos = hechosDe(req) ?? repo.getHechos(idDeSesion(req));
+    const r = buscarRadarConRed(repo, {
       texto: q.get("texto") ?? undefined,
       nivel1: q.get("nivel1") ?? undefined,
       instrumento: q.get("instrumento") ?? undefined,
@@ -17,10 +19,10 @@ export async function GET(req: NextRequest) {
       region: q.get("region") ? Number(q.get("region")) : undefined,
       cp: q.get("cp") ?? undefined,
       soloAplicables: q.get("soloAplicables") === "1",
-      hechos: hechosDe(req) ?? undefined });
+      hechos });
     return NextResponse.json({
       ...r,
-      prestaciones: q.get("texto") ? buscarPrestaciones(q.get("texto")!) : [],
+      prestaciones: q.get("texto") ? buscarPrestaciones(q.get("texto")!, hechos) : [],
     });
   } catch (e) {
     return NextResponse.json(errorJson(e), { status: 500 });

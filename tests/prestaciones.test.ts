@@ -4,10 +4,10 @@ import { PRESTACIONES, buscarPrestaciones, prestacionesParaPerfil } from "../lib
 const h = (o: Record<string, string>) => new Map(Object.entries(o));
 
 describe("catálogo de prestaciones", () => {
-  it("todas llevan enlace oficial a un dominio del Estado", () => {
+  it("todas llevan enlace oficial a una administración pública", () => {
     for (const p of PRESTACIONES) {
       expect(p.url).toMatch(/^https:\/\//);
-      expect(p.url).toMatch(/\.gob\.es|seg-social\.es|sepe\.es|imserso\.es/);
+      expect(p.url).toMatch(/\.gob\.es|seg-social\.es|sepe\.es|imserso\.es|madrid\.es|comunidad\.madrid/);
     }
   });
 
@@ -22,6 +22,9 @@ describe("catálogo de prestaciones", () => {
     expect(ids).toContain("paro");
     expect(ids).toContain("imv");
     expect(ids).toContain("subsidio");
+    expect(ids).toContain("deduccion-familia-numerosa");
+    expect(ids).toContain("deduccion-ascendiente-dos-hijos");
+    expect(ids).toContain("emergencia-alquiler-madrid");
   });
 });
 
@@ -38,6 +41,33 @@ describe("buscarPrestaciones", () => {
 
   it("no dispara con dos letras", () => {
     expect(buscarPrestaciones("pa")).toHaveLength(0);
+  });
+
+  it("entiende una frase de necesidad y devuelve la vía local correcta", () => {
+    const ids = buscarPrestaciones(
+      "no puedo pagar el alquiler",
+      h({ perfil: "particular", situacion: "desempleado", ingresos: "menos_12000", cp: "28013" }),
+    ).map((p) => p.id);
+    expect(ids).toContain("emergencia-alquiler-madrid");
+    expect(ids).toContain("vivienda-especial-necesidad-madrid");
+  });
+
+  it("no enseña recursos territoriales de Madrid fuera de Madrid", () => {
+    const ids = buscarPrestaciones(
+      "alquiler",
+      h({ perfil: "particular", situacion: "desempleado", ingresos: "menos_12000", cp: "08001" }),
+    ).map((p) => p.id);
+    expect(ids).not.toContain("emergencia-alquiler-madrid");
+    expect(ids).not.toContain("vivienda-especial-necesidad-madrid");
+  });
+
+  it("respeta el perfil al buscar desempleo", () => {
+    const ids = buscarPrestaciones(
+      "desempleo",
+      h({ perfil: "particular", situacion: "desempleado", ingresos: "menos_12000" }),
+    ).map((p) => p.id);
+    expect(ids).toContain("paro");
+    expect(ids).not.toContain("cese-actividad");
   });
 });
 
@@ -69,7 +99,74 @@ describe("prestacionesParaPerfil", () => {
   });
 
   it("al autónomo le sale su cese de actividad", () => {
-    const ids = prestacionesParaPerfil(h({ situacion: "autonomo_activo" })).map((p) => p.id);
+    const ids = prestacionesParaPerfil(h({ perfil: "autonomo", situacion: "autonomo_activo" })).map((p) => p.id);
     expect(ids).toContain("cese-actividad");
+  });
+
+  it("no confunde a un particular desempleado con un autónomo que cesa", () => {
+    const ids = prestacionesParaPerfil(
+      h({ perfil: "particular", situacion: "desempleado", ingresos: "menos_12000" }),
+    ).map((p) => p.id);
+    expect(ids).not.toContain("cese-actividad");
+  });
+
+  it("ofrece la deducción precisa a una familia monoparental con dos hijos", () => {
+    const ids = prestacionesParaPerfil(
+      h({
+        perfil: "particular",
+        situacion: "desempleado",
+        ingresos: "menos_12000",
+        menores_cargo: "2",
+        circunstancias: "monoparental",
+      }),
+    ).map((p) => p.id);
+    expect(ids).toContain("deduccion-ascendiente-dos-hijos");
+    expect(ids).not.toContain("deduccion-familia-numerosa");
+    expect(ids[0]).toBe("deduccion-ascendiente-dos-hijos");
+  });
+
+  it("no generaliza la deducción de dos hijos a cualquier familia monoparental", () => {
+    const ids = prestacionesParaPerfil(
+      h({
+        perfil: "particular",
+        situacion: "desempleado",
+        ingresos: "menos_12000",
+        menores_cargo: "1",
+        circunstancias: "monoparental",
+      }),
+    ).map((p) => p.id);
+    expect(ids).not.toContain("deduccion-ascendiente-dos-hijos");
+  });
+
+  it("una familia numerosa ve su deducción y el bono social aunque supere el tramo bajo", () => {
+    const ids = prestacionesParaPerfil(
+      h({
+        perfil: "particular",
+        situacion: "cuenta_ajena",
+        ingresos: "mas_40000",
+        menores_cargo: "3+",
+        circunstancias: "familia_numerosa",
+      }),
+    ).map((p) => p.id);
+    expect(ids).toContain("deduccion-familia-numerosa");
+    expect(ids).toContain("bono-social");
+  });
+
+  it("prioriza las dos vías de vivienda de Madrid para un hogar en apuros", () => {
+    const ids = prestacionesParaPerfil(
+      h({
+        perfil: "particular",
+        objetivo: "apuro,vivienda",
+        situacion: "desempleado",
+        ingresos: "menos_12000",
+        cp: "28013",
+      }),
+    ).map((p) => p.id);
+    expect(ids).toContain("emergencia-alquiler-madrid");
+    expect(ids).toContain("vivienda-especial-necesidad-madrid");
+    expect(ids.slice(0, 2)).toEqual([
+      "emergencia-alquiler-madrid",
+      "vivienda-especial-necesidad-madrid",
+    ]);
   });
 });
