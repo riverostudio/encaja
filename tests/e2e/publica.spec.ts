@@ -75,6 +75,34 @@ test("una respuesta antigua no pisa las ayudas de la comunidad detectada", async
   await expect(page.getByText("Ayuda de Madrid", { exact: true }).first()).toBeVisible();
 });
 
+test("una vía directa no se presenta como una búsqueda vacía", async ({ page }) => {
+  await page.route(/\/api\/convocatorias(?:\?.*)?$/, async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        filas: [],
+        relajado: null,
+        prestaciones: [
+          {
+            id: "emergencia-alquiler-madrid",
+            titular: "Ayuda urgente para el alquiler",
+            que: "Una vía oficial para una necesidad de vivienda.",
+            quien: "Hogares en situación de necesidad.",
+            organismo: "Ayuntamiento de Madrid",
+            url: "https://sede.madrid.es/",
+          },
+        ],
+      }),
+    });
+  });
+  await entrarSinClave(page);
+  await page.getByPlaceholder("Busca una ayuda…").fill("alquiler");
+  await expect(page.getByText("Ayuda urgente para el alquiler", { exact: true })).toBeVisible();
+  await expect(page.getByText("No hay una convocatoria directa en la BDNS.")).toBeVisible();
+  await expect(page.getByText("Nada con estos filtros.")).toHaveCount(0);
+});
+
 test("una respuesta de Encajo viaja en la siguiente petición", async ({ page }) => {
   let perfilSegunda = "";
   let llamadas = 0;

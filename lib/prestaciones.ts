@@ -188,6 +188,14 @@ function valores(hechos: Map<string, string>, clave: string): string[] {
   return (hechos.get(clave) ?? "").split(",").filter(Boolean);
 }
 
+function normalizarBusqueda(texto: string): string {
+  return texto
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .toLowerCase()
+    .trim();
+}
+
 function coincideAlguno(actuales: string[], esperados: string[]): boolean {
   return esperados.some((valor) => actuales.includes(valor));
 }
@@ -251,24 +259,24 @@ export function prestacionesParaPerfil(hechos: Map<string, string>): Prestacion[
 
 /** Búsqueda por texto, para que aparezcan al buscar "paro" o "renta". */
 export function buscarPrestaciones(texto: string, hechos?: Map<string, string>): Prestacion[] {
-  const q = texto
-    .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "")
-    .toLowerCase()
-    .trim();
+  const q = normalizarBusqueda(texto);
   if (q.length < 3) return [];
-  return PRESTACIONES.filter((p) => {
-    const coincide = [...p.busca, p.titular].some((t) => {
-      const termino = t
-        .normalize("NFD")
-        .replace(/[̀-ͯ]/g, "")
-        .toLowerCase()
-        .trim();
-      return termino.includes(q) || (termino.length >= 4 && q.includes(termino));
-    });
-    if (!coincide) return false;
-    return hechos
-      ? cumplePerfil(p, hechos, { estricto: false, respetarObjetivos: false })
-      : !(p.municipios || p.comunidades);
-  });
+  return PRESTACIONES.map((p) => {
+    const puntuacion = [...p.busca, p.titular].reduce((mejor, textoTermino) => {
+      const termino = normalizarBusqueda(textoTermino);
+      if (termino === q) return Math.max(mejor, 1_000 + termino.length);
+      if (termino.includes(q)) return Math.max(mejor, 500 + q.length);
+      if (termino.length >= 4 && q.includes(termino)) return Math.max(mejor, 100 + termino.length);
+      return mejor;
+    }, 0);
+    return { p, puntuacion };
+  })
+    .filter(({ p, puntuacion }) => {
+      if (puntuacion === 0) return false;
+      return hechos
+        ? cumplePerfil(p, hechos, { estricto: false, respetarObjetivos: false })
+        : !(p.municipios || p.comunidades);
+    })
+    .sort((a, b) => b.puntuacion - a.puntuacion)
+    .map(({ p }) => p);
 }

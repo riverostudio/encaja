@@ -69,6 +69,32 @@ describe("buscarPrestaciones", () => {
     expect(ids).toContain("paro");
     expect(ids).not.toContain("cese-actividad");
   });
+
+  it("pone la coincidencia familiar exacta antes que las genéricas", () => {
+    const monoparental = buscarPrestaciones(
+      "familia monoparental",
+      h({
+        perfil: "particular",
+        situacion: "desempleado",
+        ingresos: "menos_12000",
+        menores_cargo: "2",
+        circunstancias: "monoparental",
+      }),
+    ).map((p) => p.id);
+    expect(monoparental[0]).toBe("deduccion-ascendiente-dos-hijos");
+
+    const numerosa = buscarPrestaciones(
+      "familia numerosa",
+      h({
+        perfil: "particular",
+        situacion: "desempleado",
+        ingresos: "menos_12000",
+        menores_cargo: "3+",
+        circunstancias: "familia_numerosa",
+      }),
+    ).map((p) => p.id);
+    expect(numerosa[0]).toBe("deduccion-familia-numerosa");
+  });
 });
 
 describe("prestacionesParaPerfil", () => {

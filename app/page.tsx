@@ -482,8 +482,11 @@ export default function PaginaRadar() {
               <span className="cifra text-[var(--grafito)]">
                 {filas.length === 400 ? "400+" : filas.length}
               </span>{" "}
-              ayudas · las que
-              antes cierran, primero
+              convocatorias
+              {prestacionesVisibles.length > 0 && (
+                <> · {prestacionesVisibles.length} vías directas</>
+              )}
+              {filas.length > 0 && " · las que antes cierran, primero"}
               {traduciendo > 0 && (
                 <span className="ml-3 inline-flex items-center gap-2">
                   <span className="pulso" /> traduciendo {traduciendo}…
@@ -525,10 +528,11 @@ export default function PaginaRadar() {
       {/* ——— lo que NO está en la BDNS pero te puede tocar ——— */}
       {prestacionesVisibles.length > 0 && (
         <div className="mt-6">
-          <p className="rotulo mb-1">Además, esto te puede corresponder por derecho</p>
+          <p className="rotulo mb-1">Además, estas ayudas y vías oficiales pueden corresponderte</p>
           <p className="nota mb-3 max-w-2xl">
-            No son convocatorias con plazo, así que no salen en el radar: son prestaciones que se
-            piden cuando cumples los requisitos, sin fecha límite.
+            No todas se publican como convocatorias en la BDNS: algunas son prestaciones,
+            deducciones o vías de emergencia que se solicitan directamente al organismo. Comprueba
+            los requisitos en el enlace oficial.
           </p>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {prestacionesVisibles.map((p, i) => (
@@ -640,11 +644,22 @@ export default function PaginaRadar() {
         />
       ) : filas.length === 0 ? (
         <div className="filete mt-6 py-24 text-center">
-          <p className="display text-[20px]">Nada con estos filtros.</p>
-          <p className="nota mx-auto mt-2 max-w-sm">
-            Prueba a vaciar el buscador, cambiar de comunidad o pulsar «Actualizar» para traer lo
-            último de la BDNS.
-          </p>
+          {prestacionesVisibles.length > 0 ? (
+            <>
+              <p className="display text-[20px]">No hay una convocatoria directa en la BDNS.</p>
+              <p className="nota mx-auto mt-2 max-w-md">
+                Pero arriba tienes {prestacionesVisibles.length === 1 ? "una vía oficial" : `${prestacionesVisibles.length} vías oficiales`} que sí puedes consultar o solicitar directamente.
+              </p>
+            </>
+          ) : (
+            <>
+              <p className="display text-[20px]">Nada con estos filtros.</p>
+              <p className="nota mx-auto mt-2 max-w-sm">
+                Prueba a vaciar el buscador, cambiar de comunidad o pulsar «Actualizar» para traer
+                lo último de la BDNS.
+              </p>
+            </>
+          )}
         </div>
       ) : (
         <>
