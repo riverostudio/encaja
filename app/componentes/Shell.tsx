@@ -41,7 +41,7 @@ export default function Shell({ children }: { children: ReactNode }) {
   if (!ia) return null;
 
   // Sin clave no se entra: la app no podría hacer su trabajo.
-  if (!ia.configurada && ia.proveedores.length > 0) {
+  if (!ia.configurada && ia.proveedores.length > 0 && ruta !== "/privacidad") {
     return (
       <Bienvenida
         proveedores={ia.proveedores}
@@ -91,8 +91,15 @@ export default function Shell({ children }: { children: ReactNode }) {
       <main className="mx-auto w-full max-w-6xl flex-1 px-6 py-10">{children}</main>
 
       <footer className="mt-16 border-t border-[var(--linea)]">
-        <div className="mx-auto max-w-6xl px-6 py-6">
-          <p className="nota max-w-2xl">
+        <div className="mx-auto max-w-6xl px-6 py-7">
+          <p className="max-w-3xl text-[12.5px] leading-relaxed text-[var(--grafito)]">
+            <strong className="text-[var(--tinta)]">Transparencia sobre IA.</strong> Encaja se ha
+            creado e investigado con ayuda de inteligencia artificial y puede usar IA para resumir,
+            buscar y orientar. Sus explicaciones pueden contener errores, omisiones o información
+            desactualizada. No son asesoramiento ni una decisión oficial: comprueba siempre la
+            convocatoria y la sede del organismo.
+          </p>
+          <p className="nota mt-3 max-w-3xl">
             Datos del{" "}
             <a
               className="enlace"
@@ -102,11 +109,10 @@ export default function Shell({ children }: { children: ReactNode }) {
             >
               Sistema Nacional de Publicidad de Subvenciones
             </a>
-            , de naturaleza dinámica: verifica siempre contra la convocatoria oficial antes de
-            presentar. Esta herramienta no firma ni presenta solicitudes.
+            , de naturaleza dinámica. Esta herramienta no firma ni presenta solicitudes.
             {" · "}
             <Link className="enlace" href="/privacidad">
-              Privacidad y uso responsable
+              Aviso legal, privacidad e IA
             </Link>
           </p>
         </div>

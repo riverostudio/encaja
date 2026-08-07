@@ -156,6 +156,8 @@ test("el asistente conversa, muestra requisitos y lleva la búsqueda al radar", 
   await page.getByRole("button", { name: "Soy estudiante" }).click();
 
   const asistente = page.getByRole("dialog", { name: "Asistente para buscar ayudas" });
+  await expect(asistente.getByText("Asistente automático · puede usar inteligencia artificial")).toBeVisible();
+  await expect(asistente.getByText(/Puede equivocarse o estar desactualizado/)).toBeVisible();
   await expect(asistente.getByText("He buscado para: Soy estudiante")).toBeVisible();
   await expect(asistente.getByText("Becas del Ministerio de Educación", { exact: true })).toBeVisible();
   await expect(asistente.getByText("Cumplir los umbrales de renta y patrimonio.")).toBeVisible();
@@ -167,6 +169,26 @@ test("el asistente conversa, muestra requisitos y lleva la búsqueda al radar", 
 
   await asistente.getByRole("button", { name: "Ver toda esta búsqueda en el radar" }).click();
   await expect(page.getByPlaceholder("Busca una ayuda…")).toHaveValue("beca · ayudas al estudio");
+});
+
+test("la transparencia sobre IA es visible y explica sus límites", async ({ page }) => {
+  await page.goto("/privacidad");
+  await expect(
+    page.getByRole("heading", { name: "Aviso legal, privacidad e inteligencia artificial" }),
+  ).toBeVisible();
+  await expect(page.getByText(/no son asesoramiento jurídico, fiscal, laboral o administrativo/i)).toBeVisible();
+  await expect(page.getByText(/Encaja se ha creado, documentado e investigado con ayuda/i)).toBeVisible();
+
+  await entrarSinClave(page);
+  await expect(
+    page.getByRole("complementary", {
+      name: "Aviso sobre contenido asistido por inteligencia artificial",
+    }),
+  ).toContainText("pueden haberse generado con inteligencia artificial");
+  await page.getByRole("link", { name: "Cómo se usa la IA" }).click();
+  await expect(
+    page.getByRole("heading", { name: "Aviso legal, privacidad e inteligencia artificial" }),
+  ).toBeVisible();
 });
 
 test("una respuesta de Encajo viaja en la siguiente petición", async ({ page }) => {

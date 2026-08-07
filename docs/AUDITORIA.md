@@ -21,7 +21,7 @@ Encaja y la IA configurada por el visitante solo los explica.
 | Solo con ficha oficial BDNS | 270 |
 | Vías prioritarias fuera de la BDNS | 12 |
 | Pruebas unitarias | 210 |
-| Pruebas de navegador | 18, escritorio y móvil |
+| Pruebas de navegador | 20, escritorio y móvil |
 
 Las 270 convocatorias sin sede ni bases separadas siguen teniendo la ficha oficial de
 la BDNS. En esos casos la interfaz no etiqueta el enlace como solicitud directa: explica
@@ -57,3 +57,9 @@ El chat funciona de forma guiada sin clave. Si el visitante configura Gemini, Cl
 OpenAI, el orientador reutiliza ese mismo proveedor. En la web pública la clave y el
 perfil permanecen en el navegador y se envían solo durante la petición necesaria; no se
 guardan en la base pública.
+
+La aplicación identifica de forma visible que el orientador es automático, indica en
+cada respuesta si ha usado IA o el modo guiado y avisa de que los textos pueden contener
+errores o información desactualizada. El aviso legal explica que la IA también ayudó a
+crear, documentar e investigar el proyecto, que Encaja no adopta decisiones con efectos
+jurídicos y que la fuente oficial siempre debe verificarse.

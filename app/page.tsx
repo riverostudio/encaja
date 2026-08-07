@@ -554,6 +554,16 @@ export default function PaginaRadar() {
         </p>
       </div>
 
+      <aside
+        className="mt-5 max-w-3xl rounded-lg border border-[var(--linea)] px-4 py-3 text-[12px] leading-relaxed text-[var(--grafito)]"
+        aria-label="Aviso sobre contenido asistido por inteligencia artificial"
+      >
+        <strong className="text-[var(--tinta)]">Contenido asistido por IA.</strong> Algunas
+        explicaciones y traducciones pueden haberse generado con inteligencia artificial y pueden
+        contener errores o información desactualizada. Verifica siempre los requisitos y plazos en
+        la fuente oficial. <Link href="/privacidad" className="enlace">Cómo se usa la IA</Link>
+      </aside>
+
       {/* ——— lo que NO está en la BDNS pero te puede tocar ——— */}
       {prestacionesVisibles.length > 0 && (
         <div className="mt-6">

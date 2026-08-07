@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import { guardarIaLocal, APP_PUBLICA } from "./Sesion";
 
@@ -249,7 +250,9 @@ export default function Bienvenida({
         <p className="nota mt-12 max-w-lg">
           Los datos de las ayudas vienen de la Base de Datos Nacional de Subvenciones y son
           gratuitos. La clave solo se usa para traducir y explicar; esta herramienta nunca firma ni
-          presenta solicitudes en tu nombre.
+          presenta solicitudes en tu nombre. Encaja se ha creado e investigado con ayuda de IA y
+          sus explicaciones pueden contener errores o información desactualizada: comprueba siempre
+          la fuente oficial. <Link href="/privacidad" className="enlace">Aviso legal y uso de IA</Link>
         </p>
       </div>
     </div>

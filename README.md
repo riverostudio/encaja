@@ -105,6 +105,12 @@ sin clave. La clave se guarda **en tu navegador** y se transmite cifrada únicam
 solicitar una operación de IA; Encaja no la conserva en el servidor. Perfil,
 entrevistas y expedientes permanecen en ese navegador y se pueden exportar o borrar.
 
+**Transparencia sobre IA.** Encaja se ha creado, documentado e investigado con ayuda de
+inteligencia artificial y también puede usarla para resumir, traducir, leer bases y
+conversar. Esas explicaciones pueden contener errores, omisiones o información
+desactualizada: no son asesoramiento ni una decisión oficial y siempre deben comprobarse
+contra la convocatoria y la sede del organismo.
+
 ### En tu ordenador
 
 Necesitas Node 20 o más nuevo.
