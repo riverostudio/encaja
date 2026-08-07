@@ -7,6 +7,8 @@ async function entrarSinClave(page: import("@playwright/test").Page) {
   // Shell resuelve el estado de IA de forma asíncrona: espera a que aparezca
   // la puerta o el radar si este navegador ya había entrado.
   await expect(invitado.or(radar)).toBeVisible({ timeout: 15_000 });
+  const entendido = page.getByRole("button", { name: "Entendido" });
+  if (await entendido.isVisible()) await entendido.click();
   if (await invitado.isVisible()) await invitado.click();
   await expect(radar).toBeVisible();
 }
@@ -156,8 +158,11 @@ test("el asistente conversa, muestra requisitos y lleva la búsqueda al radar", 
   await page.getByRole("button", { name: "Soy estudiante" }).click();
 
   const asistente = page.getByRole("dialog", { name: "Asistente para buscar ayudas" });
-  await expect(asistente.getByText("Asistente automático · puede usar inteligencia artificial")).toBeVisible();
-  await expect(asistente.getByText(/Puede equivocarse o estar desactualizado/)).toBeVisible();
+  await expect(asistente.getByText("Orientador de Encaja · IA")).toBeVisible();
+  await expect(asistente.getByRole("link", { name: "Privacidad y uso de IA" })).toHaveAttribute(
+    "href",
+    "/privacidad",
+  );
   await expect(asistente.getByText("He buscado para: Soy estudiante")).toBeVisible();
   await expect(asistente.getByText("Becas del Ministerio de Educación", { exact: true })).toBeVisible();
   await expect(asistente.getByText("Cumplir los umbrales de renta y patrimonio.")).toBeVisible();
@@ -171,24 +176,27 @@ test("el asistente conversa, muestra requisitos y lleva la búsqueda al radar", 
   await expect(page.getByPlaceholder("Busca una ayuda…")).toHaveValue("beca · ayudas al estudio");
 });
 
-test("la transparencia sobre IA es visible y explica sus límites", async ({ page }) => {
+test("el aviso de IA aparece una vez, se puede quitar y remite a la página legal", async ({ page }) => {
+  await page.goto("/");
+  const aviso = page.getByRole("dialog", { name: "Aviso inicial" });
+  await expect(aviso).toBeVisible({ timeout: 15_000 });
+  await expect(aviso).toContainText("Encaja usa contenido asistido por IA");
+  await expect(aviso.getByRole("link", { name: "Leer aviso legal" })).toHaveAttribute(
+    "href",
+    "/privacidad",
+  );
+  await aviso.getByRole("button", { name: "Entendido" }).click();
+  await expect(aviso).toHaveCount(0);
+
+  await page.reload();
+  await expect(page.getByRole("dialog", { name: "Aviso inicial" })).toHaveCount(0);
+
   await page.goto("/privacidad");
   await expect(
     page.getByRole("heading", { name: "Aviso legal, privacidad e inteligencia artificial" }),
   ).toBeVisible();
   await expect(page.getByText(/no son asesoramiento jurídico, fiscal, laboral o administrativo/i)).toBeVisible();
   await expect(page.getByText(/Encaja se ha creado, documentado e investigado con ayuda/i)).toBeVisible();
-
-  await entrarSinClave(page);
-  await expect(
-    page.getByRole("complementary", {
-      name: "Aviso sobre contenido asistido por inteligencia artificial",
-    }),
-  ).toContainText("pueden haberse generado con inteligencia artificial");
-  await page.getByRole("link", { name: "Cómo se usa la IA" }).click();
-  await expect(
-    page.getByRole("heading", { name: "Aviso legal, privacidad e inteligencia artificial" }),
-  ).toBeVisible();
 });
 
 test("una respuesta de Encajo viaja en la siguiente petición", async ({ page }) => {

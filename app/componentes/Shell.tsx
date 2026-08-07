@@ -8,6 +8,7 @@ import Tema from "./Tema";
 import Bienvenida, { type ProveedorUi } from "./Bienvenida";
 import { APP_PUBLICA } from "./Sesion";
 import AsistenteAyudas from "./AsistenteAyudas";
+import AvisoLegalInicial from "./AvisoLegalInicial";
 
 const LLAVE_ENTRADA = "encaja.entrada";
 
@@ -43,13 +44,16 @@ export default function Shell({ children }: { children: ReactNode }) {
   // Sin clave no se entra: la app no podría hacer su trabajo.
   if (!ia.configurada && ia.proveedores.length > 0 && ruta !== "/privacidad") {
     return (
-      <Bienvenida
-        proveedores={ia.proveedores}
-        onListo={() => {
-          if (APP_PUBLICA) localStorage.setItem(LLAVE_ENTRADA, "1");
-          setIa({ ...ia, configurada: true });
-        }}
-      />
+      <>
+        <Bienvenida
+          proveedores={ia.proveedores}
+          onListo={() => {
+            if (APP_PUBLICA) localStorage.setItem(LLAVE_ENTRADA, "1");
+            setIa({ ...ia, configurada: true });
+          }}
+        />
+        <AvisoLegalInicial />
+      </>
     );
   }
 
@@ -92,14 +96,7 @@ export default function Shell({ children }: { children: ReactNode }) {
 
       <footer className="mt-16 border-t border-[var(--linea)]">
         <div className="mx-auto max-w-6xl px-6 py-7">
-          <p className="max-w-3xl text-[12.5px] leading-relaxed text-[var(--grafito)]">
-            <strong className="text-[var(--tinta)]">Transparencia sobre IA.</strong> Encaja se ha
-            creado e investigado con ayuda de inteligencia artificial y puede usar IA para resumir,
-            buscar y orientar. Sus explicaciones pueden contener errores, omisiones o información
-            desactualizada. No son asesoramiento ni una decisión oficial: comprueba siempre la
-            convocatoria y la sede del organismo.
-          </p>
-          <p className="nota mt-3 max-w-3xl">
+          <p className="nota max-w-3xl">
             Datos del{" "}
             <a
               className="enlace"
@@ -120,6 +117,7 @@ export default function Shell({ children }: { children: ReactNode }) {
 
       {ajustesAbierto && <Ajustes onCerrar={() => setAjustesAbierto(false)} />}
       <AsistenteAyudas />
+      {ruta !== "/privacidad" && <AvisoLegalInicial />}
     </div>
   );
 }

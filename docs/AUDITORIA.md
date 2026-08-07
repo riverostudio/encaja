@@ -58,8 +58,8 @@ OpenAI, el orientador reutiliza ese mismo proveedor. En la web pública la clave
 perfil permanecen en el navegador y se envían solo durante la petición necesaria; no se
 guardan en la base pública.
 
-La aplicación identifica de forma visible que el orientador es automático, indica en
-cada respuesta si ha usado IA o el modo guiado y avisa de que los textos pueden contener
-errores o información desactualizada. El aviso legal explica que la IA también ayudó a
-crear, documentar e investigar el proyecto, que Encaja no adopta decisiones con efectos
+La aplicación muestra una sola vez por navegador un aviso inicial que se puede cerrar y
+mantiene una identificación breve de IA en el orientador. Las explicaciones extensas se
+centralizan en una única página legal, que detalla que la IA también ayudó a crear,
+documentar e investigar el proyecto, que Encaja no adopta decisiones con efectos
 jurídicos y que la fuente oficial siempre debe verificarse.

@@ -124,11 +124,8 @@ export default function AsistenteAyudas() {
         >
           <header className="chat-cabecera">
             <div>
-              <p className="rotulo">Orientador de Encaja</p>
+              <p className="rotulo">Orientador de Encaja · IA</p>
               <p className="display mt-0.5 text-[18px]">¿Qué ayuda necesitas?</p>
-              <p className="mt-1 text-[10.5px] text-[var(--niebla)]">
-                Asistente automático · puede usar inteligencia artificial
-              </p>
             </div>
             <button className="chat-cerrar" onClick={() => setAbierto(false)} aria-label="Cerrar asistente">
               ✕
@@ -243,8 +240,9 @@ export default function AsistenteAyudas() {
             </button>
           </form>
           <p className="chat-aviso">
-            Puede equivocarse o estar desactualizado. No compartas DNI, datos bancarios,
-            contraseñas ni informes médicos. La fuente oficial siempre manda.
+            <a className="enlace" href="/privacidad">
+              Privacidad y uso de IA
+            </a>
           </p>
         </section>
       )}
