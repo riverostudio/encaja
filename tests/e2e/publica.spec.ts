@@ -33,6 +33,21 @@ test("el código postal selecciona su comunidad", async ({ page }) => {
   await expect(page.locator("select").first()).toHaveValue("26");
 });
 
+test("la lista de comunidades conserva contraste en el tema oscuro", async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem("tema", "oscuro"));
+  await entrarSinClave(page);
+
+  const selector = page.locator("select").first();
+  const opcion = selector.locator("option").filter({ hasText: "Andalucía" });
+  await expect(selector).toHaveCSS("background-color", "rgb(16, 15, 13)");
+  await expect(selector).toHaveCSS("color", "rgb(242, 237, 228)");
+  await expect(opcion).toHaveCSS("background-color", "rgb(16, 15, 13)");
+  await expect(opcion).toHaveCSS("color", "rgb(242, 237, 228)");
+  await selector.selectOption({ label: "Andalucía" });
+  await expect(opcion).toHaveCSS("background-color", "rgb(47, 93, 69)");
+  await expect(opcion).toHaveCSS("color", "rgb(255, 255, 255)");
+});
+
 test("una respuesta antigua no pisa las ayudas de la comunidad detectada", async ({ page }) => {
   const convocatoria = (titulo: string, nivel2: string) => ({
     codigoBdns: titulo === "Ayuda de Madrid" ? "260001" : "540001",

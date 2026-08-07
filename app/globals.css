@@ -310,6 +310,27 @@ select.campo {
   cursor: pointer;
 }
 
+select.campo option {
+  background-color: #ffffff;
+  color: #16150f;
+}
+
+[data-tema="oscuro"] select.campo {
+  background-color: #100f0d;
+  color: #f2ede4;
+  color-scheme: dark;
+}
+
+[data-tema="oscuro"] select.campo option {
+  background-color: #100f0d;
+  color: #f2ede4;
+}
+
+[data-tema="oscuro"] select.campo option:checked {
+  background-color: #2f5d45;
+  color: #ffffff;
+}
+
 /* ——— filtros de texto con subrayado que crece ——— */
 .filtro {
   position: relative;
