@@ -4,6 +4,7 @@ import {
   detectarEscenario,
   hechosInferidosParaBuscar,
   preguntasQueFaltan,
+  profesionalNecesitaAclaracion,
   respuestaGuiada,
   respuestaIaSegura,
 } from "../lib/asistente";
@@ -45,11 +46,33 @@ describe("orientación del asistente", () => {
     expect(original.get("situacion")).toBe("estudiante");
   });
 
+  it("usa en esa búsqueda un código postal escrito en el chat sin persistirlo", () => {
+    const original = h();
+    const inferido = hechosInferidosParaBuscar(original, "autonomo", "Tengo un taller en el 46001");
+    expect(inferido.get("cp")).toBe("46001");
+    expect(original.has("cp")).toBe(false);
+  });
+
   it("a una persona con pocos recursos le pide solo los datos decisivos que faltan", () => {
     expect(preguntasQueFaltan(h(), "pocos_recursos")).toEqual([
       "¿Cuál es tu código postal?",
       "¿En qué tramo están aproximadamente los ingresos anuales de tu hogar?",
     ]);
+  });
+
+  it("no pregunta otra vez el tipo de estudios que el usuario acaba de decir", () => {
+    expect(preguntasQueFaltan(h({ cp: "28013" }), "estudiante", "Soy universitario")).toEqual(
+      [],
+    );
+  });
+
+  it("aclara profesional cuando el perfil personal no distingue la forma de trabajo", () => {
+    expect(profesionalNecesitaAclaracion(h({ perfil: "particular" }), "Soy profesional")).toBe(
+      true,
+    );
+    expect(
+      profesionalNecesitaAclaracion(h({ perfil: "particular" }), "Soy profesional por cuenta ajena"),
+    ).toBe(false);
   });
 
   it("no presenta un resultado como concesión segura", () => {

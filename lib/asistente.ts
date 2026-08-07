@@ -78,8 +78,11 @@ export function consultaParaAsistente(texto: string): string {
 export function hechosInferidosParaBuscar(
   originales: Map<string, string>,
   escenario: EscenarioAsistente,
+  mensajeActual = "",
 ): Map<string, string> {
   const hechos = new Map(originales);
+  const cpEscrito = mensajeActual.match(/\b((?:0[1-9]|[1-4]\d|5[0-2])\d{3})\b/)?.[1];
+  if (cpEscrito) hechos.set("cp", cpEscrito);
   if (
     ["pocos_recursos", "estudiante", "trabajador", "desempleo", "vivienda", "familia"].includes(
       escenario,
@@ -135,12 +138,16 @@ export function recursoDesdePrestacion(p: Prestacion): RecursoAsistente {
 export function preguntasQueFaltan(
   hechos: Map<string, string>,
   escenario: EscenarioAsistente,
+  mensajeActual = "",
 ): string[] {
+  const q = normalizar(mensajeActual);
   const preguntas: string[] = [];
-  if (escenario === "profesional" && !hechos.has("perfil")) {
+  if (escenario === "profesional" && profesionalNecesitaAclaracion(hechos, mensajeActual)) {
     preguntas.push("¿Trabajas por cuenta propia, por cuenta ajena o tienes una empresa?");
   }
-  if (!hechos.has("cp")) preguntas.push("¿Cuál es tu código postal?");
+  if (!hechos.has("cp") && !/\b(?:0[1-9]|[1-4]\d|5[0-2])\d{3}\b/.test(q)) {
+    preguntas.push("¿Cuál es tu código postal?");
+  }
   if (
     ["pocos_recursos", "vivienda", "familia", "trabajador"].includes(escenario) &&
     !hechos.has("ingresos")
@@ -153,10 +160,28 @@ export function preguntasQueFaltan(
   if (escenario === "autonomo" && !hechos.has("cnae_letras")) {
     preguntas.push("¿A qué se dedica tu actividad?");
   }
-  if (escenario === "estudiante" && !hechos.has("tipo_estudios")) {
+  if (
+    escenario === "estudiante" &&
+    !hechos.has("tipo_estudios") &&
+    !/bachiller|universidad|universitari|\bfp\b|formacion profesional|otra ensenanza/.test(q)
+  ) {
     preguntas.push("¿Qué estudias: Bachillerato, FP, universidad u otra enseñanza?");
   }
   return preguntas.slice(0, 2);
+}
+
+export function profesionalNecesitaAclaracion(
+  hechos: Map<string, string>,
+  mensajeActual = "",
+): boolean {
+  const q = normalizar(mensajeActual);
+  if (/cuenta propia|autonom|freelance|cuenta ajena|asalariad|emplead|tengo una empresa/.test(q)) {
+    return false;
+  }
+  return !(
+    ["autonomo", "empresa"].includes(hechos.get("perfil") ?? "") ||
+    ["autonomo_activo", "cuenta_ajena"].includes(hechos.get("situacion") ?? "")
+  );
 }
 
 export function respuestaGuiada(

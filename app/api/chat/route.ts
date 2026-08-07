@@ -4,6 +4,7 @@ import {
   detectarEscenario,
   hechosInferidosParaBuscar,
   preguntasQueFaltan,
+  profesionalNecesitaAclaracion,
   promptConversacional,
   recursoDesdePrestacion,
   respuestaGuiada,
@@ -92,7 +93,7 @@ export async function POST(req: NextRequest) {
     const repo = getRepo();
     const hechosOriginales = hechosDe(req) ?? repo.getHechos(idDeSesion(req));
     const escenario = detectarEscenario(ultimo);
-    const hechosBusqueda = hechosInferidosParaBuscar(hechosOriginales, escenario);
+    const hechosBusqueda = hechosInferidosParaBuscar(hechosOriginales, escenario, ultimo);
     const cp = hechosBusqueda.get("cp");
     const zona = cp ? resolverCP(cp) : null;
     const consulta = consultaParaAsistente(ultimo);
@@ -110,12 +111,13 @@ export async function POST(req: NextRequest) {
     )
       .slice(0, 4)
       .map(recursoDesdePrestacion);
-    const necesitaAclararProfesional = escenario === "profesional" && !hechosOriginales.has("perfil");
+    const necesitaAclararProfesional =
+      escenario === "profesional" && profesionalNecesitaAclaracion(hechosOriginales, ultimo);
     const convocatorias = necesitaAclararProfesional
       ? []
       : filasRadar.slice(0, 5).map(recursoDesdeConvocatoria);
     const recursos = [...directas, ...convocatorias].slice(0, 7);
-    const preguntas = preguntasQueFaltan(hechosOriginales, escenario);
+    const preguntas = preguntasQueFaltan(hechosOriginales, escenario, ultimo);
 
     const credenciales = credencialesDe(req);
     const puedeUsarIa = Boolean(credenciales) || (!esPublico() && hayClave(repo));

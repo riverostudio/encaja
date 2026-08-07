@@ -20,7 +20,7 @@ Encaja y la IA configurada por el visitante solo los explica.
 | Con sede o bases específicas | 19.500 |
 | Solo con ficha oficial BDNS | 270 |
 | Vías prioritarias fuera de la BDNS | 12 |
-| Pruebas unitarias | 204 |
+| Pruebas unitarias | 207 |
 | Pruebas de navegador | 18, escritorio y móvil |
 
 Las 270 convocatorias sin sede ni bases separadas siguen teniendo la ficha oficial de
