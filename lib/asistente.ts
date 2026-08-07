@@ -157,7 +157,11 @@ export function preguntasQueFaltan(
   if (escenario === "pocos_recursos" && !hechos.has("personas_hogar")) {
     preguntas.push("¿Cuántas personas vivís en casa?");
   }
-  if (escenario === "autonomo" && !hechos.has("cnae_letras")) {
+  const actividadDescrita =
+    /\bautonom\w*\s+de\s+\w+|\bme dedico a\b|\bmi actividad (?:es|consiste)\b|\btengo (?:un|una) (?:taller|tienda|bar|restaurante|consulta|despacho|agencia|estudio)\b/.test(
+      q,
+    );
+  if (escenario === "autonomo" && !hechos.has("cnae_letras") && !actividadDescrita) {
     preguntas.push("¿A qué se dedica tu actividad?");
   }
   if (
@@ -184,6 +188,41 @@ export function profesionalNecesitaAclaracion(
   );
 }
 
+export function convocatoriaRelevanteParaEscenario(
+  texto: string,
+  escenario: EscenarioAsistente,
+): boolean {
+  const q = normalizar(texto);
+  if (escenario === "autonomo") {
+    return /autonom|autoemple|emprend|pyme|negocio|actividad economica|empresa/.test(q);
+  }
+  if (escenario === "estudiante") {
+    return /estudiant|universit|beca|estudio|bachiller|formacion profesional|doctorad|tesis|practicas/.test(
+      q,
+    );
+  }
+  if (escenario === "trabajador") {
+    const esSoloOtroPerfil =
+      /desemple|parad[oa]|sin trabajo|estudiant|universit|doctorad|beca/.test(q) &&
+      !/\btrabajador|\bemplead|\basalariad|\bcuenta ajena/.test(q);
+    return (
+      !esSoloOtroPerfil &&
+      /concili|\btrabajador|\bemplead|\basalariad|\bcuenta ajena|formacion profesional para el empleo|transporte.{0,30}laboral|laboral.{0,30}transporte/.test(
+        q,
+      )
+    );
+  }
+  if (escenario === "pocos_recursos") {
+    return /vulnerab|exclusion|pobreza|emergencia|renta|ingreso|alquiler|vivienda|necesidad|familia|infancia|comedor|alimento/.test(
+      q,
+    );
+  }
+  if (escenario === "desempleo") return /desemple|parad[oa]|sin trabajo|insercion laboral|empleabilidad/.test(q);
+  if (escenario === "vivienda") return /alquiler|vivienda|alojamiento|desahuc|hipoteca/.test(q);
+  if (escenario === "familia") return /familia|infancia|hij[oa]|concili|comedor|libros/.test(q);
+  return escenario !== "profesional";
+}
+
 export function respuestaGuiada(
   escenario: EscenarioAsistente,
   recursos: RecursoAsistente[],
@@ -208,6 +247,8 @@ export function respuestaGuiada(
 
 const PATRON_PREGUNTA_NO_AUTORIZADA =
   /[¿?]|\bpara (?:poder )?afinar\b|\bnecesit(?:o|amos|aría|aríamos) (?:saber|conocer)\b|\b(?:nos|me) falt(?:a|aría)\b|\b(?:dime|cuéntame|indícame|confírmame)\b/i;
+const PATRON_INTERPRETACION_DE_PLAZO =
+  /\bplazo\b|\babiert[ao]s?\b|\bcerrad[ao]s?\b|\bhan? cerrado\b|\bfinaliza[n]?\b|\bdisponible[s]? hasta\b/i;
 
 /**
  * La IA redacta la explicación, pero no decide qué datos pedir. Eliminamos
@@ -223,7 +264,12 @@ export function respuestaIaSegura(texto: string, preguntas: string[]): string {
   const explicacion = limpio
     .split(/\n{2,}|(?<=[.!?])\s+(?=[A-ZÁÉÍÓÚ¿])/)
     .map((parte) => parte.trim())
-    .filter((parte) => parte && !PATRON_PREGUNTA_NO_AUTORIZADA.test(parte))
+    .filter(
+      (parte) =>
+        parte &&
+        !PATRON_PREGUNTA_NO_AUTORIZADA.test(parte) &&
+        !PATRON_INTERPRETACION_DE_PLAZO.test(parte),
+    )
     .join(" ")
     .trim()
     .slice(0, 2_500);
@@ -253,6 +299,7 @@ REGLAS OBLIGATORIAS:
 - Responde en español claro, cálido y directo, con un máximo de 130 palabras.
 - Escribe texto plano: no uses Markdown, asteriscos, títulos ni enlaces.
 - No hagas preguntas ni menciones datos que falten. La aplicación añadirá después, de forma segura, las preguntas necesarias.
+- No interpretes ni resumas fechas o estados de plazo. Las tarjetas de Encaja los muestran de forma calculada.
 
 PERFIL CONOCIDO: ${args.perfil}
 

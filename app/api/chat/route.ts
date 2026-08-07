@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import {
   consultaParaAsistente,
+  convocatoriaRelevanteParaEscenario,
   detectarEscenario,
   hechosInferidosParaBuscar,
   preguntasQueFaltan,
@@ -75,6 +76,20 @@ function recursoDesdeConvocatoria(c: ConvocatoriaConPlazo): RecursoAsistente {
   };
 }
 
+function textoRelevancia(c: ConvocatoriaConPlazo): string {
+  return [
+    c.titulo,
+    c.resumen?.titular,
+    c.resumen?.que,
+    c.resumen?.aQuien,
+    c.llano.que,
+    c.llano.quien,
+    c.beneficiarios.join(" "),
+  ]
+    .filter(Boolean)
+    .join(" ");
+}
+
 function unicos<T extends { id: string }>(items: T[]): T[] {
   return [...new Map(items.map((x) => [x.id, x])).values()];
 }
@@ -115,7 +130,10 @@ export async function POST(req: NextRequest) {
       escenario === "profesional" && profesionalNecesitaAclaracion(hechosOriginales, ultimo);
     const convocatorias = necesitaAclararProfesional
       ? []
-      : filasRadar.slice(0, 5).map(recursoDesdeConvocatoria);
+      : filasRadar
+          .filter((fila) => convocatoriaRelevanteParaEscenario(textoRelevancia(fila), escenario))
+          .slice(0, 5)
+          .map(recursoDesdeConvocatoria);
     const recursos = [...directas, ...convocatorias].slice(0, 7);
     const preguntas = preguntasQueFaltan(hechosOriginales, escenario, ultimo);
 
@@ -123,7 +141,7 @@ export async function POST(req: NextRequest) {
     const puedeUsarIa = Boolean(credenciales) || (!esPublico() && hayClave(repo));
     let respuesta = respuestaGuiada(escenario, recursos, preguntas);
     let modo: "ia" | "guiado" = "guiado";
-    if (puedeUsarIa) {
+    if (puedeUsarIa && !necesitaAclararProfesional) {
       try {
         const respuestaIa = respuestaIaSegura(await generar(
           repo,

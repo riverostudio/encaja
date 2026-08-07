@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   consultaParaAsistente,
+  convocatoriaRelevanteParaEscenario,
   detectarEscenario,
   hechosInferidosParaBuscar,
   preguntasQueFaltan,
@@ -66,6 +67,12 @@ describe("orientación del asistente", () => {
     );
   });
 
+  it("no pregunta otra vez una actividad autónoma que el usuario acaba de describir", () => {
+    expect(
+      preguntasQueFaltan(h({ cp: "46001" }), "autonomo", "Soy autónomo de diseño gráfico"),
+    ).toEqual([]);
+  });
+
   it("aclara profesional cuando el perfil personal no distingue la forma de trabajo", () => {
     expect(profesionalNecesitaAclaracion(h({ perfil: "particular" }), "Soy profesional")).toBe(
       true,
@@ -73,6 +80,18 @@ describe("orientación del asistente", () => {
     expect(
       profesionalNecesitaAclaracion(h({ perfil: "particular" }), "Soy profesional por cuenta ajena"),
     ).toBe(false);
+  });
+
+  it("no mezcla becas o desempleo en los resultados de un trabajador", () => {
+    expect(
+      convocatoriaRelevanteParaEscenario("Becas para estudiantes universitarios", "trabajador"),
+    ).toBe(false);
+    expect(
+      convocatoriaRelevanteParaEscenario("Cheque de formación para jóvenes desempleados", "trabajador"),
+    ).toBe(false);
+    expect(
+      convocatoriaRelevanteParaEscenario("Ayuda de conciliación para personas trabajadoras", "trabajador"),
+    ).toBe(true);
   });
 
   it("no presenta un resultado como concesión segura", () => {
@@ -107,6 +126,14 @@ describe("orientación del asistente", () => {
     expect(texto).not.toContain("provincia");
     expect(texto).not.toContain("contrato");
     expect(texto).toContain("¿Qué estudias: Bachillerato, FP, universidad u otra enseñanza?");
+  });
+
+  it("deja fechas y estados de plazo a las tarjetas calculadas por Encaja", () => {
+    const texto = respuestaIaSegura(
+      "La beca puede ayudarte con la matrícula. Otras convocatorias ya han cerrado. El plazo finaliza el 1 de octubre.",
+      [],
+    );
+    expect(texto).toBe("La beca puede ayudarte con la matrícula.");
   });
 
   it("no añade seguimiento cuando el perfil ya contiene lo necesario", () => {
