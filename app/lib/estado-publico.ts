@@ -7,6 +7,8 @@ import type {
   VeredictoUi,
   ResumenIaUi,
 } from "../componentes/tipos-ui";
+import { borrarMetricasLocales, leerMetricasLocales } from "./metricas-cliente";
+import { estadoPlazo, formatoRango } from "@/lib/plazos";
 
 const LLAVE_PERFIL = "encaja.perfil";
 const LLAVE_EVALUACIONES = "encaja.evaluaciones";
@@ -222,7 +224,12 @@ export function datosExpedientePublico(codigo: string) {
       carpeta: "Guardado de forma privada en este navegador",
       checklistJson: JSON.stringify(expediente.checklist),
     },
-    conv: { ...expediente.conv, urlFicha: expediente.urlFicha },
+    conv: {
+      ...expediente.conv,
+      plazo: estadoPlazo(expediente.conv.fechaInicioSol, expediente.conv.fechaFinSol),
+      rangoFechas: formatoRango(expediente.conv.fechaInicioSol, expediente.conv.fechaFinSol),
+      urlFicha: expediente.urlFicha,
+    },
     condiciones: (evaluacion?.requisitos ?? []).filter((r) => r.tipo !== "documento"),
     veredicto: evaluacion?.dictamen ?? null,
     dondeSolicitar:
@@ -285,6 +292,7 @@ export function exportarDatosPublicos(): void {
         perfil: leerPerfilPublico(),
         evaluaciones: evaluaciones(),
         expedientes: expedientes(),
+        actividad: leerMetricasLocales(),
       },
       null,
       2,
@@ -300,4 +308,6 @@ export function borrarDatosPublicos(): void {
   localStorage.removeItem(LLAVE_REGION);
   localStorage.removeItem(LLAVE_RESUMENES);
   localStorage.removeItem("encaja.entrada");
+  localStorage.removeItem("encaja.consentimiento-metricas");
+  borrarMetricasLocales();
 }

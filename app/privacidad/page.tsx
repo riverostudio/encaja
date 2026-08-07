@@ -84,9 +84,27 @@ export default function Privacidad() {
           <h2 className="display text-[21px] text-[var(--tinta)]">Qué se guarda</h2>
           <p className="mt-2">
             En la versión pública, tu perfil, las respuestas de las entrevistas y tus expedientes
-            se guardan únicamente en el almacenamiento de este navegador. Encaja no crea una cuenta
-            ni conserva esos datos en una base de usuarios. Puedes exportarlos o borrarlos desde
-            Ajustes.
+            se guardan únicamente en el almacenamiento de este navegador. También permanecen allí
+            tu tiempo de uso, el historial detallado de búsquedas y las ayudas que has consultado,
+            para construir tu panel privado. Encaja no crea una cuenta ni conserva esos datos
+            personales en una base de usuarios. Puedes exportarlos o borrarlos desde Ajustes.
+          </p>
+        </section>
+
+        <section>
+          <h2 className="display text-[21px] text-[var(--tinta)]">Estadísticas anónimas y consentimiento</h2>
+          <p className="mt-2">
+            Solo si eliges «Aceptar estadísticas», Encaja registra páginas visitadas, categorías
+            generales de búsqueda, funciones utilizadas, duración de la sesión y códigos públicos
+            BDNS de ayudas abiertas. No envía el texto que escribes, tu perfil, código postal,
+            respuestas, mensajes del orientador, documentos ni claves de inteligencia artificial.
+          </p>
+          <p className="mt-3">
+            El navegador usa identificadores aleatorios que el servidor transforma mediante HMAC
+            antes de almacenarlos. No se guarda la dirección IP en la base de métricas. Los eventos
+            se conservan como máximo 365 días en Postgres administrado por Neon y conectado a
+            Vercel en región europea. Puedes retirar el consentimiento cuando quieras desde
+            Ajustes; desde ese momento dejan de enviarse eventos nuevos.
           </p>
         </section>
 
@@ -135,7 +153,8 @@ export default function Privacidad() {
           <p className="mt-2">
             Usa «Descargar mis datos» para obtener una copia y «Borrar mis datos» para eliminar
             perfil, entrevistas, expedientes y clave de este navegador. Borrar los datos del sitio
-            desde las preferencias del navegador produce el mismo efecto.
+            desde las preferencias del navegador produce el mismo efecto. En Ajustes también puedes
+            permitir o impedir en cualquier momento el envío de estadísticas anónimas.
           </p>
         </section>
       </div>

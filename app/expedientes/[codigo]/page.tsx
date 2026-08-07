@@ -9,6 +9,7 @@ import {
   datosExpedientePublico,
   descargarExpedientePublico,
 } from "../../lib/estado-publico";
+import { registrarSolicitudAbierta } from "../../lib/metricas-cliente";
 
 interface ItemChecklist {
   id: string;
@@ -335,7 +336,10 @@ export default function PaginaExpediente({ params }: { params: Promise<{ codigo:
                 href={datos.dondeSolicitar}
                 target="_blank"
                 rel="noreferrer"
-                onClick={() => void patch({ estado: "preparacion" })}
+                onClick={() => {
+                  registrarSolicitudAbierta(codigo);
+                  void patch({ estado: "preparacion" });
+                }}
               >
                 {datos.esSedeDirecta ? "Ir a la sede electrónica ↗" : "Ir a las bases oficiales ↗"}
               </a>

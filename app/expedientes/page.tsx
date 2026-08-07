@@ -5,6 +5,8 @@ import { useEffect, useState } from "react";
 import { colorPlazo, fraseP1azo, type PlazoUi } from "../componentes/tipos-ui";
 import { APP_PUBLICA } from "../componentes/Sesion";
 import { listarExpedientesPublicos } from "../lib/estado-publico";
+import MetricasUsuario from "../componentes/MetricasUsuario";
+import { estadoPlazo } from "@/lib/plazos";
 
 interface ExpedienteFila {
   codigoBdns: string;
@@ -37,7 +39,7 @@ export default function PaginaExpedientes() {
             estado: e.estado,
             titulo: e.conv.resumen?.titular ?? e.conv.llano.que ?? e.conv.titulo,
             organo: e.conv.nivel3 ?? e.conv.nivel2,
-            plazo: e.conv.plazo,
+            plazo: estadoPlazo(e.conv.fechaInicioSol, e.conv.fechaFinSol),
           })),
         );
         setCargado(true);
@@ -52,65 +54,64 @@ export default function PaginaExpedientes() {
       });
   }, []);
 
-  if (cargado && filas.length === 0) {
-    return (
-      <div className="py-24 text-center">
-        <h1 className="display text-[26px]">Aún no hay expedientes</h1>
-        <p className="nota mx-auto mt-2 max-w-sm">
-          En el radar, abre una ayuda y pulsa «Abrir expediente». {APP_PUBLICA
-            ? "Se guardará de forma privada en este navegador y podrás descargarla."
-            : "Se creará una carpeta real en tu disco con los enlaces oficiales y las instrucciones."}
-        </p>
-        <Link href="/" className="btn mt-7 inline-block">
-          Ir al radar
-        </Link>
-      </div>
-    );
-  }
-
   return (
     <div>
       <h1 className="display text-[32px] leading-tight">Expedientes</h1>
+      <MetricasUsuario />
 
-      <div className="mt-10 space-y-10">
-        {COLUMNAS.map((col) => {
-          const deCol = filas.filter((f) => f.estado === col.clave);
-          if (deCol.length === 0) return null;
-          return (
-            <section key={col.clave}>
-              <h2 className="rotulo">
-                {col.titulo} · {deCol.length}
-              </h2>
-              <div className="mt-2">
-                {deCol.map((f) => (
-                  <Link
-                    key={f.codigoBdns}
-                    href={`/expedientes/${f.codigoBdns}`}
-                    className="fila block !grid-cols-1 sm:!grid-cols-[1fr_auto]"
-                  >
-                    <span className="block min-w-0">
-                      <span className="display line-clamp-2 text-[17px] leading-snug">
-                        {f.titulo}
+      {cargado && filas.length === 0 ? (
+        <section className="mt-14 rounded-lg border border-[var(--linea)] p-8 text-center">
+          <h2 className="display text-[22px]">Aún no hay expedientes preparados</h2>
+          <p className="nota mx-auto mt-2 max-w-sm">
+            En el radar, abre una ayuda y pulsa «Abrir expediente». {APP_PUBLICA
+              ? "Se guardará de forma privada en este navegador y podrás descargarla."
+              : "Se creará una carpeta real en tu disco con los enlaces oficiales y las instrucciones."}
+          </p>
+          <Link href="/" className="btn mt-6 inline-block">
+            Ir al radar
+          </Link>
+        </section>
+      ) : (
+        <div className="mt-14 space-y-10">
+          {COLUMNAS.map((col) => {
+            const deCol = filas.filter((f) => f.estado === col.clave);
+            if (deCol.length === 0) return null;
+            return (
+              <section key={col.clave}>
+                <h2 className="rotulo">
+                  {col.titulo} · {deCol.length}
+                </h2>
+                <div className="mt-2">
+                  {deCol.map((f) => (
+                    <Link
+                      key={f.codigoBdns}
+                      href={`/expedientes/${f.codigoBdns}`}
+                      className="fila block !grid-cols-1 sm:!grid-cols-[1fr_auto]"
+                    >
+                      <span className="block min-w-0">
+                        <span className="display line-clamp-2 text-[17px] leading-snug">
+                          {f.titulo}
+                        </span>
+                        <span className="mt-1.5 block text-[12.5px] text-[var(--grafito)]">
+                          {f.organo}
+                        </span>
                       </span>
-                      <span className="mt-1.5 block text-[12.5px] text-[var(--grafito)]">
-                        {f.organo}
-                      </span>
-                    </span>
-                    {f.plazo && (
-                      <span
-                        className="display mt-2 block text-[13.5px] italic sm:mt-0 sm:text-right"
-                        style={{ color: colorPlazo(f.plazo) }}
-                      >
-                        {fraseP1azo(f.plazo)}
-                      </span>
-                    )}
-                  </Link>
-                ))}
-              </div>
-            </section>
-          );
-        })}
-      </div>
+                      {f.plazo && (
+                        <span
+                          className="display mt-2 block text-[13.5px] italic sm:mt-0 sm:text-right"
+                          style={{ color: colorPlazo(f.plazo) }}
+                        >
+                          {fraseP1azo(f.plazo)}
+                        </span>
+                      )}
+                    </Link>
+                  ))}
+                </div>
+              </section>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

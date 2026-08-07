@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import type { MensajeAsistente, RecursoAsistente } from "@/lib/asistente";
+import { registrarAgenteAbierto, registrarUsoAgente } from "../lib/metricas-cliente";
 
 interface MensajeUi extends MensajeAsistente {
   id: string;
@@ -77,6 +78,9 @@ export default function AsistenteAyudas() {
         consulta?: string;
         modo?: "ia" | "guiado";
       };
+      if (respuesta.ok && datos.modo) {
+        registrarUsoAgente(datos.modo, datos.recursos?.length ?? 0);
+      }
       setMensajes((antes) => [
         ...antes,
         {
@@ -249,7 +253,12 @@ export default function AsistenteAyudas() {
 
       <button
         className="chat-burbuja"
-        onClick={() => setAbierto((valor) => !valor)}
+        onClick={() =>
+          setAbierto((valor) => {
+            if (!valor) registrarAgenteAbierto();
+            return !valor;
+          })
+        }
         aria-label={abierto ? "Cerrar asistente de ayudas" : "Abrir asistente de ayudas"}
         aria-expanded={abierto}
       >

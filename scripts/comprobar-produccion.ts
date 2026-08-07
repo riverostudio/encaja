@@ -16,7 +16,7 @@ async function esperarDespliegue(): Promise<void> {
 
 async function comprobar() {
   await esperarDespliegue();
-  for (const ruta of ["/", "/ficha", "/expedientes", "/privacidad", "/api/estado", "/api/sync"]) {
+  for (const ruta of ["/", "/ficha", "/expedientes", "/privacidad", "/admin", "/api/estado", "/api/sync"]) {
     const r = await fetch(`${base}${ruta}`, { redirect: "manual" });
     if (r.status !== 200) throw new Error(`${ruta}: esperaba 200 y devuelve ${r.status}`);
     console.log(`OK ${r.status} ${ruta}`);
@@ -33,9 +33,25 @@ async function comprobar() {
   if (mantenimiento.status !== 405) {
     throw new Error(`/api/sync POST debe estar desactivada (405), devuelve ${mantenimiento.status}`);
   }
+  const metricasAdmin = await fetch(`${base}/api/admin/metricas`);
+  if (metricasAdmin.status !== 401) {
+    throw new Error(`/api/admin/metricas debe exigir sesión (401), devuelve ${metricasAdmin.status}`);
+  }
+  const metricaInvalida = await fetch(`${base}/api/metricas`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ tipo: "clave_api", valor: "no-debe-aceptarse" }),
+  });
+  if (metricaInvalida.status !== 400) {
+    throw new Error(`/api/metricas debe rechazar eventos no permitidos (400), devuelve ${metricaInvalida.status}`);
+  }
   const raiz = await fetch(base);
   if (!raiz.headers.get("content-security-policy")?.includes("frame-ancestors 'none'")) {
     throw new Error("Falta la política CSP en producción.");
+  }
+  const admin = await fetch(`${base}/admin`);
+  if (!(await admin.text()).includes("noindex")) {
+    throw new Error("El panel admin debe quedar fuera de los buscadores.");
   }
   console.log("Producción verificada.");
 }
@@ -44,4 +60,3 @@ comprobar().catch((error) => {
   console.error(error instanceof Error ? error.message : error);
   process.exitCode = 1;
 });
-

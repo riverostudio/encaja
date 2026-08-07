@@ -15,6 +15,11 @@ export default defineConfig({
   ],
   webServer: {
     command: "npm run start:e2e",
+    env: {
+      ...process.env,
+      ENCAJA_ADMIN_PASSWORD: "clave-e2e",
+      ENCAJA_ADMIN_SESSION_SECRET: "secreto-de-pruebas-e2e-no-usar-en-produccion",
+    },
     url: "http://127.0.0.1:3102",
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,

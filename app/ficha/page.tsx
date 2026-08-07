@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
+import { registrarPerfil } from "../lib/metricas-cliente";
 
 interface OpcionUi {
   valor: string;
@@ -46,6 +47,9 @@ export default function PaginaPerfil() {
       body: JSON.stringify({ clave, valor }),
     });
     const d = (await r.json()) as EstadoPerfil;
+    if (clave === "perfil" && ["particular", "autonomo", "empresa"].includes(valor)) {
+      registrarPerfil(valor as "particular" | "autonomo" | "empresa");
+    }
     setE(d);
     setTexto("");
     setMarcadas([]);

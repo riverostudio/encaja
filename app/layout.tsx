@@ -3,6 +3,7 @@ import { Newsreader, Inter } from "next/font/google";
 import "./globals.css";
 import Shell from "./componentes/Shell";
 import Sesion from "./componentes/Sesion";
+import MetricasSesion from "./componentes/MetricasSesion";
 
 const display = Newsreader({
   variable: "--font-display",
@@ -37,6 +38,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       </head>
       <body className="min-h-full flex flex-col">
         <Sesion />
+        <MetricasSesion />
         <Shell>{children}</Shell>
       </body>
     </html>

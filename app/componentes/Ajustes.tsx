@@ -11,6 +11,11 @@ import {
   guardarHechoPublico,
   leerPerfilPublico,
 } from "../lib/estado-publico";
+import {
+  guardarConsentimientoMetricas,
+  leerConsentimientoMetricas,
+  type ConsentimientoMetricas,
+} from "../lib/metricas-cliente";
 
 interface Estado {
   configurada: boolean;
@@ -32,8 +37,10 @@ export default function Ajustes({ onCerrar }: { onCerrar: () => void }) {
   const [guardando, setGuardando] = useState(false);
   const [guardado, setGuardado] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [consentimiento, setConsentimiento] = useState<ConsentimientoMetricas>(null);
 
   useEffect(() => {
+    queueMicrotask(() => setConsentimiento(leerConsentimientoMetricas()));
     fetch("/api/ajustes")
       .then((r) => r.json())
       .then((d: Estado) => {
@@ -196,6 +203,36 @@ export default function Ajustes({ onCerrar }: { onCerrar: () => void }) {
             <div className="filete mt-10 pt-6">
               <p className="rotulo mb-4">Trabajo en lote</p>
               <Trabajos />
+            </div>
+          )}
+
+          {APP_PUBLICA && (
+            <div className="filete mt-10 pt-6">
+              <p className="rotulo mb-2">Estadísticas anónimas</p>
+              <p className="nota mb-4">
+                Ayudan a saber cuántas personas usan Encaja y qué funciones sirven. No incluyen tu
+                perfil, búsquedas escritas, mensajes ni claves de IA.
+              </p>
+              <div className="flex flex-wrap gap-3">
+                <button
+                  className={`btn btn-linea ${consentimiento === "si" ? "!border-[var(--bosque)]" : ""}`}
+                  onClick={() => {
+                    guardarConsentimientoMetricas("si");
+                    setConsentimiento("si");
+                  }}
+                >
+                  Permitir estadísticas
+                </button>
+                <button
+                  className={`btn btn-linea ${consentimiento === "no" ? "!border-[var(--tinta)]" : ""}`}
+                  onClick={() => {
+                    guardarConsentimientoMetricas("no");
+                    setConsentimiento("no");
+                  }}
+                >
+                  No enviar
+                </button>
+              </div>
             </div>
           )}
 

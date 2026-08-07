@@ -2,8 +2,9 @@
 
 import Link from "next/link";
 import { useSyncExternalStore } from "react";
+import { guardarConsentimientoMetricas } from "../lib/metricas-cliente";
 
-const LLAVE_AVISO = "encaja.aviso-legal.v1";
+const LLAVE_AVISO = "encaja.aviso-legal.v2";
 const EVENTO_AVISO = "encaja:cambio-aviso-legal";
 let cerradoEnEstaPagina = false;
 
@@ -28,8 +29,9 @@ function estaVisible() {
 export default function AvisoLegalInicial() {
   const visible = useSyncExternalStore(suscribir, estaVisible, () => false);
 
-  function cerrar() {
+  function cerrar(consentimiento: "si" | "no") {
     cerradoEnEstaPagina = true;
+    guardarConsentimientoMetricas(consentimiento);
     try {
       localStorage.setItem(LLAVE_AVISO, "1");
     } catch {
@@ -50,7 +52,7 @@ export default function AvisoLegalInicial() {
       <button
         type="button"
         className="absolute right-3 top-3 rounded p-1 text-[var(--niebla)] hover:text-[var(--tinta)]"
-        onClick={cerrar}
+        onClick={() => cerrar("no")}
         aria-label="Cerrar aviso"
       >
         ✕
@@ -59,14 +61,17 @@ export default function AvisoLegalInicial() {
         Aviso inicial
       </p>
       <p className="mt-2 pr-5 text-[13px] leading-relaxed text-[var(--grafito)]">
-        Encaja usa contenido asistido por IA y puede equivocarse. Comprueba siempre la fuente
-        oficial y no compartas datos sensibles.
+        Encaja usa contenido asistido por IA y puede equivocarse. Si aceptas, también enviará
+        estadísticas anónimas de uso, nunca tu perfil, mensajes ni claves de IA.
       </p>
       <div className="mt-4 flex flex-wrap items-center gap-4">
-        <button type="button" className="btn !px-4 !py-2 !text-[12px]" onClick={cerrar}>
-          Entendido
+        <button type="button" className="btn !px-4 !py-2 !text-[12px]" onClick={() => cerrar("si")}>
+          Aceptar estadísticas
         </button>
-        <Link href="/privacidad" className="enlace text-[12px]" onClick={cerrar}>
+        <button type="button" className="btn-texto !text-[12px]" onClick={() => cerrar("no")}>
+          Solo necesarias
+        </button>
+        <Link href="/privacidad" className="enlace text-[12px]">
           Leer aviso legal
         </Link>
       </div>

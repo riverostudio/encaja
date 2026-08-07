@@ -7,8 +7,8 @@ async function entrarSinClave(page: import("@playwright/test").Page) {
   // Shell resuelve el estado de IA de forma asíncrona: espera a que aparezca
   // la puerta o el radar si este navegador ya había entrado.
   await expect(invitado.or(radar)).toBeVisible({ timeout: 15_000 });
-  const entendido = page.getByRole("button", { name: "Entendido" });
-  if (await entendido.isVisible()) await entendido.click();
+  const necesarias = page.getByRole("button", { name: "Solo necesarias" });
+  if (await necesarias.isVisible()) await necesarias.click();
   if (await invitado.isVisible()) await invitado.click();
   await expect(radar).toBeVisible();
 }
@@ -191,7 +191,7 @@ test("el asistente conversa, muestra requisitos y lleva la búsqueda al radar", 
   await expect(page.getByPlaceholder("Busca una ayuda…")).toHaveValue("beca · ayudas al estudio");
 });
 
-test("el aviso de IA aparece una vez, se puede quitar y remite a la página legal", async ({ page }) => {
+test("el aviso de IA y estadísticas aparece una vez y permite rechazarlas", async ({ page }) => {
   await page.goto("/");
   const aviso = page.getByRole("dialog", { name: "Aviso inicial" });
   await expect(aviso).toBeVisible({ timeout: 15_000 });
@@ -200,8 +200,9 @@ test("el aviso de IA aparece una vez, se puede quitar y remite a la página lega
     "href",
     "/privacidad",
   );
-  await aviso.getByRole("button", { name: "Entendido" }).click();
+  await aviso.getByRole("button", { name: "Solo necesarias" }).click();
   await expect(aviso).toHaveCount(0);
+  expect(await page.evaluate(() => localStorage.getItem("encaja.consentimiento-metricas"))).toBe("no");
 
   await page.reload();
   await expect(page.getByRole("dialog", { name: "Aviso inicial" })).toHaveCount(0);
@@ -212,6 +213,23 @@ test("el aviso de IA aparece una vez, se puede quitar y remite a la página lega
   ).toBeVisible();
   await expect(page.getByText(/no son asesoramiento jurídico, fiscal, laboral o administrativo/i)).toBeVisible();
   await expect(page.getByText(/Encaja se ha creado, documentado e investigado con ayuda/i)).toBeVisible();
+});
+
+test("las estadísticas solo se envían después del consentimiento", async ({ page }) => {
+  const peticiones: string[] = [];
+  page.on("request", (req) => {
+    if (new URL(req.url()).pathname === "/api/metricas") peticiones.push(req.url());
+  });
+  await page.goto("/");
+  const aviso = page.getByRole("dialog", { name: "Aviso inicial" });
+  await expect(aviso).toBeVisible({ timeout: 15_000 });
+  await page.waitForTimeout(300);
+  expect(peticiones).toHaveLength(0);
+  await aviso.getByRole("button", { name: "Aceptar estadísticas" }).click();
+  const invitado = page.getByRole("button", { name: /Entrar sin clave/ });
+  if (await invitado.isVisible()) await invitado.click();
+  await page.getByRole("link", { name: "Mi perfil" }).click();
+  await expect.poll(() => peticiones.length).toBeGreaterThan(0);
 });
 
 test("una respuesta de Encajo viaja en la siguiente petición", async ({ page }) => {
@@ -279,6 +297,76 @@ test("los expedientes públicos se leen solo desde este navegador", async ({ pag
   await entrarSinClave(page);
   await page.goto("/expedientes");
   await expect(page.getByText("Ayuda de prueba")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Mi actividad" })).toBeVisible();
+});
+
+test("el panel del usuario muestra tiempo, búsquedas e historial con vigencia", async ({ page }) => {
+  await page.goto("/");
+  await page.evaluate(() => {
+    localStorage.setItem("encaja.entrada", "1");
+    localStorage.setItem("encaja.aviso-legal.v2", "1");
+    localStorage.setItem(
+      "encaja.metricas.v1",
+      JSON.stringify({
+        version: 1,
+        primeraVisitaAt: "2026-08-01T10:00:00.000Z",
+        ultimaActividadAt: "2026-08-07T10:00:00.000Z",
+        tiempoActivoSegundos: 3900,
+        tiempoRadarSegundos: 1200,
+        paginasVistas: 12,
+        usosAgente: 2,
+        busquedas: [{ texto: "ayuda para alquiler", categoria: "vivienda", resultados: 4, fecha: "2026-08-07T10:00:00.000Z" }],
+        ayudasVistas: [{
+          codigoBdns: "123456",
+          titulo: "Ayuda antigua para el alquiler",
+          organo: "Ayuntamiento",
+          fechaInicioSol: "2025-01-01",
+          fechaFinSol: "2025-12-31",
+          rangoFechas: "1 ene — 31 dic 2025",
+          vistaAt: "2026-08-07T10:00:00.000Z",
+          veces: 3,
+        }],
+      }),
+    );
+  });
+  await page.goto("/expedientes");
+  await expect(page.getByText("1 h 5 min")).toBeVisible();
+  await expect(page.getByText("20 min")).toBeVisible();
+  await expect(page.getByText("ayuda para alquiler")).toBeVisible();
+  await expect(page.getByText("Ayuda antigua para el alquiler")).toBeVisible();
+  await expect(page.getByText("Plazo cerrado")).toBeVisible();
+});
+
+test("el panel admin exige clave y nunca devuelve secretos del cliente", async ({ page }) => {
+  const metrica = await page.request.post("/api/metricas", {
+    data: {
+      visitanteId: "11111111-1111-4111-8111-111111111111",
+      sesionId: "22222222-2222-4222-8222-222222222222",
+      tipo: "agente_usado",
+      pagina: "/",
+      categoria: "guiado",
+      valor: 2,
+      claveIa: "sk-no-debe-guardarse",
+      mensaje: "dato privado que no debe guardarse",
+    },
+  });
+  expect(metrica.status()).toBe(202);
+
+  await page.goto("/admin");
+  await expect(page.getByRole("heading", { name: "Administración" })).toBeVisible();
+  await page.getByLabel("Clave de administración").fill("incorrecta");
+  await page.getByRole("button", { name: "Entrar" }).click();
+  await expect(page.getByText("Clave incorrecta")).toBeVisible();
+  await page.getByLabel("Clave de administración").fill("clave-e2e");
+  await page.getByRole("button", { name: "Entrar" }).click();
+  await expect(page.getByRole("heading", { name: "Métricas de administración" })).toBeVisible();
+  await expect(page.getByText("Consultas al orientador").first()).toBeVisible();
+
+  const respuesta = await page.request.get("/api/admin/metricas?dias=7");
+  expect(respuesta.status()).toBe(200);
+  const texto = await respuesta.text();
+  expect(texto).not.toContain("sk-no-debe-guardarse");
+  expect(texto).not.toContain("dato privado");
 });
 
 test("mantenimiento público protegido y cabeceras activas", async ({ page }) => {

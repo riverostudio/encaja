@@ -22,6 +22,10 @@ import {
   type VeredictoUi,
 } from "./tipos-ui";
 import { avisoResumenVigente } from "@/lib/requisitos";
+import {
+  registrarAyudaVistaLocal,
+  registrarExpedienteCreado,
+} from "../lib/metricas-cliente";
 
 interface Detalle {
   conv: ConvUi;
@@ -60,6 +64,16 @@ export default function DetalleAyuda({
             : null;
         }
         setD(datos);
+        if (datos.conv && !datos.error) {
+          registrarAyudaVistaLocal({
+            codigoBdns: datos.conv.codigoBdns,
+            titulo: datos.conv.resumen?.titular ?? datos.conv.llano.que ?? datos.conv.titulo,
+            organo: datos.conv.nivel3 ?? datos.conv.nivel2,
+            fechaInicioSol: datos.conv.fechaInicioSol,
+            fechaFinSol: datos.conv.fechaFinSol,
+            rangoFechas: datos.conv.rangoFechas,
+          });
+        }
         setResumen(datos.conv?.resumen ?? (APP_PUBLICA ? getResumenPublico(codigo) : null));
         setVeredicto(datos.evaluacion?.dictamen ?? null);
       });
@@ -92,11 +106,13 @@ export default function DetalleAyuda({
 
   const alExpediente = useCallback(async () => {
     setCreandoExp(true);
+    const eraNuevo = !d?.expediente;
     if (APP_PUBLICA && d) {
       crearExpedientePublico(
         { ...d.conv, resumen: resumen ?? d.conv.resumen },
         d.urlFicha,
       );
+      if (eraNuevo) registrarExpedienteCreado(codigo);
       router.push(`/expedientes/${codigo}`);
       setCreandoExp(false);
       return;
@@ -106,7 +122,10 @@ export default function DetalleAyuda({
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ codigo }),
     });
-    if (r.ok) router.push(`/expedientes/${codigo}`);
+    if (r.ok) {
+      if (eraNuevo) registrarExpedienteCreado(codigo);
+      router.push(`/expedientes/${codigo}`);
+    }
     setCreandoExp(false);
   }, [codigo, d, resumen, router]);
 

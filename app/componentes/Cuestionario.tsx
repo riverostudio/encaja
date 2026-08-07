@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import EsperaLectura, { PASOS_ENCAJE } from "./EsperaLectura";
 import type { MotivoUi, RequisitoUi } from "./tipos-ui";
+import { registrarEncajeIniciado, registrarEncajeTerminado } from "../lib/metricas-cliente";
 
 interface RespuestaEncaje {
   fase: "entrevista" | "listo_para_dictamen" | "dictamen" | "sin_ia" | "sin_bases";
@@ -88,7 +89,10 @@ export default function Cuestionario({
         else {
           setEstado(d);
           setPaso((p) => p + 1);
-          if (d.fase === "dictamen" && d.dictamen) onVeredictoRef.current?.(d.dictamen);
+          if (d.fase === "dictamen" && d.dictamen) {
+            if (cuerpo.accion === "dictaminar") registrarEncajeTerminado(codigo, d.dictamen);
+            onVeredictoRef.current?.(d.dictamen);
+          }
         }
       } catch (e) {
         setError(e instanceof Error ? e.message : String(e));
@@ -111,6 +115,7 @@ export default function Cuestionario({
         if (!r.ok) setError(d.error ?? "Error inesperado");
         else {
           setEstado(d);
+          registrarEncajeIniciado(codigo);
           if (d.fase === "dictamen" && d.dictamen) onVeredictoRef.current?.(d.dictamen);
         }
       })

@@ -14,6 +14,7 @@ import {
   guardarResumenPublico,
   leerPerfilPublico,
 } from "./lib/estado-publico";
+import { registrarBusquedaLocal } from "./lib/metricas-cliente";
 
 interface EstadoSync {
   ultimo: string | null;
@@ -158,6 +159,9 @@ export default function PaginaRadar() {
     // El CP puede cambiar la comunidad mientras la primera búsqueda sigue en
     // vuelo. Una respuesta antigua nunca debe pisar la región ya detectada.
     if (numeroCarga !== ultimaCarga.current) return;
+    if (consulta.trim()) {
+      registrarBusquedaLocal(consulta, (d.filas?.length ?? 0) + (d.prestaciones?.length ?? 0));
+    }
     setFilas(
       (d.filas ?? []).map((c) => ({
         ...c,

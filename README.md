@@ -27,7 +27,7 @@ boletines, las pone en un sitio, las explica y te ayuda a comprobar si puedes pe
 
 ---
 
-## Qué hace, en cinco pasos
+## Qué hace, en seis pasos
 
 **1. Te pregunta quién eres.** Unas preguntas normales: si pides como persona o como
 negocio, qué te vendría bien ahora, en qué situación estás, cuánto entra en casa, tu
@@ -48,6 +48,10 @@ no encajas, o depende. Siempre citando el trozo de las bases en el que se apoya.
 
 **5. Te deja el expediente listo.** Lo que tienes que cumplir, lo que hay que aportar,
 borradores redactados y el enlace a la sede donde se presenta.
+
+**6. Te enseña tu progreso.** En Expedientes aparece un panel privado con el tiempo de
+uso, búsquedas recientes, ayudas consultadas y su plazo actualizado. Ese historial
+detallado se queda en el navegador.
 
 ---
 
@@ -104,6 +108,12 @@ del «¿encajo?», que lee las bases y te entrevista. El chat guiado y la búsqu
 sin clave. La clave se guarda **en tu navegador** y se transmite cifrada únicamente al
 solicitar una operación de IA; Encaja no la conserva en el servidor. Perfil,
 entrevistas y expedientes permanecen en ese navegador y se pueden exportar o borrar.
+
+Si el visitante acepta estadísticas anónimas, el servidor registra únicamente eventos
+permitidos: páginas, categorías generales, funciones usadas, duración y códigos públicos
+BDNS. No recibe textos de búsqueda, mensajes, perfil ni claves de IA. El panel `/admin`
+está protegido por una clave guardada solo como variable de entorno y una cookie
+`HttpOnly`; la telemetría persistente usa Postgres serverless en región europea.
 
 **Transparencia sobre IA.** Encaja se ha creado, documentado e investigado con ayuda de
 inteligencia artificial y también puede usarla para resumir, traducir, leer bases y

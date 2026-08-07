@@ -25,6 +25,7 @@ interface EstadoIa {
 
 export default function Shell({ children }: { children: ReactNode }) {
   const ruta = usePathname();
+  const esAdmin = ruta.startsWith("/admin");
   const [ajustesAbierto, setAjustesAbierto] = useState(false);
   const [ia, setIa] = useState<EstadoIa | null>(null);
 
@@ -42,7 +43,7 @@ export default function Shell({ children }: { children: ReactNode }) {
   if (!ia) return null;
 
   // Sin clave no se entra: la app no podría hacer su trabajo.
-  if (!ia.configurada && ia.proveedores.length > 0 && ruta !== "/privacidad") {
+  if (!ia.configurada && ia.proveedores.length > 0 && ruta !== "/privacidad" && !esAdmin) {
     return (
       <>
         <Bienvenida
@@ -54,6 +55,15 @@ export default function Shell({ children }: { children: ReactNode }) {
         />
         <AvisoLegalInicial />
       </>
+    );
+  }
+
+  if (esAdmin) {
+    return (
+      <div className="min-h-dvh">
+        <div className="fixed right-5 top-5 z-30"><Tema /></div>
+        <main className="mx-auto w-full max-w-7xl px-6 py-10">{children}</main>
+      </div>
     );
   }
 
@@ -117,7 +127,7 @@ export default function Shell({ children }: { children: ReactNode }) {
 
       {ajustesAbierto && <Ajustes onCerrar={() => setAjustesAbierto(false)} />}
       <AsistenteAyudas />
-      {ruta !== "/privacidad" && <AvisoLegalInicial />}
+      {ruta !== "/privacidad" && !esAdmin && <AvisoLegalInicial />}
     </div>
   );
 }

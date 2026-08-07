@@ -63,3 +63,17 @@ mantiene una identificación breve de IA en el orientador. Las explicaciones ext
 centralizan en una única página legal, que detalla que la IA también ayudó a crear,
 documentar e investigar el proyecto, que Encaja no adopta decisiones con efectos
 jurídicos y que la fuente oficial siempre debe verificarse.
+
+## Métricas y administración
+
+El panel de actividad del visitante se calcula y guarda en su navegador: tiempo activo,
+tiempo en el radar, textos de búsquedas e historial de ayudas. La vigencia se recalcula
+con las fechas oficiales cada vez que abre Expedientes.
+
+La telemetría de administración es optativa y separada. Tras consentimiento explícito,
+solo envía tipos de evento permitidos, categorías generales, duración, rutas y códigos
+BDNS públicos. Los identificadores aleatorios se transforman con HMAC; no se registran
+IP en la base, claves de IA, perfil, código postal, mensajes, documentos ni texto libre.
+El panel `/admin` usa una contraseña solo de servidor, cookie `HttpOnly`, `SameSite=Strict`,
+caducidad de ocho horas, límite de intentos y respuestas sin caché. Los eventos tienen
+retención máxima de 365 días.
