@@ -5,6 +5,7 @@ import {
   hechosInferidosParaBuscar,
   preguntasQueFaltan,
   respuestaGuiada,
+  respuestaIaSegura,
 } from "../lib/asistente";
 
 const h = (datos: Record<string, string> = {}) => new Map(Object.entries(datos));
@@ -72,5 +73,22 @@ describe("orientación del asistente", () => {
     );
     expect(texto).toContain("posible ayuda");
     expect(texto).toContain("Revisa los requisitos");
+  });
+
+  it("descarta preguntas inventadas por la IA y solo añade las autorizadas", () => {
+    const texto = respuestaIaSegura(
+      "El IMV es una posible ayuda para hogares vulnerables. Para poder afinar, nos faltaría conocer tu provincia y si eres titular de la luz. ¿Tienes contrato?",
+      ["¿Qué estudias: Bachillerato, FP, universidad u otra enseñanza?"],
+    );
+    expect(texto).toContain("El IMV es una posible ayuda");
+    expect(texto).not.toContain("provincia");
+    expect(texto).not.toContain("contrato");
+    expect(texto).toContain("¿Qué estudias: Bachillerato, FP, universidad u otra enseñanza?");
+  });
+
+  it("no añade seguimiento cuando el perfil ya contiene lo necesario", () => {
+    expect(respuestaIaSegura("Hay dos posibles ayudas. ¿Dónde vives?", [])).toBe(
+      "Hay dos posibles ayudas.",
+    );
   });
 });

@@ -7,6 +7,7 @@ import {
   promptConversacional,
   recursoDesdePrestacion,
   respuestaGuiada,
+  respuestaIaSegura,
   terminosDirectosParaAsistente,
   type MensajeAsistente,
   type RecursoAsistente,
@@ -77,15 +78,6 @@ function unicos<T extends { id: string }>(items: T[]): T[] {
   return [...new Map(items.map((x) => [x.id, x])).values()];
 }
 
-function limpiarRespuestaIa(texto: string): string {
-  return texto
-    .replace(/\*\*/g, "")
-    .replace(/^#{1,6}\s*/gm, "")
-    .replace(/\[([^\]]+)]\([^)]+\)/g, "$1")
-    .trim()
-    .slice(0, 3_000);
-}
-
 export async function POST(req: NextRequest) {
   try {
     const bloqueo = protegerApi(req, "chat", 80);
@@ -131,12 +123,15 @@ export async function POST(req: NextRequest) {
     let modo: "ia" | "guiado" = "guiado";
     if (puedeUsarIa) {
       try {
-        respuesta = limpiarRespuestaIa(await generar(
+        const respuestaIa = respuestaIaSegura(await generar(
           repo,
           [{ texto: promptConversacional({ historial, perfil: resumenPerfil(hechosOriginales), recursos, preguntas }) }],
           { credenciales },
-        ));
-        modo = "ia";
+        ), preguntas);
+        if (respuestaIa) {
+          respuesta = respuestaIa;
+          modo = "ia";
+        }
       } catch {
         // La orientación determinista conserva resultados y enlaces aunque el
         // proveedor esté sin cuota, lento o temporalmente indisponible.

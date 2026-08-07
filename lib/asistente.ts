@@ -181,6 +181,34 @@ export function respuestaGuiada(
   return `${aclaracion}He encontrado ${tipo}. Te las dejo con sus requisitos conocidos, plazo y acceso oficial.${siguiente}`;
 }
 
+const PATRON_PREGUNTA_NO_AUTORIZADA =
+  /[¿?]|\bpara (?:poder )?afinar\b|\bnecesit(?:o|amos|aría|aríamos) (?:saber|conocer)\b|\b(?:nos|me) falt(?:a|aría)\b|\b(?:dime|cuéntame|indícame|confírmame)\b/i;
+
+/**
+ * La IA redacta la explicación, pero no decide qué datos pedir. Eliminamos
+ * cualquier intento de seguimiento y añadimos únicamente las preguntas que
+ * Encaja ha calculado de forma determinista a partir del perfil real.
+ */
+export function respuestaIaSegura(texto: string, preguntas: string[]): string {
+  const limpio = texto
+    .replace(/\*\*/g, "")
+    .replace(/^#{1,6}\s*/gm, "")
+    .replace(/\[([^\]]+)]\([^)]+\)/g, "$1")
+    .trim();
+  const explicacion = limpio
+    .split(/\n{2,}|(?<=[.!?])\s+(?=[A-ZÁÉÍÓÚ¿])/)
+    .map((parte) => parte.trim())
+    .filter((parte) => parte && !PATRON_PREGUNTA_NO_AUTORIZADA.test(parte))
+    .join(" ")
+    .trim()
+    .slice(0, 2_500);
+  if (!explicacion) return "";
+  const seguimiento = preguntas.length
+    ? `\n\nPara afinar y no mezclar ayudas: ${preguntas.join(" ")}`
+    : "";
+  return `${explicacion}${seguimiento}`.slice(0, 3_000);
+}
+
 export function promptConversacional(args: {
   historial: MensajeAsistente[];
   perfil: string;
@@ -199,15 +227,12 @@ REGLAS OBLIGATORIAS:
 - No pidas DNI, cuenta bancaria, contraseña, clave API ni otros datos sensibles.
 - Responde en español claro, cálido y directo, con un máximo de 130 palabras.
 - Escribe texto plano: no uses Markdown, asteriscos, títulos ni enlaces.
-- Solo puedes hacer preguntas que aparezcan literalmente en PREGUNTAS ÚTILES. Si la lista está vacía, no hagas ninguna pregunta.
+- No hagas preguntas ni menciones datos que falten. La aplicación añadirá después, de forma segura, las preguntas necesarias.
 
 PERFIL CONOCIDO: ${args.perfil}
 
 CATÁLOGO RECUPERADO:
 ${JSON.stringify(args.recursos)}
-
-PREGUNTAS ÚTILES:
-${JSON.stringify(args.preguntas)}
 
 CONVERSACIÓN:
 ${args.historial.map((m) => `${m.rol.toUpperCase()}: ${m.texto}`).join("\n")}
