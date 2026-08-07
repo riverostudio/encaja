@@ -7,7 +7,12 @@ describe("catálogo de prestaciones", () => {
   it("todas llevan enlace oficial a una administración pública", () => {
     for (const p of PRESTACIONES) {
       expect(p.url).toMatch(/^https:\/\//);
+      expect(p.urlSolicitud).toMatch(/^https:\/\//);
       expect(p.url).toMatch(/\.gob\.es|seg-social\.es|sepe\.es|imserso\.es|madrid\.es|comunidad\.madrid/);
+      expect(p.urlSolicitud).toMatch(/\.gob\.es|seg-social\.es|sepe\.es|imserso\.es|madrid\.es|comunidad\.madrid/);
+      expect(p.accion.length).toBeGreaterThan(8);
+      expect(p.plazo.length).toBeGreaterThan(8);
+      expect(p.requisitos.length).toBeGreaterThanOrEqual(3);
     }
   });
 
@@ -41,6 +46,12 @@ describe("buscarPrestaciones", () => {
 
   it("no dispara con dos letras", () => {
     expect(buscarPrestaciones("pa")).toHaveLength(0);
+  });
+
+  it("no confunde «renta» con la palabra monoparental", () => {
+    expect(buscarPrestaciones("renta").map((p) => p.id)).not.toContain(
+      "deduccion-ascendiente-dos-hijos",
+    );
   });
 
   it("entiende una frase de necesidad y devuelve la vía local correcta", () => {

@@ -34,6 +34,10 @@ interface PrestacionUi {
   quien: string;
   organismo: string;
   url: string;
+  urlSolicitud?: string;
+  accion?: string;
+  plazo?: string;
+  requisitos?: string[];
 }
 
 const POR_TANDA = 60;
@@ -109,6 +113,31 @@ export default function PaginaRadar() {
   const ultimaCarga = useRef(0);
   const inicializado = useRef(false);
   const centinela = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    let cancelado = false;
+    const aplicarConsulta = (consultaNueva: string) => {
+      setTexto(consultaNueva.replaceAll("|", " · "));
+      setConsulta(consultaNueva);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    };
+    const inicial = new URLSearchParams(window.location.search).get("buscar");
+    const ayuda = new URLSearchParams(window.location.search).get("ayuda");
+    queueMicrotask(() => {
+      if (cancelado) return;
+      if (inicial) aplicarConsulta(inicial);
+      if (ayuda && /^\d+$/.test(ayuda)) setAbierta(ayuda);
+    });
+    const alBuscar = (evento: Event) => {
+      const consultaNueva = (evento as CustomEvent<{ consulta?: string }>).detail?.consulta;
+      if (consultaNueva) aplicarConsulta(consultaNueva);
+    };
+    window.addEventListener("encaja:buscar", alBuscar);
+    return () => {
+      cancelado = true;
+      window.removeEventListener("encaja:buscar", alBuscar);
+    };
+  }, []);
 
   const cargarLista = useCallback(async () => {
     const numeroCarga = ++ultimaCarga.current;
@@ -536,24 +565,41 @@ export default function PaginaRadar() {
           </p>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {prestacionesVisibles.map((p, i) => (
-              <a
+              <article
                 key={p.id}
-                href={p.url}
-                target="_blank"
-                rel="noreferrer"
                 className="tarjeta entra !p-4"
                 style={{ "--acento": "var(--bosque)", "--i": i } as React.CSSProperties}
               >
                 <span className="rotulo">{p.organismo}</span>
                 <span className="display mt-2 block text-[16px] leading-snug">{p.titular}</span>
-                <span className="mt-1.5 line-clamp-3 block text-[12.5px] leading-relaxed text-[var(--grafito)]">
+                <span className="mt-1.5 block text-[12.5px] leading-relaxed text-[var(--grafito)]">
                   {p.que}
                 </span>
-                <span className="mt-auto flex items-baseline justify-between pt-3">
-                  <span className="rotulo">sin plazo</span>
-                  <span className="flecha text-[13px] text-[var(--grafito)]">ir ↗</span>
+                <span className="mt-2 block text-[11.5px] leading-relaxed">
+                  <strong>Quién:</strong> {p.quien}
                 </span>
-              </a>
+                {p.requisitos && p.requisitos.length > 0 && (
+                  <span className="mt-3 block border-t border-[var(--linea)] pt-3">
+                    <span className="rotulo mb-1 block">Requisitos principales</span>
+                    <ul className="grid list-disc gap-1 pl-4 text-[11.5px] leading-relaxed text-[var(--grafito)]">
+                      {p.requisitos.map((requisito) => (
+                        <li key={requisito}>{requisito}</li>
+                      ))}
+                    </ul>
+                  </span>
+                )}
+                <span className="mt-auto block pt-3 text-[11.5px] text-[var(--grafito)]">
+                  <strong>Plazo:</strong> {p.plazo ?? "Comprueba el plazo en la fuente oficial"}
+                </span>
+                <a
+                  className="btn mt-3 text-center !px-3 !py-2 !text-[11.5px]"
+                  href={p.urlSolicitud ?? p.url}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  {p.accion ?? "Ver requisitos y solicitar"} ↗
+                </a>
+              </article>
             ))}
           </div>
         </div>

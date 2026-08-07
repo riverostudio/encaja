@@ -103,6 +103,72 @@ test("una vía directa no se presenta como una búsqueda vacía", async ({ page 
   await expect(page.getByText("Nada con estos filtros.")).toHaveCount(0);
 });
 
+test("el asistente conversa, muestra requisitos y lleva la búsqueda al radar", async ({ page }) => {
+  let perfilRecibido = "";
+  await page.route("**/api/chat", async (route) => {
+    perfilRecibido = route.request().headers()["x-perfil"] ?? "";
+    const cuerpo = route.request().postDataJSON() as {
+      mensajes: Array<{ rol: string; texto: string }>;
+    };
+    const consulta = cuerpo.mensajes.at(-1)?.texto ?? "";
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        respuesta: `He buscado para: ${consulta}`,
+        consulta: "beca|ayudas al estudio",
+        modo: "guiado",
+        recursos: [
+          {
+            id: "beca-mec",
+            tipo: "via_directa",
+            titulo: "Becas del Ministerio de Educación",
+            organismo: "Ministerio de Educación",
+            resumen: "Ayuda oficial para estudiar.",
+            requisitos: [
+              "Matricularse en estudios incluidos.",
+              "Cumplir los requisitos académicos.",
+              "Cumplir los umbrales de renta y patrimonio.",
+            ],
+            plazo: "Consulta la convocatoria vigente",
+            urlInfo: "https://www.becaseducacion.gob.es/becas-y-ayudas.html",
+            urlSolicitud: "https://www.becaseducacion.gob.es/becas-y-ayudas.html",
+            accion: "Ver y solicitar la beca",
+          },
+        ],
+      }),
+    });
+  });
+  await page.route(/\/api\/convocatorias(?:\?.*)?$/, async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ filas: [], relajado: null, prestaciones: [] }),
+    });
+  });
+
+  await page.goto("/");
+  await page.evaluate(() => {
+    localStorage.setItem("encaja.perfil", JSON.stringify({ perfil: "particular", cp: "28013" }));
+  });
+  await entrarSinClave(page);
+  await page.getByRole("button", { name: "Abrir asistente de ayudas" }).click();
+  await page.getByRole("button", { name: "Soy estudiante" }).click();
+
+  const asistente = page.getByRole("dialog", { name: "Asistente para buscar ayudas" });
+  await expect(asistente.getByText("He buscado para: Soy estudiante")).toBeVisible();
+  await expect(asistente.getByText("Becas del Ministerio de Educación", { exact: true })).toBeVisible();
+  await expect(asistente.getByText("Cumplir los umbrales de renta y patrimonio.")).toBeVisible();
+  await expect(asistente.getByRole("link", { name: /Ver y solicitar la beca/ })).toHaveAttribute(
+    "href",
+    "https://www.becaseducacion.gob.es/becas-y-ayudas.html",
+  );
+  expect(JSON.parse(decodeURIComponent(perfilRecibido)).cp).toBe("28013");
+
+  await asistente.getByRole("button", { name: "Ver toda esta búsqueda en el radar" }).click();
+  await expect(page.getByPlaceholder("Busca una ayuda…")).toHaveValue("beca · ayudas al estudio");
+});
+
 test("una respuesta de Encajo viaja en la siguiente petición", async ({ page }) => {
   let perfilSegunda = "";
   let llamadas = 0;

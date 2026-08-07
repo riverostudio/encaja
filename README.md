@@ -27,7 +27,7 @@ boletines, las pone en un sitio, las explica y te ayuda a comprobar si puedes pe
 
 ---
 
-## Qué hace, en cuatro pasos
+## Qué hace, en cinco pasos
 
 **1. Te pregunta quién eres.** Unas preguntas normales: si pides como persona o como
 negocio, qué te vendría bien ahora, en qué situación estás, cuánto entra en casa, tu
@@ -37,11 +37,16 @@ código postal. Nada de formularios con jerga.
 que reúne la publicidad oficial de subvenciones. Con el código postal salen también
 las de tu ayuntamiento y tu diputación, que no aparecen en ningún buscador.
 
-**3. Te dice si encajas.** Descarta lo imposible con los datos oficiales, y para el
+**3. Habla contigo.** Un asistente flotante entiende frases como «no llego al alquiler»
+o «soy autónomo», busca en el catálogo real y devuelve posibles ayudas con requisitos,
+plazo y acceso oficial. Funciona de forma guiada sin clave; si configuras una IA, usa
+ese mismo proveedor para explicar y repreguntar, pero nunca para inventar resultados.
+
+**4. Te dice si encajas.** Descarta lo imposible con los datos oficiales, y para el
 resto se lee el PDF de las bases, te hace las preguntas justas y dictamina: encajas,
 no encajas, o depende. Siempre citando el trozo de las bases en el que se apoya.
 
-**4. Te deja el expediente listo.** Lo que tienes que cumplir, lo que hay que aportar,
+**5. Te deja el expediente listo.** Lo que tienes que cumplir, lo que hay que aportar,
 borradores redactados y el enlace a la sede donde se presenta.
 
 ---
@@ -94,9 +99,10 @@ conceden directamente, sin plazo de solicitud. Me pasé un rato buscando cómo
 registro y sin instalar nada. El resumen estructural y las traducciones ya preparadas se
 leen sin poner ninguna clave.
 
-Solo hace falta una clave de IA propia para la parte del «¿encajo?», que lee las bases y
-te entrevista. La clave se guarda **en tu navegador** y se transmite cifrada únicamente
-al solicitar una operación de IA; Encaja no la conserva en el servidor. Perfil,
+Solo hace falta una clave de IA propia para enriquecer la conversación y para la parte
+del «¿encajo?», que lee las bases y te entrevista. El chat guiado y la búsqueda funcionan
+sin clave. La clave se guarda **en tu navegador** y se transmite cifrada únicamente al
+solicitar una operación de IA; Encaja no la conserva en el servidor. Perfil,
 entrevistas y expedientes permanecen en ese navegador y se pueden exportar o borrar.
 
 ### En tu ordenador
@@ -186,7 +192,9 @@ Se agradece. Sobre todo:
 
 - **Datos mal.** Si ves un plazo raro, una traducción que dice algo que no es o un enlace
   roto, abre una incidencia con el código de la convocatoria. Eso es lo más útil de todo.
-- **Prestaciones que faltan.** El listado a mano tiene ocho. Seguro que faltan.
+- **Prestaciones que faltan.** El catálogo prioritario se comprueba enlace a enlace, pero
+  siempre puede existir una prestación autonómica o municipal que todavía no esté bien
+  reflejada en la BDNS.
 - **Cobertura territorial.** Se sincronizan los 19 territorios y el Estado. Si un órgano
   local aparece donde no corresponde, abre una incidencia con el código postal usado.
 

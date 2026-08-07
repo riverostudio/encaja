@@ -19,7 +19,14 @@ export interface Prestacion {
   que: string;
   quien: string;
   organismo: string;
+  /** Página oficial que explica la ayuda y mantiene los requisitos vigentes. */
   url: string;
+  /** Destino oficial para iniciar la solicitud o consultar cómo presentarla. */
+  urlSolicitud: string;
+  accion: string;
+  plazo: string;
+  /** Condiciones mínimas conocidas; la página oficial siempre manda. */
+  requisitos: string[];
   /** Palabras con las que la gente la busca. */
   busca: string[];
   /** A qué perfil le puede tocar. */
@@ -44,7 +51,15 @@ export const PRESTACIONES: Prestacion[] = [
     que: "Un pago mensual mientras buscas trabajo, si has cotizado al menos 360 días en los últimos 6 años. Dura entre 4 meses y 2 años según lo cotizado.",
     quien: "Quien se queda sin trabajo por causa ajena a su voluntad y tiene cotización suficiente.",
     organismo: "SEPE · Servicio Público de Empleo Estatal",
-    url: "https://www.sepe.es/HomeSepe/es/Personas/distributiva-prestaciones.html",
+    url: "https://sepe.es/HomeSepe/prestaciones-desempleo",
+    urlSolicitud: "https://sepe.es/HomeSepe/prestaciones-desempleo",
+    accion: "Comprobar y solicitar en el SEPE",
+    plazo: "Normalmente, 15 días hábiles desde la situación legal de desempleo",
+    requisitos: [
+      "Estar en situación legal de desempleo y disponible para buscar trabajo.",
+      "Haber cotizado por desempleo al menos 360 días dentro de los 6 años anteriores.",
+      "Inscribirse como demandante de empleo y mantener la inscripción.",
+    ],
     busca: ["paro", "desempleo", "prestación"],
     para: ["desempleado"],
     pocosIngresos: false,
@@ -55,7 +70,15 @@ export const PRESTACIONES: Prestacion[] = [
     que: "Una ayuda mensual cuando ya no te queda paro o no cotizaste lo suficiente. Hay modalidades para mayores de 52, con cargas familiares y tras agotar la prestación.",
     quien: "Quien ha agotado el paro o no llega a los 360 días cotizados, con rentas por debajo del límite que fija el SEPE.",
     organismo: "SEPE · Servicio Público de Empleo Estatal",
-    url: "https://www.sepe.es/HomeSepe/es/Personas/distributiva-prestaciones.html",
+    url: "https://sepe.es/HomeSepe/prestaciones-desempleo",
+    urlSolicitud: "https://sepe.es/HomeSepe/prestaciones-desempleo",
+    accion: "Ver qué subsidio corresponde y solicitarlo",
+    plazo: "Depende de la modalidad; comprueba el plazo en el SEPE",
+    requisitos: [
+      "No tener derecho a la prestación contributiva o haberla agotado.",
+      "Estar en una de las situaciones protegidas por el subsidio solicitado.",
+      "Cumplir el límite de rentas y, cuando corresponda, las responsabilidades familiares.",
+    ],
     busca: ["subsidio", "paro", "desempleo"],
     para: ["desempleado"],
     pocosIngresos: true,
@@ -66,7 +89,15 @@ export const PRESTACIONES: Prestacion[] = [
     que: "Una renta mensual para hogares sin ingresos suficientes. Se cobra de forma indefinida mientras se sigan cumpliendo los requisitos, y se revisa cada año.",
     quien: "Hogares cuyos ingresos quedan por debajo del umbral, según cuántos sois y las circunstancias de cada uno.",
     organismo: "Seguridad Social",
-    url: "https://www.seg-social.es/wps/portal/wss/internet/Trabajadores/PrestacionesPensionesTrabajadores/65850d68-8d06-4645-bde7-05374ee42ac7",
+    url: "https://prestaciones.seg-social.es/servicio/ingreso-minimo-vital-complemento-ayuda-infancia.html",
+    urlSolicitud: "https://prestaciones.seg-social.es/servicio/ingreso-minimo-vital-complemento-ayuda-infancia.html",
+    accion: "Simular o comenzar la solicitud",
+    plazo: "Solicitud abierta todo el año",
+    requisitos: [
+      "Encontrarse en situación de vulnerabilidad económica según ingresos y patrimonio.",
+      "Tener residencia legal y efectiva en España durante el periodo exigido.",
+      "Cumplir las reglas de edad y de unidad de convivencia aplicables al hogar.",
+    ],
     busca: ["ingreso mínimo vital", "imv", "renta", "ingresos"],
     para: ["desempleado", "cuenta_ajena", "autonomo_activo", "estudiante", "jubilado"],
     pocosIngresos: true,
@@ -77,7 +108,15 @@ export const PRESTACIONES: Prestacion[] = [
     que: "Un pago mensual añadido al Ingreso Mínimo Vital por cada menor a cargo. Se cobra automáticamente si ya tienes IMV.",
     quien: "Hogares con menores a cargo que cumplen los requisitos de renta del IMV.",
     organismo: "Seguridad Social",
-    url: "https://www.seg-social.es/wps/portal/wss/internet/Trabajadores/PrestacionesPensionesTrabajadores/65850d68-8d06-4645-bde7-05374ee42ac7",
+    url: "https://prestaciones.seg-social.es/servicio/ingreso-minimo-vital-complemento-ayuda-infancia.html",
+    urlSolicitud: "https://prestaciones.seg-social.es/servicio/ingreso-minimo-vital-complemento-ayuda-infancia.html",
+    accion: "Comprobar el complemento con la Seguridad Social",
+    plazo: "Se estudia con la solicitud del IMV; puede pedirse durante todo el año",
+    requisitos: [
+      "Formar parte de un hogar con menores de edad.",
+      "Cumplir los límites de ingresos y patrimonio previstos para este complemento.",
+      "Si ya se percibe el IMV, la Seguridad Social lo reconoce cuando corresponde.",
+    ],
     busca: ["hijo", "infancia", "menores", "familia"],
     para: ["desempleado", "cuenta_ajena", "autonomo_activo"],
     pocosIngresos: true,
@@ -89,6 +128,14 @@ export const PRESTACIONES: Prestacion[] = [
     quien: "Hogares vulnerables por renta, familias numerosas, y perceptores de pensiones mínimas o del IMV.",
     organismo: "Ministerio para la Transición Ecológica",
     url: "https://www.bonosocial.gob.es/",
+    urlSolicitud: "https://www.miteco.gob.es/es/energia/pobreza-energetica/pe-001/como-solicitarlo.html",
+    accion: "Ver cómo solicitarlo a la comercializadora",
+    plazo: "Solicitud abierta; se renueva cuando corresponda",
+    requisitos: [
+      "Ser titular del contrato eléctrico de la vivienda habitual.",
+      "Tener contratada la tarifa regulada PVPC con una comercializadora de referencia.",
+      "Cumplir los criterios de consumidor vulnerable por renta o por una situación reconocida.",
+    ],
     busca: ["luz", "suministros", "electricidad", "bono social"],
     para: ["desempleado", "cuenta_ajena", "autonomo_activo", "estudiante", "jubilado"],
     pocosIngresos: true,
@@ -100,7 +147,15 @@ export const PRESTACIONES: Prestacion[] = [
     que: "Un pago mensual si tienes que cerrar tu actividad, siempre que hayas cotizado por cese de actividad al menos 12 meses.",
     quien: "Autónomos que cesan por motivos económicos, técnicos, de fuerza mayor o pérdida de licencia.",
     organismo: "Seguridad Social",
-    url: "https://www.seg-social.es/wps/portal/wss/internet/Trabajadores/PrestacionesPensionesTrabajadores/10964",
+    url: "https://www.seg-social.es/wps/portal/wss/internet/Trabajadores/10538/2277",
+    urlSolicitud: "https://www.seg-social.es/wps/portal/wss/internet/Trabajadores/10538/2277",
+    accion: "Ver requisitos y pedirla a la mutua",
+    plazo: "Hasta el último día del mes siguiente al cese, con carácter general",
+    requisitos: [
+      "Estar de alta como autónomo y cotizando por cese de actividad.",
+      "Acreditar una situación legal de cese total o parcial.",
+      "Haber cotizado por cese al menos 12 meses dentro de los 24 anteriores y estar al corriente de cuotas.",
+    ],
     busca: ["cese", "autónomo", "paro", "desempleo"],
     para: ["autonomo_activo", "desempleado"],
     pocosIngresos: false,
@@ -112,7 +167,16 @@ export const PRESTACIONES: Prestacion[] = [
     que: "Una pensión mensual de jubilación o invalidez para quien no ha cotizado lo suficiente, o nada.",
     quien: "Mayores de 65 años o personas con discapacidad reconocida, sin rentas suficientes.",
     organismo: "Seguridad Social e IMSERSO",
-    url: "https://www.seg-social.es/wps/portal/wss/internet/Pensionistas/Pensiones/31351/31358",
+    url: "https://imserso.es/pnc-prestaciones-subvenciones",
+    urlSolicitud:
+      "https://imserso.es/pnc-prestaciones-subvenciones/donde-solicitar-pension-no-contributiva-pnc",
+    accion: "Consultar requisitos y dónde solicitarla",
+    plazo: "Solicitud abierta todo el año",
+    requisitos: [
+      "No disponer de ingresos suficientes según el límite anual aplicable.",
+      "Cumplir la edad y los periodos de residencia exigidos para jubilación, o el grado de discapacidad y edad para incapacidad.",
+      "Presentarla ante el órgano gestor de la comunidad autónoma o el IMSERSO donde corresponda.",
+    ],
     busca: ["pensión", "jubilación", "invalidez", "discapacidad", "mayores"],
     para: ["jubilado", "desempleado"],
     pocosIngresos: true,
@@ -124,6 +188,14 @@ export const PRESTACIONES: Prestacion[] = [
     quien: "Estudiantes cuya familia no supera los umbrales de renta y patrimonio que fija cada curso.",
     organismo: "Ministerio de Educación",
     url: "https://www.becaseducacion.gob.es/becas-y-ayudas.html",
+    urlSolicitud: "https://www.becaseducacion.gob.es/becas-y-ayudas.html",
+    accion: "Ver la convocatoria vigente y solicitarla",
+    plazo: "Cada convocatoria tiene su propio plazo; comprueba el curso vigente",
+    requisitos: [
+      "Matricularse en uno de los estudios incluidos en la convocatoria.",
+      "Cumplir los requisitos generales y académicos del tipo de beca.",
+      "No superar los umbrales de renta y patrimonio familiar que correspondan.",
+    ],
     busca: ["beca", "estudios", "universidad", "fp"],
     para: ["estudiante", "desempleado", "cuenta_ajena"],
     pocosIngresos: true,
@@ -135,6 +207,14 @@ export const PRESTACIONES: Prestacion[] = [
     quien: "Quien tenga el título de familia numerosa y trabaje, sea autónomo, cobre una prestación o subsidio por desempleo, o perciba una pensión.",
     organismo: "Agencia Tributaria",
     url: "https://sede.agenciatributaria.gob.es/Sede/ciudadanos-familias-personas-discapacidad/deducciones-relacionadas-hijos-descendientes/deduccion-familia-numerosa.html",
+    urlSolicitud: "https://sede.agenciatributaria.gob.es/Sede/ciudadanos-familias-personas-discapacidad/deducciones-relacionadas-hijos-descendientes/deduccion-familia-numerosa.html",
+    accion: "Comprobar el derecho y tramitar el modelo 143",
+    plazo: "Puede aplicarse en el IRPF o pedirse como abono anticipado",
+    requisitos: [
+      "Tener en vigor el título oficial de familia numerosa.",
+      "Tener derecho al mínimo por descendientes o ascendientes que origina la deducción.",
+      "Trabajar, ser autónomo, cobrar desempleo o percibir una pensión en los supuestos admitidos.",
+    ],
     busca: ["familia numerosa", "deducción familia numerosa", "modelo 143", "madre numerosa", "padre numeroso"],
     para: ["desempleado", "cuenta_ajena", "autonomo_activo", "estudiante", "jubilado"],
     pocosIngresos: false,
@@ -147,6 +227,14 @@ export const PRESTACIONES: Prestacion[] = [
     quien: "Para quien esté separado legalmente o sin vínculo matrimonial, tenga dos hijos sin anualidades por alimentos y derecho a todo el mínimo por descendientes; además debe trabajar, cobrar desempleo o percibir una pensión.",
     organismo: "Agencia Tributaria",
     url: "https://sede.agenciatributaria.gob.es/Sede/ciudadanos-familias-personas-discapacidad/deducciones-relacionadas-hijos-descendientes/deduccion-ascendiente-dos-hijos-separado-matrimonial.html",
+    urlSolicitud: "https://sede.agenciatributaria.gob.es/Sede/ciudadanos-familias-personas-discapacidad/deducciones-relacionadas-hijos-descendientes/deduccion-ascendiente-dos-hijos-separado-matrimonial.html",
+    accion: "Comprobar el derecho y tramitar el abono",
+    plazo: "Puede aplicarse en el IRPF o pedirse como abono anticipado",
+    requisitos: [
+      "Estar separado legalmente o no tener vínculo matrimonial y tener dos hijos.",
+      "Tener derecho a la totalidad del mínimo por descendientes y no percibir anualidades por alimentos.",
+      "Trabajar, ser autónomo, cobrar desempleo o percibir una pensión; es incompatible con la deducción por familia numerosa.",
+    ],
     busca: ["familia monoparental", "madre soltera", "padre soltero", "dos hijos", "modelo 143", "ascendiente con dos hijos"],
     para: ["desempleado", "cuenta_ajena", "autonomo_activo", "estudiante", "jubilado"],
     pocosIngresos: false,
@@ -161,6 +249,14 @@ export const PRESTACIONES: Prestacion[] = [
     quien: "Personas o familias empadronadas en Madrid con carencia de medios y riesgo de exclusión. Se solicita en línea o con cita en el Centro de Servicios Sociales del distrito.",
     organismo: "Ayuntamiento de Madrid · Servicios Sociales",
     url: "https://sede.madrid.es/portal/site/tramites/menuitem.62876cb64654a55e2dbd7003a8a409a0/?target=enLinea&vgnextchannel=2cb9a38813180210VgnVCM100000c90da8c0RCRD&vgnextfmt=pd&vgnextoid=aa50ef82e1bed010VgnVCM1000000b205a0aRCRD",
+    urlSolicitud: "https://sede.madrid.es/portal/site/tramites/menuitem.62876cb64654a55e2dbd7003a8a409a0/?target=enLinea&vgnextchannel=2cb9a38813180210VgnVCM100000c90da8c0RCRD&vgnextfmt=pd&vgnextoid=aa50ef82e1bed010VgnVCM1000000b205a0aRCRD",
+    accion: "Pedir valoración a Servicios Sociales",
+    plazo: "Atención permanente para situaciones de necesidad",
+    requisitos: [
+      "Estar empadronado en el municipio de Madrid.",
+      "Carecer de medios suficientes y encontrarse en riesgo de exclusión o necesidad urgente.",
+      "Aceptar la valoración del Centro de Servicios Sociales del distrito y aportar lo que solicite.",
+    ],
     busca: ["alquiler", "no puedo pagar el alquiler", "impago alquiler", "emergencia vivienda", "alojamiento", "desahucio"],
     para: ["desempleado", "cuenta_ajena", "autonomo_activo", "estudiante", "jubilado"],
     pocosIngresos: true,
@@ -175,6 +271,14 @@ export const PRESTACIONES: Prestacion[] = [
     quien: "Hogares de la Comunidad de Madrid que cumplan los requisitos de especial necesidad; en emergencias sociales la propuesta parte de los servicios públicos que atienden el caso.",
     organismo: "Comunidad de Madrid · Agencia de Vivienda Social",
     url: "https://www.comunidad.madrid/vivienda/alquilar-vivienda-agencia-vivienda-social",
+    urlSolicitud: "https://www.comunidad.madrid/vivienda/alquilar-vivienda-agencia-vivienda-social",
+    accion: "Consultar la vía de especial necesidad o emergencia",
+    plazo: "La vía depende del procedimiento y de la valoración social",
+    requisitos: [
+      "Acreditar una necesidad grave de vivienda dentro de la Comunidad de Madrid.",
+      "Cumplir las condiciones de acceso a vivienda social que correspondan al procedimiento.",
+      "En una emergencia social, la propuesta debe partir de los servicios públicos que atienden el caso.",
+    ],
     busca: ["alquiler", "vivienda social", "emergencia vivienda", "desahucio", "no puedo pagar el alquiler", "alojamiento"],
     para: ["desempleado", "cuenta_ajena", "autonomo_activo", "estudiante", "jubilado"],
     pocosIngresos: true,
@@ -194,6 +298,14 @@ function normalizarBusqueda(texto: string): string {
     .replace(/[̀-ͯ]/g, "")
     .toLowerCase()
     .trim();
+}
+
+function contieneTermino(texto: string, termino: string): boolean {
+  if (termino.includes(" ")) return texto.includes(termino);
+  return texto
+    .split(/[^a-z0-9]+/)
+    .filter(Boolean)
+    .some((palabra) => palabra === termino || palabra.startsWith(termino));
 }
 
 function coincideAlguno(actuales: string[], esperados: string[]): boolean {
@@ -265,8 +377,8 @@ export function buscarPrestaciones(texto: string, hechos?: Map<string, string>):
     const puntuacion = [...p.busca, p.titular].reduce((mejor, textoTermino) => {
       const termino = normalizarBusqueda(textoTermino);
       if (termino === q) return Math.max(mejor, 1_000 + termino.length);
-      if (termino.includes(q)) return Math.max(mejor, 500 + q.length);
-      if (termino.length >= 4 && q.includes(termino)) return Math.max(mejor, 100 + termino.length);
+      if (contieneTermino(termino, q)) return Math.max(mejor, 500 + q.length);
+      if (termino.length >= 4 && contieneTermino(q, termino)) return Math.max(mejor, 100 + termino.length);
       return mejor;
     }, 0);
     return { p, puntuacion };

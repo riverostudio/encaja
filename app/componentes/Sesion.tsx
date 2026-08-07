@@ -109,7 +109,8 @@ export default function Sesion() {
         url.includes("/api/perfil") ||
         url.includes("/api/encaje/") ||
         url.includes("/api/convocatorias") ||
-        url.includes("/api/borrador/");
+        url.includes("/api/borrador/") ||
+        url.includes("/api/chat");
       // Las cabeceras HTTP son bytes, no Unicode libre. Se codifica para que
       // respuestas como «sí» no queden truncadas al atravesar el proxy.
       if (necesitaPerfil) {
@@ -125,7 +126,8 @@ export default function Sesion() {
         pruebaAjustes ||
         url.includes("/api/resumen/") ||
         url.includes("/api/encaje/") ||
-        url.includes("/api/borrador/");
+        url.includes("/api/borrador/") ||
+        url.includes("/api/chat");
       if (url.includes("/api/ajustes") && ia.proveedor) {
         cab.set("x-ia-configurada", ia.clave ? "1" : "0");
         cab.set("x-ia-proveedor", ia.proveedor);

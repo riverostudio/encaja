@@ -7,6 +7,7 @@ import Ajustes from "./Ajustes";
 import Tema from "./Tema";
 import Bienvenida, { type ProveedorUi } from "./Bienvenida";
 import { APP_PUBLICA } from "./Sesion";
+import AsistenteAyudas from "./AsistenteAyudas";
 
 const LLAVE_ENTRADA = "encaja.entrada";
 
@@ -112,6 +113,7 @@ export default function Shell({ children }: { children: ReactNode }) {
       </footer>
 
       {ajustesAbierto && <Ajustes onCerrar={() => setAjustesAbierto(false)} />}
+      <AsistenteAyudas />
     </div>
   );
 }

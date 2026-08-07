@@ -666,6 +666,203 @@ select.campo {
   color: var(--grafito);
 }
 
+/* ——— asistente flotante ——— */
+.chat-burbuja {
+  position: fixed;
+  right: max(20px, env(safe-area-inset-right));
+  bottom: max(20px, env(safe-area-inset-bottom));
+  z-index: 58;
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 48px;
+  padding: 8px 16px 8px 9px;
+  border: 1px solid var(--tinta);
+  border-radius: 999px;
+  background: var(--tinta);
+  color: var(--fondo);
+  box-shadow: var(--sombra-alta);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.chat-burbuja > span:first-child {
+  display: grid;
+  place-items: center;
+  width: 31px;
+  height: 31px;
+  border: 1px solid color-mix(in srgb, currentColor 35%, transparent);
+  border-radius: 50%;
+  font-family: var(--fuente-display);
+  font-size: 19px;
+}
+
+.chat-panel {
+  position: fixed;
+  right: max(20px, env(safe-area-inset-right));
+  bottom: calc(max(20px, env(safe-area-inset-bottom)) + 62px);
+  z-index: 57;
+  display: flex;
+  width: min(430px, calc(100vw - 40px));
+  max-height: min(720px, calc(100dvh - 110px));
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--linea-fuerte);
+  border-radius: 16px;
+  background: var(--lienzo);
+  box-shadow: var(--sombra-alta);
+  animation: sube 0.35s var(--curva);
+}
+
+.chat-cabecera {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--linea);
+  padding: 15px 17px;
+  background: var(--fondo-velo);
+  backdrop-filter: blur(8px);
+}
+
+.chat-cerrar {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--linea);
+  border-radius: 50%;
+  color: var(--grafito);
+  cursor: pointer;
+}
+
+.chat-mensajes {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+  overscroll-behavior: contain;
+}
+
+.chat-mensaje {
+  width: fit-content;
+  max-width: 94%;
+  margin-bottom: 12px;
+  border-radius: 12px;
+  padding: 10px 12px;
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.chat-asistente {
+  border: 1px solid var(--linea);
+  background: var(--fondo);
+}
+
+.chat-usuario {
+  margin-left: auto;
+  background: var(--tinta);
+  color: var(--fondo);
+}
+
+.chat-recurso {
+  border: 1px solid var(--linea-fuerte);
+  border-radius: 10px;
+  padding: 12px;
+  background: var(--lienzo);
+  color: var(--tinta);
+}
+
+.chat-requisitos {
+  display: grid;
+  gap: 4px;
+  padding-left: 16px;
+  color: var(--grafito);
+  font-size: 11.5px;
+  line-height: 1.45;
+  list-style: disc;
+}
+
+.chat-inicios {
+  display: flex;
+  flex: none;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 0 16px 12px;
+}
+
+.chat-inicios button {
+  border: 1px solid var(--linea-fuerte);
+  border-radius: 999px;
+  padding: 6px 9px;
+  color: var(--grafito);
+  font-size: 11.5px;
+  cursor: pointer;
+}
+
+.chat-inicios button:hover {
+  border-color: var(--tinta);
+  color: var(--tinta);
+}
+
+.chat-formulario {
+  display: flex;
+  flex: none;
+  gap: 8px;
+  border-top: 1px solid var(--linea);
+  padding: 11px 12px;
+}
+
+.chat-formulario input {
+  min-width: 0;
+  flex: 1;
+  border: 1px solid var(--linea-fuerte);
+  border-radius: 8px;
+  background: var(--fondo);
+  color: var(--tinta);
+  padding: 9px 10px;
+  font-size: 12.5px;
+  outline: none;
+}
+
+.chat-formulario input:focus {
+  border-color: var(--tinta);
+}
+
+.chat-formulario button {
+  border-radius: 8px;
+  background: var(--tinta);
+  color: var(--fondo);
+  padding: 0 13px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.chat-formulario button:disabled {
+  opacity: 0.35;
+}
+
+.chat-aviso {
+  flex: none;
+  padding: 0 13px 10px;
+  color: var(--niebla);
+  font-size: 10px;
+  line-height: 1.35;
+}
+
+@media (max-width: 520px) {
+  .chat-panel {
+    inset: 72px 10px 78px;
+    width: auto;
+    max-height: none;
+  }
+
+  .chat-burbuja {
+    right: 12px;
+    bottom: max(12px, env(safe-area-inset-bottom));
+  }
+}
+
 /* ——— respeto por quien no quiere movimiento ——— */
 @media (prefers-reduced-motion: reduce) {
   *,

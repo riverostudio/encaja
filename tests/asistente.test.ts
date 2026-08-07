@@ -1,0 +1,76 @@
+import { describe, expect, it } from "vitest";
+import {
+  consultaParaAsistente,
+  detectarEscenario,
+  hechosInferidosParaBuscar,
+  preguntasQueFaltan,
+  respuestaGuiada,
+} from "../lib/asistente";
+
+const h = (datos: Record<string, string> = {}) => new Map(Object.entries(datos));
+
+describe("orientación del asistente", () => {
+  it.each([
+    ["No tengo casi ingresos y no llego a fin de mes", "pocos_recursos", "ingreso mínimo"],
+    ["Soy estudiante de FP", "estudiante", "beca"],
+    ["Soy autónomo y necesito ayuda para mi negocio", "autonomo", "autoempleo"],
+    ["Soy profesional y quiero saber qué puedo pedir", "profesional", "competencias profesionales"],
+    ["Trabajo por cuenta ajena", "trabajador", "conciliación"],
+  ] as const)("clasifica %s", (mensaje, escenario, termino) => {
+    expect(detectarEscenario(mensaje)).toBe(escenario);
+    expect(consultaParaAsistente(mensaje)).toContain(termino);
+  });
+
+  it("las inferencias sirven para buscar pero no modifican el perfil original", () => {
+    const original = h();
+    const inferido = hechosInferidosParaBuscar(original, "autonomo");
+    expect(inferido.get("perfil")).toBe("autonomo");
+    expect(inferido.get("situacion")).toBe("autonomo_activo");
+    expect(original.size).toBe(0);
+  });
+
+  it("una necesidad personal se filtra como persona aunque la ficha esté vacía", () => {
+    const inferido = hechosInferidosParaBuscar(h(), "pocos_recursos");
+    expect(inferido.get("perfil")).toBe("particular");
+    expect(inferido.get("ingresos")).toBe("menos_12000");
+  });
+
+  it("la necesidad expresada ahora prevalece en la búsqueda sin reescribir el perfil", () => {
+    const original = h({ perfil: "particular", situacion: "estudiante" });
+    const inferido = hechosInferidosParaBuscar(original, "autonomo");
+    expect(inferido.get("perfil")).toBe("autonomo");
+    expect(inferido.get("situacion")).toBe("autonomo_activo");
+    expect(original.get("perfil")).toBe("particular");
+    expect(original.get("situacion")).toBe("estudiante");
+  });
+
+  it("a una persona con pocos recursos le pide solo los datos decisivos que faltan", () => {
+    expect(preguntasQueFaltan(h(), "pocos_recursos")).toEqual([
+      "¿Cuál es tu código postal?",
+      "¿En qué tramo están aproximadamente los ingresos anuales de tu hogar?",
+    ]);
+  });
+
+  it("no presenta un resultado como concesión segura", () => {
+    const texto = respuestaGuiada(
+      "estudiante",
+      [
+        {
+          id: "beca",
+          tipo: "via_directa",
+          titulo: "Beca",
+          organismo: "Ministerio",
+          resumen: "Ayuda para estudiar",
+          requisitos: ["Estudiar"],
+          plazo: "Consulta",
+          urlInfo: "https://example.test",
+          urlSolicitud: "https://example.test",
+          accion: "Solicitar",
+        },
+      ],
+      [],
+    );
+    expect(texto).toContain("posible ayuda");
+    expect(texto).toContain("Revisa los requisitos");
+  });
+});
