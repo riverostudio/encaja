@@ -20,10 +20,11 @@ echo "[$(/bin/date -Iseconds)] Sincronización diaria"
 /opt/homebrew/bin/npm test
 /opt/homebrew/bin/npm run test:links
 /opt/homebrew/bin/npm run build:public
-/opt/homebrew/bin/npx vercel deploy --prod --yes
-# El alias personalizado no forma parte de los dominios automáticos del
-# proyecto; se vuelve a apuntar a su alias estable de producción.
-/opt/homebrew/bin/npx vercel alias set encaja-app-xi.vercel.app usar-encaja.vercel.app
+ENCAJA_DEPLOYMENT_URL=$(/opt/homebrew/bin/npx vercel deploy --prod --yes)
+# Se prueba primero la URL inmutable. El dominio público solo cambia cuando la
+# nueva función y su base SQLite han respondido correctamente de punta a punta.
+ENCAJA_URL="$ENCAJA_DEPLOYMENT_URL" /opt/homebrew/bin/npm run test:prod
+/opt/homebrew/bin/npx vercel alias set "$ENCAJA_DEPLOYMENT_URL" usar-encaja.vercel.app
 /opt/homebrew/bin/npm run test:prod
 
 ENCAJA_TMP=$(/usr/bin/mktemp -d /tmp/encaja-publicar.XXXXXX)

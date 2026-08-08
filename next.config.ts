@@ -4,9 +4,7 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
   // Sin esto la base no viaja con la función y el servidor arranca vacío.
   outputFileTracingIncludes: {
-    "/api/**/*": ["./data/radar-publico.db"],
-    "app/api/**/*": ["./data/radar-publico.db"],
-    "/**/*": ["./data/radar-publico.db"],
+    "/*": ["./data/radar-publico.db"],
   },
   async headers() {
     const seguridad = [

@@ -7,3 +7,7 @@ web/
 .env.local
 data/*
 !data/radar-publico.db
+# Si una tarea dejó cambios pendientes en WAL, el prebuild necesita estos
+# auxiliares para consolidarlos antes de empaquetar la base en modo DELETE.
+!data/radar-publico.db-wal
+!data/radar-publico.db-shm
