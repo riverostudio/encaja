@@ -18,7 +18,8 @@
     "prepare:public-db": "tsx scripts/preparar-db-despliegue.ts",
     "test:links": "tsx scripts/comprobar-enlaces.ts",
     "test:prod": "tsx scripts/comprobar-produccion.ts",
-    "test:assistant": "tsx scripts/evaluar-asistente.ts"
+    "test:assistant": "tsx scripts/evaluar-asistente.ts",
+    "test:quality": "tsx scripts/comprobar-calidad.ts"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.1.0",

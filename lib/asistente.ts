@@ -1,6 +1,13 @@
 import type { Prestacion } from "./prestaciones";
 
 export type EscenarioAsistente =
+  | "violencia_genero"
+  | "alimentacion"
+  | "dependencia"
+  | "discapacidad"
+  | "mayores"
+  | "migracion"
+  | "extutelado"
   | "pocos_recursos"
   | "estudiante"
   | "autonomo"
@@ -18,7 +25,7 @@ export interface MensajeAsistente {
 
 export interface RecursoAsistente {
   id: string;
-  tipo: "via_directa" | "convocatoria";
+  tipo: "via_directa" | "convocatoria" | "orientacion";
   codigo?: string;
   titulo: string;
   organismo: string;
@@ -43,6 +50,13 @@ const PATRONES_ESCENARIO: Array<{
 }> = [
   // Lo concreto manda sobre lo genérico. Así, «estudiante con pocos
   // recursos» conserva las becas y «trabajador despedido» busca desempleo.
+  { escenario: "violencia_genero", patron: /violencia (?:de genero|machista)|maltrat|mi pareja me agrede|tengo miedo de mi pareja/ },
+  { escenario: "alimentacion", patron: /no tengo (?:dinero para (?:comprar )?comida|para comer)|no puedo comprar comida|ayuda (?:para )?(?:comida|alimentos)|emergencia alimentaria|banco de alimentos/ },
+  { escenario: "dependencia", patron: /dependencia|no puede valerse|ayuda para cuidar|cuidados? de larga duracion|ley de dependencia/ },
+  { escenario: "discapacidad", patron: /discapacidad|grado de discapacidad|minusvalia|diversidad funcional/ },
+  { escenario: "extutelado", patron: /extutelad|ex ?tutelad|sali del sistema de proteccion|piso de emancipacion/ },
+  { escenario: "migracion", patron: /migrant|inmigrant|refugiad|asilo|proteccion internacional|permiso de residencia|sin papeles/ },
+  { escenario: "mayores", patron: /persona mayor|tercera edad|jubilad|pensionista|tengo (?:6[5-9]|[7-9]\d) anos|mi madre es mayor|mi padre es mayor/ },
   { escenario: "vivienda", patron: /alquiler|desahuc|vivienda|hipoteca|alojamiento/ },
   { escenario: "estudiante", patron: /estudiant|universidad|universitari|beca|bachiller|\bfp\b|estudiar/ },
   { escenario: "autonomo", patron: /autonom|cuenta propia|freelance|negocio propio/ },
@@ -67,6 +81,13 @@ export function detectarEscenario(texto: string): EscenarioAsistente {
 }
 
 const CONSULTAS: Record<Exclude<EscenarioAsistente, "general">, string> = {
+  violencia_genero: "violencia de género|emergencia social|vivienda|apoyo psicológico|asistencia jurídica",
+  alimentacion: "emergencia social|alimentos|necesidades básicas|renta|comedor",
+  dependencia: "dependencia|autonomía personal|cuidados|asistencia personal|centro de día",
+  discapacidad: "discapacidad|accesibilidad|inclusión|movilidad|asistencia personal",
+  mayores: "personas mayores|pensión|dependencia|cuidados|vivienda",
+  migracion: "integración|inclusión|acogida|protección internacional|formación",
+  extutelado: "jóvenes extutelados|emancipación|vivienda|inserción laboral|acompañamiento",
   pocos_recursos:
     "ingreso mínimo|renta|emergencia social|vulnerabilidad|necesidades básicas|bono social|alimentos",
   estudiante: "beca|ayudas al estudio|universidad|formación profesional|estudiantes",
@@ -144,7 +165,10 @@ export function hechosInferidosParaBuscar(
   if (cpEscrito) hechos.set("cp", cpEscrito);
   if (
     [...escenarios].some((e) =>
-      ["pocos_recursos", "estudiante", "trabajador", "desempleo", "vivienda", "familia"].includes(e),
+      [
+        "pocos_recursos", "estudiante", "trabajador", "desempleo", "vivienda", "familia",
+        "violencia_genero", "alimentacion", "dependencia", "discapacidad", "mayores", "migracion", "extutelado",
+      ].includes(e),
     ) &&
     !hechos.has("perfil")
   ) {
@@ -166,6 +190,10 @@ export function hechosInferidosParaBuscar(
   }
   if (escenarios.has("vivienda")) anadirValor(hechos, "objetivo", "vivienda");
   if (escenarios.has("familia")) anadirValor(hechos, "objetivo", "familia");
+  if (escenarios.has("alimentacion")) anadirValor(hechos, "objetivo", "apuro");
+  if (escenarios.has("violencia_genero")) anadirValor(hechos, "circunstancias", "victima_violencia");
+  if (escenarios.has("dependencia")) anadirValor(hechos, "circunstancias", "dependencia");
+  if (escenarios.has("discapacidad")) anadirValor(hechos, "circunstancias", "discapacidad");
   if (escenarios.has("estudiante") || /formacion|formarme|curso/.test(q)) {
     anadirValor(hechos, "objetivo", "aprender");
   }
@@ -182,6 +210,13 @@ export function hechosInferidosParaBuscar(
 }
 
 const TERMINOS_DIRECTOS: Record<EscenarioAsistente, string[]> = {
+  violencia_genero: ["violencia", "emergencia vivienda", "ingreso mínimo vital"],
+  alimentacion: ["emergencia social", "alimentos", "ingreso mínimo vital"],
+  dependencia: ["dependencia", "cuidados", "pensión"],
+  discapacidad: ["discapacidad", "pensión", "movilidad"],
+  mayores: ["pensión", "dependencia", "bono social"],
+  migracion: ["integración", "acogida"],
+  extutelado: ["emancipación", "vivienda", "inserción laboral"],
   pocos_recursos: ["ingreso mínimo vital", "bono social", "renta", "alquiler"],
   estudiante: ["beca", "estudios"],
   autonomo: ["cese", "autónomo"],
@@ -228,7 +263,7 @@ export function preguntasQueFaltan(
     preguntas.push("¿Cuál es tu código postal?");
   }
   if (
-    ["pocos_recursos", "vivienda", "familia"].includes(escenario) &&
+    ["pocos_recursos", "vivienda", "familia", "alimentacion"].includes(escenario) &&
     !hechos.has("ingresos")
   ) {
     preguntas.push("¿En qué tramo están aproximadamente los ingresos anuales de tu hogar?");
@@ -275,6 +310,13 @@ export function convocatoriaRelevanteParaEscenario(
 }
 
 const PATRONES_RELEVANCIA: Partial<Record<EscenarioAsistente, RegExp>> = {
+  violencia_genero: /violencia|victima|mujer|emergencia|alojamiento|vivienda|asistencia juridica|apoyo psicologico/,
+  alimentacion: /alimento|comida|emergencia|necesidades basicas|comedor|pobreza|exclusion/,
+  dependencia: /dependencia|autonomia personal|cuidad|asistencia personal|centro de dia|residencia/,
+  discapacidad: /discapacidad|accesib|inclusion|movilidad|asistencia personal/,
+  mayores: /mayores|tercera edad|jubil|pension|dependencia|cuidad/,
+  migracion: /migrant|inmigrant|refugiad|asilo|proteccion internacional|integracion|acogida/,
+  extutelado: /extutel|emancip|sistema de proteccion|piso asistido|insercion laboral/,
   autonomo: /autonom|autoemple|emprend|pyme|negocio|actividad economica|empresa/,
   estudiante: /estudiant|universit|beca|estudio|bachiller|formacion profesional|doctorad|tesis|practicas/,
   trabajador: /concili|\btrabajador|\bemplead|\basalariad|\bcuenta ajena|formacion profesional para el empleo|formacion subvencionada|curso gratuito|transporte.{0,30}laboral|laboral.{0,30}transporte/,

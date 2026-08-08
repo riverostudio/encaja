@@ -2,6 +2,7 @@
 import fs from "node:fs";
 import Database from "better-sqlite3";
 import { PRESTACIONES } from "../lib/prestaciones";
+import { DERIVACIONES_OFICIALES } from "../lib/derivaciones";
 import { urlAbsoluta } from "../lib/url-oficial";
 
 function comprobarCatalogo() {
@@ -76,6 +77,32 @@ async function comprobar() {
       } catch (error) {
         console.warn(`AVISO ${prestacion.id} (${enlace.tipo}): ${error instanceof Error ? error.message : error}`);
       }
+    }
+  }
+  for (const derivacion of DERIVACIONES_OFICIALES) {
+    try {
+      const respuesta = await fetch(derivacion.url, {
+        redirect: "follow",
+        headers: { "User-Agent": "Encaja/1.0 comprobador de enlaces" },
+        signal: AbortSignal.timeout(20_000),
+      });
+      const final = respuesta.url.toLowerCase();
+      const html = (respuesta.headers.get("content-type") ?? "").includes("text/html")
+        ? await respuesta.text()
+        : "";
+      const soft404 =
+        /\/404(?:[./?#]|$)/.test(final) ||
+        /<title>[^<]*(?:404|página no encontrada|page not found)/i.test(html);
+      if (soft404) {
+        rotos++;
+        console.error(`ROTO ${derivacion.id} (derivación): termina en ${respuesta.url}`);
+      } else if (!respuesta.ok) {
+        console.warn(`AVISO ${derivacion.id} (derivación): HTTP ${respuesta.status} (puede ser antibot)`);
+      } else {
+        console.log(`OK ${derivacion.id} (derivación): ${respuesta.url}`);
+      }
+    } catch (error) {
+      console.warn(`AVISO ${derivacion.id} (derivación): ${error instanceof Error ? error.message : error}`);
     }
   }
   if (rotos) throw new Error(`${rotos} enlace(s) llevan a una página 404.`);

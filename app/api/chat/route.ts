@@ -19,6 +19,7 @@ import {
 import { urlAbsoluta } from "@/lib/bdns";
 import { beneficiarioDesdePerfil, resumenPerfil } from "@/lib/perfil";
 import { buscarPrestaciones } from "@/lib/prestaciones";
+import { derivacionesParaEscenarios, recursoDesdeDerivacion } from "@/lib/derivaciones";
 import { protegerApi } from "@/lib/seguridad";
 import { credencialesDe, esPublico, hechosDe, idDeSesion } from "@/lib/sesion";
 import { errorJson, getRepo, buscarRadar, type ConvocatoriaConPlazo } from "@/lib/servidor";
@@ -149,6 +150,27 @@ function tituloCompatibleConNecesidad(
       t,
     );
   }
+  if (escenarios.includes("violencia_genero")) {
+    return /VIOLENCIA|VICTIMA|MUJER|EMERGENCIA|ALOJAMIENTO|VIVIENDA|ASISTENCIA/.test(t);
+  }
+  if (escenarios.includes("alimentacion")) {
+    return /ALIMENT|COMIDA|EMERGENCIA|NECESIDADES BASICAS|COMEDOR|INCLUSION/.test(t);
+  }
+  if (escenarios.includes("dependencia")) {
+    return /DEPENDENCIA|AUTONOMIA|CUIDAD|ASISTENCIA|CENTRO DE DIA|RESIDENCIA/.test(t);
+  }
+  if (escenarios.includes("discapacidad")) {
+    return /DISCAPACIDAD|ACCESIB|INCLUSION|MOVILIDAD|ASISTENCIA/.test(t);
+  }
+  if (escenarios.includes("mayores")) {
+    return /MAYOR|JUBIL|PENSION|DEPENDENCIA|CUIDAD|RESIDENCIA/.test(t);
+  }
+  if (escenarios.includes("migracion")) {
+    return /MIGR|REFUG|ASILO|PROTECCION INTERNACIONAL|INTEGRACION|ACOGIDA/.test(t);
+  }
+  if (escenarios.includes("extutelado")) {
+    return /EXTUTEL|EMANCIP|PROTECCION|PISO ASISTIDO|INSERCION/.test(t);
+  }
   return true;
 }
 
@@ -212,7 +234,10 @@ export async function POST(req: NextRequest) {
           .sort((a, b) => b.puntuacion - a.puntuacion || a.indice - b.indice)
           .slice(0, 5)
           .map(({ fila }) => recursoDesdeConvocatoria(fila));
-    let recursos = [...directas, ...convocatorias].slice(0, 7);
+    const orientaciones = necesitaAclararProfesional
+      ? []
+      : derivacionesParaEscenarios(escenarios).map(recursoDesdeDerivacion);
+    let recursos = [...directas, ...orientaciones, ...convocatorias].slice(0, 7);
     const preguntas = preguntasQueFaltan(hechosBusqueda, escenario, ultimo);
 
     const credenciales = credencialesDe(req);

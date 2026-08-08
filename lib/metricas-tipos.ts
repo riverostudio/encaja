@@ -33,6 +33,13 @@ export interface ResumenAdmin {
     comprobaciones: number;
     tiempoMedioSegundos: number;
   };
+  calidad: {
+    busquedasSinResultados: number;
+    tasaSinResultados: number;
+    comprobacionesAbandonadas: number;
+    tasaExpedienteASolicitud: number;
+    categoriasSinResultados: { nombre: string; total: number }[];
+  };
   eventosPorTipo: { nombre: string; total: number }[];
   paginas: { nombre: string; total: number }[];
   categorias: { nombre: string; total: number }[];

@@ -22,6 +22,12 @@ describe("orientación del asistente", () => {
     ["Soy autónomo y necesito ayuda para mi negocio", "autonomo", "autoempleo"],
     ["Soy profesional y quiero saber qué puedo pedir", "profesional", "competencias profesionales"],
     ["Trabajo por cuenta ajena", "trabajador", "conciliación"],
+    ["Necesito ayuda por dependencia para cuidar a mi padre", "dependencia", "dependencia"],
+    ["Quiero pedir el grado de discapacidad", "discapacidad", "discapacidad"],
+    ["Sufro violencia de género y necesito ayuda", "violencia_genero", "violencia de género"],
+    ["No tengo dinero para comprar comida", "alimentacion", "alimentos"],
+    ["Soy migrante y necesito orientación", "migracion", "integración"],
+    ["Soy joven extutelado y necesito vivienda", "extutelado", "jóvenes extutelados"],
   ] as const)("clasifica %s", (mensaje, escenario, termino) => {
     expect(detectarEscenario(mensaje)).toBe(escenario);
     expect(consultaParaAsistente(mensaje)).toContain(termino);

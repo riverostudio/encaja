@@ -80,6 +80,36 @@ const casos: Caso[] = [
     incluye: [],
     sinRecursos: true,
   },
+  {
+    nombre: "persona con discapacidad",
+    mensaje: "Tengo una discapacidad y quiero saber dónde pedir el reconocimiento oficial. Vivo en el 46001.",
+    incluye: ["grado-discapacidad", "dependencia-saad"],
+  },
+  {
+    nombre: "cuidados y dependencia",
+    mensaje: "Mi madre no puede valerse sola y quiero pedir la ayuda de dependencia. Vivimos en el 28013.",
+    incluye: ["dependencia-saad"],
+  },
+  {
+    nombre: "violencia de género",
+    mensaje: "Sufro violencia de género y necesito ayuda segura.",
+    incluye: ["violencia-016"],
+  },
+  {
+    nombre: "emergencia alimentaria",
+    mensaje: "No tengo dinero para comprar comida y vivo en el 28013.",
+    incluye: ["orientacion-060", "imv"],
+  },
+  {
+    nombre: "persona migrante",
+    mensaje: "Soy migrante y necesito orientación para integrarme y pedir acogida. Vivo en el 46001.",
+    incluye: ["integracion-migrantes", "acogida-proteccion-internacional"],
+  },
+  {
+    nombre: "joven extutelado",
+    mensaje: "Soy joven extutelado y necesito apoyo para vivienda y empleo. Vivo en el 46001.",
+    incluye: ["joven-extutelado", "orientacion-060"],
+  },
 ];
 
 function asegurarEnlace(valor: string, caso: string, id: string): void {

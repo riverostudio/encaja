@@ -42,6 +42,8 @@ export interface Prestacion {
   comunidades?: string[];
   /** Algunas vías de acceso no dependen de renta cuando concurre esta circunstancia. */
   admiteCircunstanciasSinRenta?: string[];
+  /** Incompatibilidades expresas publicadas. Si falta, nunca se presume compatibilidad. */
+  incompatibleCon?: string[];
 }
 
 export const PRESTACIONES: Prestacion[] = [
@@ -246,6 +248,7 @@ export const PRESTACIONES: Prestacion[] = [
     para: ["desempleado", "cuenta_ajena", "autonomo_activo", "estudiante", "jubilado"],
     pocosIngresos: false,
     circunstancias: ["familia_numerosa"],
+    incompatibleCon: ["deduccion-ascendiente-dos-hijos"],
   },
   {
     id: "deduccion-ascendiente-dos-hijos",
@@ -268,6 +271,7 @@ export const PRESTACIONES: Prestacion[] = [
     circunstancias: ["monoparental"],
     excluyeCircunstancias: ["familia_numerosa"],
     menores: ["2"],
+    incompatibleCon: ["deduccion-familia-numerosa"],
   },
   {
     id: "emergencia-alquiler-madrid",

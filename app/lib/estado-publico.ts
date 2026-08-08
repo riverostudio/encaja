@@ -16,6 +16,14 @@ const LLAVE_EVALUACIONES = "encaja.evaluaciones";
 const LLAVE_EXPEDIENTES = "encaja.expedientes";
 const LLAVE_REGION = "encaja.region";
 const LLAVE_RESUMENES = "encaja.resumenes";
+const LLAVE_DOCUMENTOS_BASE = "encaja.documentos-base";
+
+export interface DocumentoBaseLocal {
+  id: string;
+  estado: "pendiente" | "listo" | "pedir";
+  nota?: string;
+  updatedAt: string;
+}
 
 export type EstadoExpedientePublico =
   | "interesa"
@@ -86,6 +94,22 @@ export function getRegionPublica(): number | "" | null {
 
 export function guardarRegionPublica(region: number | ""): void {
   guardar(LLAVE_REGION, region);
+}
+
+export function leerDocumentosBase(): Record<string, DocumentoBaseLocal> {
+  return leer<Record<string, DocumentoBaseLocal>>(LLAVE_DOCUMENTOS_BASE, {});
+}
+
+export function guardarDocumentoBase(
+  id: string,
+  estado: DocumentoBaseLocal["estado"],
+  nota?: string,
+): DocumentoBaseLocal {
+  const todos = leerDocumentosBase();
+  const documento = { id, estado, nota, updatedAt: new Date().toISOString() };
+  todos[id] = documento;
+  guardar(LLAVE_DOCUMENTOS_BASE, todos);
+  return documento;
 }
 
 /** Añade las claves que consumen las reglas estructurales sin duplicar preguntas. */
@@ -335,6 +359,7 @@ export function exportarDatosPublicos(): void {
         perfil: leerPerfilPublico(),
         evaluaciones: evaluaciones(),
         expedientes: expedientes(),
+        documentosBase: leerDocumentosBase(),
         actividad: leerMetricasLocales(),
       },
       null,
@@ -351,6 +376,8 @@ export async function borrarDatosPublicos(): Promise<boolean> {
   localStorage.removeItem(LLAVE_EXPEDIENTES);
   localStorage.removeItem(LLAVE_REGION);
   localStorage.removeItem(LLAVE_RESUMENES);
+  localStorage.removeItem(LLAVE_DOCUMENTOS_BASE);
+  localStorage.removeItem("encaja.accesibilidad.v1");
   localStorage.removeItem("encaja.entrada");
   localStorage.removeItem("encaja.aviso-legal.v2");
   localStorage.removeItem("encaja.consentimiento-metricas");

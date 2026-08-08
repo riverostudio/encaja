@@ -28,6 +28,11 @@ const GUION_TEMA = `(function(){try{
   var t = localStorage.getItem('tema');
   if(!t) t = matchMedia('(prefers-color-scheme: dark)').matches ? 'oscuro' : 'claro';
   document.documentElement.setAttribute('data-tema', t);
+  var a = JSON.parse(localStorage.getItem('encaja.accesibilidad.v1') || '{}');
+  if(a.textoGrande) document.documentElement.setAttribute('data-texto-grande','');
+  if(a.contrasteAlto) document.documentElement.setAttribute('data-contraste-alto','');
+  if(a.reducirMovimiento) document.documentElement.setAttribute('data-reducir-movimiento','');
+  if(a.lecturaFacil) document.documentElement.setAttribute('data-lectura-facil','');
 }catch(e){document.documentElement.setAttribute('data-tema','claro');}})();`;
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

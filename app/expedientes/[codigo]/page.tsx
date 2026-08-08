@@ -169,6 +169,8 @@ export default function PaginaExpediente({ params }: { params: Promise<{ codigo:
   const conv = datos.conv;
   const sello = datos.veredicto ? SELLO[datos.veredicto] : null;
   const pendientes = checklist.filter((i) => i.estado === "pendiente" || i.estado === "pedirlo");
+  const preparados = checklist.filter((i) => i.estado === "lo_tengo").length;
+  const progresoDocumentos = checklist.length ? Math.round((preparados / checklist.length) * 100) : 0;
   const cerrada = conv?.plazo.estado === "cerrada";
 
   return (
@@ -209,6 +211,16 @@ export default function PaginaExpediente({ params }: { params: Promise<{ codigo:
             {e.texto}
           </button>
         ))}
+      </div>
+
+      <div className="mt-6 rounded-lg border border-[var(--linea)] bg-[var(--lienzo-alto)] p-4">
+        <div className="flex items-baseline justify-between gap-4">
+          <span className="rotulo">Documentación preparada</span>
+          <span className="cifra text-[13px]">{preparados}/{checklist.length || "—"}</span>
+        </div>
+        <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-[var(--linea)]" aria-label={`Documentación preparada al ${progresoDocumentos}%`}>
+          <div className="h-full bg-[var(--bosque)]" style={{ width: `${progresoDocumentos}%` }} />
+        </div>
       </div>
 
       {/* ——— 1 · QUÉ TE PIDEN ——— */}
@@ -258,10 +270,25 @@ export default function PaginaExpediente({ params }: { params: Promise<{ codigo:
                     </button>
                   ))}
                 </div>
+                <label className="mt-3 block">
+                  <span className="rotulo mb-1 block">Nota privada opcional</span>
+                  <input
+                    className="campo w-full text-[13px]"
+                    defaultValue={item.nota ?? ""}
+                    placeholder="Ej.: pedir cita el lunes"
+                    onBlur={(e) => {
+                      const nota = e.currentTarget.value.trim();
+                      if (nota !== (item.nota ?? "")) void patch({ item: { id: item.id, estado: item.estado, nota } });
+                    }}
+                  />
+                </label>
               </div>
             ))}
           </div>
         )}
+        <p className="nota mt-4">
+          Encaja guarda solo estas marcas y notas en tu navegador. No subas aquí documentos: la app no los recibe ni los envía a la IA.
+        </p>
       </section>
 
       {/* ——— 3 · APLICAR ——— */}

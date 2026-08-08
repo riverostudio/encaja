@@ -313,6 +313,12 @@ export async function obtenerResumenAdmin(periodoDias: number): Promise<ResumenA
     const sesiones = [...memoria.sesiones.entries()].filter(([, s]) => s.ultima.getTime() >= desde);
     const visitantes = new Set(sesiones.map(([, s]) => s.visitante));
     const nuevos = [...memoria.visitantes.entries()].filter(([, v]) => v.primera.getTime() >= desde).length;
+    const busquedas = eventos.filter((e) => e.tipo === "busqueda");
+    const busquedasSinResultados = busquedas.filter((e) => e.valor === 0);
+    const comprobacionesIniciadas = eventos.filter((e) => e.tipo === "encaje_iniciado").length;
+    const comprobacionesTerminadas = eventos.filter((e) => e.tipo === "encaje_terminado").length;
+    const expedientesCreados = eventos.filter((e) => e.tipo === "expediente_creado").length;
+    const solicitudesAbiertas = eventos.filter((e) => e.tipo === "solicitud_abierta").length;
     const agrupar = (valores: (string | null)[]) =>
       [...valores.reduce((m, valor) => {
         if (valor) m.set(valor, (m.get(valor) ?? 0) + 1);
@@ -347,14 +353,21 @@ export async function obtenerResumenAdmin(periodoDias: number): Promise<ResumenA
         visitantesNuevos: nuevos,
         sesiones: sesiones.length,
         interacciones: eventos.length,
-        busquedas: eventos.filter((e) => e.tipo === "busqueda").length,
+        busquedas: busquedas.length,
         usosAgente: eventos.filter((e) => e.tipo === "agente_usado").length,
-        expedientes: eventos.filter((e) => e.tipo === "expediente_creado").length,
-        solicitudes: eventos.filter((e) => e.tipo === "solicitud_abierta").length,
-        comprobaciones: eventos.filter((e) => e.tipo === "encaje_terminado").length,
+        expedientes: expedientesCreados,
+        solicitudes: solicitudesAbiertas,
+        comprobaciones: comprobacionesTerminadas,
         tiempoMedioSegundos: sesiones.length
           ? Math.round(sesiones.reduce((suma, [, s]) => suma + s.duracion, 0) / sesiones.length)
           : 0,
+      },
+      calidad: {
+        busquedasSinResultados: busquedasSinResultados.length,
+        tasaSinResultados: busquedas.length ? Math.round((busquedasSinResultados.length / busquedas.length) * 100) : 0,
+        comprobacionesAbandonadas: Math.max(0, comprobacionesIniciadas - comprobacionesTerminadas),
+        tasaExpedienteASolicitud: expedientesCreados ? Math.round((solicitudesAbiertas / expedientesCreados) * 100) : 0,
+        categoriasSinResultados: agrupar(busquedasSinResultados.map((e) => e.categoria)).slice(0, 10),
       },
       eventosPorTipo: agrupar(eventos.map((e) => e.tipo)),
       paginas: agrupar(eventos.filter((e) => e.tipo === "pagina").map((e) => e.pagina)),
@@ -388,7 +401,7 @@ export async function obtenerResumenAdmin(periodoDias: number): Promise<ResumenA
   }
 
   await esquema();
-  const [totales, tipos, paginas, categorias, ayudas, serie, activos, recientes] = await sql.transaction([
+  const [totales, tipos, paginas, categorias, categoriasSinResultados, ayudas, serie, activos, recientes] = await sql.transaction([
     sql`
       SELECT
         (SELECT COUNT(DISTINCT visitante_hash) FROM sesiones_analitica WHERE ultima_actividad >= NOW() - (${dias} * INTERVAL '1 day')) AS visitantes,
@@ -399,14 +412,17 @@ export async function obtenerResumenAdmin(periodoDias: number): Promise<ResumenA
         (SELECT COALESCE(AVG(duracion_segundos), 0) FROM sesiones_analitica WHERE ultima_actividad >= NOW() - (${dias} * INTERVAL '1 day')) AS tiempo_medio,
         (SELECT COUNT(*) FROM eventos_analitica WHERE creado_at >= NOW() - (${dias} * INTERVAL '1 day')) AS interacciones,
         (SELECT COUNT(*) FROM eventos_analitica WHERE tipo = 'busqueda' AND creado_at >= NOW() - (${dias} * INTERVAL '1 day')) AS busquedas,
+        (SELECT COUNT(*) FROM eventos_analitica WHERE tipo = 'busqueda' AND valor = 0 AND creado_at >= NOW() - (${dias} * INTERVAL '1 day')) AS busquedas_sin_resultados,
         (SELECT COUNT(*) FROM eventos_analitica WHERE tipo = 'agente_usado' AND creado_at >= NOW() - (${dias} * INTERVAL '1 day')) AS agente,
         (SELECT COUNT(*) FROM eventos_analitica WHERE tipo = 'expediente_creado' AND creado_at >= NOW() - (${dias} * INTERVAL '1 day')) AS expedientes,
         (SELECT COUNT(*) FROM eventos_analitica WHERE tipo = 'solicitud_abierta' AND creado_at >= NOW() - (${dias} * INTERVAL '1 day')) AS solicitudes
-        ,(SELECT COUNT(*) FROM eventos_analitica WHERE tipo = 'encaje_terminado' AND creado_at >= NOW() - (${dias} * INTERVAL '1 day')) AS comprobaciones
+        ,(SELECT COUNT(*) FROM eventos_analitica WHERE tipo = 'encaje_terminado' AND creado_at >= NOW() - (${dias} * INTERVAL '1 day')) AS comprobaciones,
+        (SELECT COUNT(*) FROM eventos_analitica WHERE tipo = 'encaje_iniciado' AND creado_at >= NOW() - (${dias} * INTERVAL '1 day')) AS comprobaciones_iniciadas
     `,
     sql`SELECT tipo AS nombre, COUNT(*) AS total FROM eventos_analitica WHERE creado_at >= NOW() - (${dias} * INTERVAL '1 day') GROUP BY tipo ORDER BY total DESC`,
     sql`SELECT pagina AS nombre, COUNT(*) AS total FROM eventos_analitica WHERE tipo = 'pagina' AND creado_at >= NOW() - (${dias} * INTERVAL '1 day') GROUP BY pagina ORDER BY total DESC LIMIT 20`,
     sql`SELECT categoria AS nombre, COUNT(*) AS total FROM eventos_analitica WHERE tipo = 'busqueda' AND categoria IS NOT NULL AND creado_at >= NOW() - (${dias} * INTERVAL '1 day') GROUP BY categoria ORDER BY total DESC LIMIT 20`,
+    sql`SELECT categoria AS nombre, COUNT(*) AS total FROM eventos_analitica WHERE tipo = 'busqueda' AND valor = 0 AND categoria IS NOT NULL AND creado_at >= NOW() - (${dias} * INTERVAL '1 day') GROUP BY categoria ORDER BY total DESC LIMIT 20`,
     sql`SELECT codigo_bdns AS codigo, COUNT(*) AS total FROM eventos_analitica WHERE tipo = 'ayuda_abierta' AND codigo_bdns IS NOT NULL AND creado_at >= NOW() - (${dias} * INTERVAL '1 day') GROUP BY codigo_bdns ORDER BY total DESC LIMIT 12`,
     sql`
       SELECT TO_CHAR(DATE_TRUNC('day', creado_at), 'YYYY-MM-DD') AS dia,
@@ -453,6 +469,20 @@ export async function obtenerResumenAdmin(periodoDias: number): Promise<ResumenA
       solicitudes: numero(t.solicitudes),
       comprobaciones: numero(t.comprobaciones),
       tiempoMedioSegundos: Math.round(numero(t.tiempo_medio)),
+    },
+    calidad: {
+      busquedasSinResultados: numero(t.busquedas_sin_resultados),
+      tasaSinResultados: numero(t.busquedas)
+        ? Math.round((numero(t.busquedas_sin_resultados) / numero(t.busquedas)) * 100)
+        : 0,
+      comprobacionesAbandonadas: Math.max(0, numero(t.comprobaciones_iniciadas) - numero(t.comprobaciones)),
+      tasaExpedienteASolicitud: numero(t.expedientes)
+        ? Math.round((numero(t.solicitudes) / numero(t.expedientes)) * 100)
+        : 0,
+      categoriasSinResultados: (categoriasSinResultados as Record<string, unknown>[]).map((r) => ({
+        nombre: String(r.nombre),
+        total: numero(r.total),
+      })),
     },
     eventosPorTipo: (tipos as Record<string, unknown>[]).map((r) => ({ nombre: String(r.nombre), total: numero(r.total) })),
     paginas: (paginas as Record<string, unknown>[]).map((r) => ({ nombre: String(r.nombre), total: numero(r.total) })),

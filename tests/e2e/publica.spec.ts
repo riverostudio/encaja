@@ -439,6 +439,100 @@ test("el panel del usuario muestra tiempo, búsquedas e historial con vigencia",
   await expect(page.getByText("Plazo cerrado")).toBeVisible();
 });
 
+test("Mi plan reúne avisos, progreso, documentos y compatibilidades sin subir archivos", async ({ page }) => {
+  await page.route("**/api/acompanamiento", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        privacidad: "Encaja no sube ni envía tus documentos.",
+        documentos: [
+          { id: "identidad", titulo: "DNI o NIE", motivo: "Para identificarte.", sensible: true },
+        ],
+        prestaciones: [
+          {
+            id: "deduccion-familia-numerosa",
+            titular: "Deducción por familia numerosa",
+            urlSolicitud: "https://sede.agenciatributaria.gob.es/",
+            accion: "Comprobar deducción",
+            incompatibleCon: ["deduccion-ascendiente-dos-hijos"],
+          },
+          {
+            id: "deduccion-ascendiente-dos-hijos",
+            titular: "Deducción para progenitor con dos hijos",
+            urlSolicitud: "https://sede.agenciatributaria.gob.es/",
+            accion: "Comprobar deducción",
+            incompatibleCon: ["deduccion-familia-numerosa"],
+          },
+        ],
+        derivaciones: [
+          {
+            id: "orientacion-060",
+            titulo: "Orientación 060",
+            organismo: "Gobierno de España",
+            resumen: "Ayuda para localizar el trámite correcto.",
+            url: "https://administracion.gob.es/pag_Home/es/contacto/telefono-060.html",
+            accion: "Ver atención 060",
+          },
+        ],
+      }),
+    });
+  });
+  await page.goto("/");
+  await page.evaluate(() => {
+    localStorage.setItem("encaja.entrada", "1");
+    localStorage.setItem("encaja.aviso-legal.v2", "1");
+    const fin = new Date(Date.now() + 2 * 86_400_000).toISOString().slice(0, 10);
+    localStorage.setItem("encaja.expedientes", JSON.stringify({
+      "777777": {
+        codigoBdns: "777777",
+        estado: "preparacion",
+        checklist: [
+          { id: "a", texto: "Documento A", estado: "lo_tengo" },
+          { id: "b", texto: "Documento B", estado: "pendiente" },
+        ],
+        conv: {
+          codigoBdns: "777777", titulo: "Ayuda urgente de prueba", nivel1: "ESTADO", nivel2: "Ministerio",
+          fechaRegistro: "2026-01-01", mrr: false, beneficiarios: [], instrumentos: [], sectores: [], regiones: [], fondos: [],
+          rangoFechas: `hoy — ${fin}`, fechaInicioSol: "2020-01-01", fechaFinSol: fin,
+          plazo: { estado: "urgente", dias: 2 }, llano: { que: "Ayuda urgente de prueba", quien: "personas", consigues: "apoyo" },
+        },
+        urlFicha: "https://www.infosubvenciones.es/bdnstrans/GE/es/convocatoria/777777",
+        creadoAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
+      },
+    }));
+  });
+  await page.goto("/plan");
+  await expect(page.getByRole("heading", { name: "Mi plan" })).toBeVisible();
+  await expect(page.getByText("Cierra en 2 días")).toBeVisible();
+  await expect(page.getByText("50%", { exact: true })).toBeVisible();
+  await expect(page.getByText(/no sube ni envía tus documentos/i)).toBeVisible();
+  await page.getByRole("button", { name: "Lo tengo" }).click();
+  expect(await page.evaluate(() => JSON.parse(localStorage.getItem("encaja.documentos-base")!)["identidad"].estado)).toBe("listo");
+  await page.getByText("Deducción por familia numerosa").click();
+  await page.getByText("Deducción para progenitor con dos hijos").click();
+  await expect(page.getByText(/incompatibilidad expresa/i)).toBeVisible();
+  await expect(page.getByRole("link", { name: /Ver atención 060/ })).toHaveAttribute("href", /administracion\.gob\.es/);
+});
+
+test("las opciones de accesibilidad se aplican, persisten y existe salto al contenido", async ({ page }) => {
+  await entrarSinClave(page);
+  await page.getByRole("button", { name: "Abrir opciones de accesibilidad" }).click();
+  const dialogo = page.getByRole("dialog", { name: "Accesibilidad y lectura" });
+  await expect(dialogo).toBeVisible();
+  await dialogo.getByLabel("Texto más grande").check();
+  await dialogo.getByLabel("Contraste alto").check();
+  await expect(page.locator("html")).toHaveAttribute("data-texto-grande", "");
+  await expect(page.locator("html")).toHaveAttribute("data-contraste-alto", "");
+  await dialogo.getByRole("button", { name: "Cerrar accesibilidad" }).click();
+  await page.reload();
+  await expect(page.locator("html")).toHaveAttribute("data-texto-grande", "");
+  const salto = page.getByRole("link", { name: "Saltar al contenido" });
+  await salto.focus();
+  await expect(salto).toBeVisible();
+  await expect(salto).toHaveAttribute("href", "#contenido-principal");
+});
+
 test("el panel admin exige clave y nunca devuelve secretos del cliente", async ({ page }, testInfo) => {
   const movil = testInfo.project.name === "mobile";
   const visitanteId = movil
@@ -513,6 +607,18 @@ test("el panel admin exige clave y nunca devuelve secretos del cliente", async (
     },
   });
   expect(ayuda.status()).toBe(202);
+  const busquedaVacia = await page.request.post("/api/metricas", {
+    headers: { Origin: "http://127.0.0.1:3102" },
+    data: {
+      visitanteId,
+      sesionId: "22222222-2222-4222-8222-222222222222",
+      tipo: "busqueda",
+      pagina: "/",
+      categoria: "vivienda",
+      valor: 0,
+    },
+  });
+  expect(busquedaVacia.status()).toBe(202);
 
   await page.goto("/admin");
   await expect(page.getByRole("heading", { name: "Administración" })).toBeVisible();
@@ -523,12 +629,14 @@ test("el panel admin exige clave y nunca devuelve secretos del cliente", async (
   await page.getByRole("button", { name: "Entrar" }).click();
   await expect(page.getByRole("heading", { name: "Métricas de administración" })).toBeVisible();
   await expect(page.getByText("Consultas al orientador").first()).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Calidad y huecos de cobertura" })).toBeVisible();
 
   const respuesta = await page.request.get("/api/admin/metricas?dias=7");
   expect(respuesta.status()).toBe(200);
   const texto = await respuesta.text();
   expect(texto).not.toContain("sk-no-debe-guardarse");
   expect(texto).not.toContain("dato privado");
+  expect((JSON.parse(texto) as { calidad: { busquedasSinResultados: number } }).calidad.busquedasSinResultados).toBeGreaterThan(0);
 
   const borrado = await page.request.delete("/api/metricas", {
     headers: { Origin: "http://127.0.0.1:3102" },

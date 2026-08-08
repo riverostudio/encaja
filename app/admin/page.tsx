@@ -214,6 +214,31 @@ export default function PaginaAdmin() {
         ))}
       </section>
 
+      <section className="mt-10" aria-labelledby="calidad-cobertura">
+        <h2 id="calidad-cobertura" className="rotulo">Calidad y huecos de cobertura</h2>
+        <p className="nota mt-2 max-w-3xl">
+          Señales agregadas para encontrar búsquedas que no resuelve el catálogo y pasos donde la gente se detiene. No se guardan los textos escritos.
+        </p>
+        <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          {[
+            [`${datos.calidad.tasaSinResultados}%`, "búsquedas sin resultado"],
+            [datos.calidad.busquedasSinResultados, "búsquedas vacías"],
+            [datos.calidad.comprobacionesAbandonadas, "comprobaciones no terminadas"],
+            [`${datos.calidad.tasaExpedienteASolicitud}%`, "expediente → salida oficial"],
+          ].map(([valor, etiqueta]) => (
+            <div key={etiqueta} className="rounded-lg border border-[var(--linea)] bg-[var(--lienzo-alto)] p-4">
+              <strong className="display cifra block text-[25px] font-normal">{valor}</strong>
+              <span className="rotulo mt-1 block">{etiqueta}</span>
+            </div>
+          ))}
+        </div>
+        {datos.calidad.categoriasSinResultados.length > 0 && (
+          <div className="mt-6 max-w-lg">
+            <Lista titulo="Temas con más búsquedas vacías" filas={datos.calidad.categoriasSinResultados} />
+          </div>
+        )}
+      </section>
+
       <section className="mt-10">
         <h2 className="rotulo">Actividad diaria</h2>
         {datos.serie.length === 0 ? (

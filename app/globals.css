@@ -59,6 +59,51 @@ html {
   background: var(--fondo);
 }
 
+.skip-link {
+  position: fixed;
+  left: 12px;
+  top: 8px;
+  z-index: 100;
+  transform: translateY(-150%);
+  border: 2px solid var(--tinta);
+  border-radius: 5px;
+  background: var(--lienzo);
+  color: var(--tinta);
+  padding: 8px 12px;
+}
+
+.skip-link:focus { transform: translateY(0); }
+
+:focus-visible {
+  outline: 3px solid var(--bosque);
+  outline-offset: 3px;
+}
+
+[data-texto-grande] body { font-size: 18px; }
+[data-texto-grande] .nota { font-size: 14.5px; }
+[data-texto-grande] .rotulo { font-size: 12px; }
+
+[data-contraste-alto] {
+  --niebla: var(--grafito);
+  --linea: var(--tinta);
+  --linea-fuerte: var(--tinta);
+}
+
+[data-contraste-alto] :focus-visible { outline-width: 4px; }
+
+[data-lectura-facil] body { line-height: 1.75; }
+[data-lectura-facil] p,
+[data-lectura-facil] li { max-width: 72ch; }
+
+[data-reducir-movimiento] *,
+[data-reducir-movimiento] *::before,
+[data-reducir-movimiento] *::after {
+  animation-duration: 0.01ms !important;
+  animation-delay: 0ms !important;
+  transition-duration: 0.01ms !important;
+  scroll-behavior: auto !important;
+}
+
 body {
   background: var(--fondo);
   color: var(--tinta);

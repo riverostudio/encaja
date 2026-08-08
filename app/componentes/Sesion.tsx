@@ -110,6 +110,7 @@ export default function Sesion() {
         url.includes("/api/encaje/") ||
         url.includes("/api/convocatorias") ||
         url.includes("/api/borrador/") ||
+        url.includes("/api/acompanamiento") ||
         url.includes("/api/chat");
       // Las cabeceras HTTP son bytes, no Unicode libre. Se codifica para que
       // respuestas como «sí» no queden truncadas al atravesar el proxy.

@@ -9,12 +9,14 @@ import Bienvenida, { type ProveedorUi } from "./Bienvenida";
 import { APP_PUBLICA } from "./Sesion";
 import AsistenteAyudas from "./AsistenteAyudas";
 import AvisoLegalInicial from "./AvisoLegalInicial";
+import Accesibilidad from "./Accesibilidad";
 
 const LLAVE_ENTRADA = "encaja.entrada";
 
 const PESTANAS = [
   { href: "/", etiqueta: "Radar" },
   { href: "/ficha", etiqueta: "Mi perfil" },
+  { href: "/plan", etiqueta: "Mi plan" },
   { href: "/expedientes", etiqueta: "Expedientes" },
 ];
 
@@ -61,19 +63,21 @@ export default function Shell({ children }: { children: ReactNode }) {
   if (esAdmin) {
     return (
       <div className="min-h-dvh">
-        <div className="fixed right-5 top-5 z-30"><Tema /></div>
-        <main className="mx-auto w-full max-w-7xl px-6 py-10">{children}</main>
+        <a className="skip-link" href="#contenido-principal">Saltar al contenido</a>
+        <div className="fixed right-5 top-5 z-30 flex gap-2"><Accesibilidad /><Tema /></div>
+        <main id="contenido-principal" className="mx-auto w-full max-w-7xl px-6 py-10">{children}</main>
       </div>
     );
   }
 
   return (
     <div className="flex min-h-dvh flex-col">
+      <a className="skip-link" href="#contenido-principal">Saltar al contenido</a>
       <header
         className="sticky top-0 z-30 border-b border-[var(--linea)] backdrop-blur-md"
         style={{ background: "var(--fondo-velo)" }}
       >
-        <div className="mx-auto flex max-w-6xl items-center gap-6 px-6 py-4">
+        <div className="mx-auto flex max-w-6xl items-center gap-3 px-4 py-4 sm:gap-6 sm:px-6">
           <Link href="/" className="group flex items-baseline gap-2.5">
             <span className="display text-[20px] leading-none">Encaja</span>
             <span className="rotulo hidden transition-colors group-hover:text-[var(--grafito)] sm:inline">
@@ -81,28 +85,29 @@ export default function Shell({ children }: { children: ReactNode }) {
             </span>
           </Link>
 
-          <nav className="ml-auto flex items-center gap-5">
+          <nav className="ml-auto flex items-center gap-2 sm:gap-5" aria-label="Navegación principal">
             {PESTANAS.map((p) => {
               const activa = p.href === "/" ? ruta === "/" : ruta.startsWith(p.href);
               return (
                 <Link
                   key={p.href}
                   href={p.href}
-                  className={`filtro !text-[13.5px] ${activa ? "filtro-activo" : ""}`}
+                  className={`filtro !text-[12px] sm:!text-[13.5px] ${activa ? "filtro-activo" : ""}`}
                 >
                   {p.etiqueta}
                 </Link>
               );
             })}
             <button className="filtro !text-[13.5px]" onClick={() => setAjustesAbierto(true)}>
-              Ajustes
+              <span className="hidden sm:inline">Ajustes</span><span className="sm:hidden" aria-hidden="true">⚙</span>
             </button>
+            <Accesibilidad />
             <Tema />
           </nav>
         </div>
       </header>
 
-      <main className="mx-auto w-full max-w-6xl flex-1 px-6 py-10">{children}</main>
+      <main id="contenido-principal" className="mx-auto w-full max-w-6xl flex-1 px-6 py-10">{children}</main>
 
       <footer className="mt-16 border-t border-[var(--linea)]">
         <div className="mx-auto max-w-6xl px-6 py-7">
