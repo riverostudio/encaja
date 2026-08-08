@@ -43,13 +43,15 @@ export interface AyudaVistaLocal {
 }
 
 export interface MetricasLocales {
-  version: 1;
+  version: 2;
   primeraVisitaAt: string;
   ultimaActividadAt: string;
   tiempoActivoSegundos: number;
   tiempoRadarSegundos: number;
   paginasVistas: number;
   usosAgente: number;
+  busquedasTotal: number;
+  ayudasConsultadasTotal: number;
   busquedas: BusquedaLocal[];
   ayudasVistas: AyudaVistaLocal[];
 }
@@ -57,15 +59,46 @@ export interface MetricasLocales {
 function vacias(): MetricasLocales {
   const ahora = new Date().toISOString();
   return {
-    version: 1,
+    version: 2,
     primeraVisitaAt: ahora,
     ultimaActividadAt: ahora,
     tiempoActivoSegundos: 0,
     tiempoRadarSegundos: 0,
     paginasVistas: 0,
     usosAgente: 0,
+    busquedasTotal: 0,
+    ayudasConsultadasTotal: 0,
     busquedas: [],
     ayudasVistas: [],
+  };
+}
+
+function contador(valor: unknown, respaldo: number): number {
+  const numero = Number(valor);
+  return Number.isFinite(numero) && numero >= 0 ? Math.round(numero) : respaldo;
+}
+
+type MetricasGuardadas = Omit<Partial<MetricasLocales>, "version"> & { version?: number };
+
+export function normalizarMetricasLocales(datos: MetricasGuardadas): MetricasLocales {
+  const base = vacias();
+  const busquedas = Array.isArray(datos.busquedas) ? datos.busquedas.slice(0, 60) : [];
+  const ayudasVistas = Array.isArray(datos.ayudasVistas) ? datos.ayudasVistas.slice(0, 80) : [];
+  const consultasMigradas = ayudasVistas.reduce(
+    (total, ayuda) => total + contador(ayuda.veces, 1),
+    0,
+  );
+  return {
+    ...base,
+    ...datos,
+    version: 2,
+    busquedasTotal: Math.max(contador(datos.busquedasTotal, busquedas.length), busquedas.length),
+    ayudasConsultadasTotal: Math.max(
+      contador(datos.ayudasConsultadasTotal, consultasMigradas),
+      consultasMigradas,
+    ),
+    busquedas,
+    ayudasVistas,
   };
 }
 
@@ -74,15 +107,7 @@ export function leerMetricasLocales(): MetricasLocales {
   try {
     const crudo = localStorage.getItem(LLAVE_METRICAS);
     if (!crudo) return vacias();
-    const datos = JSON.parse(crudo) as Partial<MetricasLocales>;
-    const base = vacias();
-    return {
-      ...base,
-      ...datos,
-      version: 1,
-      busquedas: Array.isArray(datos.busquedas) ? datos.busquedas.slice(0, 60) : [],
-      ayudasVistas: Array.isArray(datos.ayudasVistas) ? datos.ayudasVistas.slice(0, 80) : [],
-    };
+    return normalizarMetricasLocales(JSON.parse(crudo) as MetricasGuardadas);
   } catch {
     return vacias();
   }
@@ -107,6 +132,10 @@ export function guardarConsentimientoMetricas(valor: Exclude<ConsentimientoMetri
   try {
     localStorage.setItem(LLAVE_CONSENTIMIENTO, valor);
     window.dispatchEvent(new Event("encaja:consentimiento-metricas"));
+    if (valor === "si") {
+      enviar("pagina");
+      enviarLatido(leerMetricasLocales());
+    }
   } catch {
     // Sin almacenamiento, la opción más protectora es no enviar estadísticas.
   }
@@ -219,6 +248,7 @@ export function registrarBusquedaLocal(texto: string, resultados: number): void 
     resultados: Math.max(0, Math.round(resultados)),
     fecha: new Date().toISOString(),
   });
+  datos.busquedasTotal += 1;
   datos.busquedas = datos.busquedas.slice(0, 60);
   guardar(datos);
   // El texto permanece solo en el navegador; el servidor recibe la categoría y el total.
@@ -234,6 +264,7 @@ export function registrarAyudaVistaLocal(ayuda: Omit<AyudaVistaLocal, "vistaAt" 
     vistaAt: new Date().toISOString(),
     veces: (previa?.veces ?? 0) + 1,
   });
+  datos.ayudasConsultadasTotal += 1;
   datos.ayudasVistas = datos.ayudasVistas.slice(0, 80);
   guardar(datos);
   enviar("ayuda_abierta", { codigoBdns: ayuda.codigoBdns });
@@ -292,9 +323,26 @@ export function enviarLatido(datos: MetricasLocales, beacon = false): void {
   );
 }
 
-export function borrarMetricasLocales(): void {
+export async function borrarMetricasLocales(): Promise<boolean> {
+  let borradoRemoto = true;
+  const visitanteId = localStorage.getItem(LLAVE_VISITANTE);
+  try {
+    if (PUBLICO && visitanteId && /^[a-f0-9-]{36}$/i.test(visitanteId)) {
+      const respuesta = await fetch("/api/metricas", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ visitanteId }),
+        keepalive: true,
+      });
+      borradoRemoto = respuesta.ok;
+    }
+  } catch {
+    borradoRemoto = false;
+  }
   localStorage.removeItem(LLAVE_METRICAS);
+  if (borradoRemoto) localStorage.removeItem(LLAVE_VISITANTE);
   sessionStorage.removeItem(LLAVE_SESION);
   sessionStorage.removeItem(LLAVE_TIEMPO_SESION);
   sessionStorage.removeItem(LLAVE_RADAR_SESION);
+  return borradoRemoto;
 }

@@ -1,6 +1,6 @@
 # Auditoría actual de Encaja
 
-**7 de agosto de 2026** · después de integrar el orientador conversacional
+**8 de agosto de 2026** · después de integrar métricas persistentes y administración
 
 ## Veredicto
 
@@ -20,8 +20,8 @@ Encaja y la IA configurada por el visitante solo los explica.
 | Con sede o bases específicas | 19.500 |
 | Solo con ficha oficial BDNS | 270 |
 | Vías prioritarias fuera de la BDNS | 12 |
-| Pruebas unitarias | 210 |
-| Pruebas de navegador | 20, escritorio y móvil |
+| Pruebas unitarias | 213 |
+| Pruebas de navegador | 30, escritorio y móvil |
 
 Las 270 convocatorias sin sede ni bases separadas siguen teniendo la ficha oficial de
 la BDNS. En esos casos la interfaz no etiqueta el enlace como solicitud directa: explica
@@ -74,6 +74,8 @@ La telemetría de administración es optativa y separada. Tras consentimiento ex
 solo envía tipos de evento permitidos, categorías generales, duración, rutas y códigos
 BDNS públicos. Los identificadores aleatorios se transforman con HMAC; no se registran
 IP en la base, claves de IA, perfil, código postal, mensajes, documentos ni texto libre.
-El panel `/admin` usa una contraseña solo de servidor, cookie `HttpOnly`, `SameSite=Strict`,
-caducidad de ocho horas, límite de intentos y respuestas sin caché. Los eventos tienen
-retención máxima de 365 días.
+El panel deduplica pestañas para mostrar navegadores activos. `/admin` usa una contraseña
+solo de servidor, cookie `HttpOnly`, `Secure`, `SameSite=Strict`, caducidad de ocho horas,
+límite de intentos persistente en Neon y respuestas sin caché. Los eventos tienen
+retención máxima de 365 días. «Borrar mis datos» elimina también los eventos asociados al
+identificador seudonimizado y renueva ese identificador.

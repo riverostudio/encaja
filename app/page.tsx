@@ -111,6 +111,7 @@ export default function PaginaRadar() {
   const [sincronizando, setSincronizando] = useState(false);
   const [abierta, setAbierta] = useState<string | null>(null);
   const debounce = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const debounceMetrica = useRef<ReturnType<typeof setTimeout> | null>(null);
   const ultimaCarga = useRef(0);
   const inicializado = useRef(false);
   const centinela = useRef<HTMLDivElement | null>(null);
@@ -159,8 +160,16 @@ export default function PaginaRadar() {
     // El CP puede cambiar la comunidad mientras la primera búsqueda sigue en
     // vuelo. Una respuesta antigua nunca debe pisar la región ya detectada.
     if (numeroCarga !== ultimaCarga.current) return;
+    if (debounceMetrica.current) clearTimeout(debounceMetrica.current);
     if (consulta.trim()) {
-      registrarBusquedaLocal(consulta, (d.filas?.length ?? 0) + (d.prestaciones?.length ?? 0));
+      const textoFinal = consulta;
+      const totalFinal = (d.filas?.length ?? 0) + (d.prestaciones?.length ?? 0);
+      // El radar responde rápido, pero la métrica espera a que termine la ráfaga
+      // de escritura para no contar "a", "alq", "alquiler" como tres búsquedas.
+      debounceMetrica.current = setTimeout(
+        () => registrarBusquedaLocal(textoFinal, totalFinal),
+        1_000,
+      );
     }
     setFilas(
       (d.filas ?? []).map((c) => ({
@@ -249,6 +258,13 @@ export default function PaginaRadar() {
       if (debounce.current) clearTimeout(debounce.current);
     };
   }, [cargarLista]);
+
+  useEffect(
+    () => () => {
+      if (debounceMetrica.current) clearTimeout(debounceMetrica.current);
+    },
+    [],
+  );
 
   useEffect(() => {
     if (cp.length !== 5) return;

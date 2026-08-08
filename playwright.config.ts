@@ -19,6 +19,9 @@ export default defineConfig({
       ...process.env,
       ENCAJA_ADMIN_PASSWORD: "clave-e2e",
       ENCAJA_ADMIN_SESSION_SECRET: "secreto-de-pruebas-e2e-no-usar-en-produccion",
+      // Las pruebas nunca deben escribir en la base Neon aunque exista un .env local.
+      DATABASE_URL: "",
+      VERCEL: "",
     },
     url: "http://127.0.0.1:3102",
     reuseExistingServer: !process.env.CI,

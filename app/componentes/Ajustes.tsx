@@ -208,10 +208,10 @@ export default function Ajustes({ onCerrar }: { onCerrar: () => void }) {
 
           {APP_PUBLICA && (
             <div className="filete mt-10 pt-6">
-              <p className="rotulo mb-2">Estadísticas anónimas</p>
+              <p className="rotulo mb-2">Estadísticas sin nombre</p>
               <p className="nota mb-4">
-                Ayudan a saber cuántas personas usan Encaja y qué funciones sirven. No incluyen tu
-                perfil, búsquedas escritas, mensajes ni claves de IA.
+                Se guardan seudonimizadas y ayudan a saber cuántos navegadores usan Encaja y qué
+                funciones sirven. No incluyen tu perfil, búsquedas escritas, mensajes ni claves de IA.
               </p>
               <div className="flex flex-wrap gap-3">
                 <button
@@ -249,10 +249,21 @@ export default function Ajustes({ onCerrar }: { onCerrar: () => void }) {
                 </button>
                 <button
                   className="btn btn-linea"
-                  onClick={() => {
-                    if (!window.confirm("¿Borrar perfil, entrevistas, expedientes y clave de este navegador?")) return;
-                    borrarDatosPublicos();
+                  onClick={async () => {
+                    if (
+                      !window.confirm(
+                        "¿Borrar perfil, entrevistas, expedientes, actividad, clave y estadísticas asociadas?",
+                      )
+                    )
+                      return;
+                    const completo = await borrarDatosPublicos();
                     olvidarIaLocal();
+                    if (!completo) {
+                      window.alert(
+                        "Los datos del navegador se han borrado, pero no se pudo confirmar el borrado de las estadísticas del servidor. Vuelve a pulsar este botón cuando tengas conexión.",
+                      );
+                      return;
+                    }
                     router.push("/");
                     router.refresh();
                   }}

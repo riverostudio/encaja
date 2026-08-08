@@ -232,6 +232,35 @@ test("las estadísticas solo se envían después del consentimiento", async ({ p
   await expect.poll(() => peticiones.length).toBeGreaterThan(0);
 });
 
+test("escribir despacio cuenta una sola búsqueda terminada", async ({ page }) => {
+  await page.addInitScript(() => {
+    localStorage.setItem("encaja.entrada", "1");
+    localStorage.setItem("encaja.aviso-legal.v2", "1");
+    localStorage.setItem("encaja.consentimiento-metricas", "si");
+  });
+  const eventos: { tipo?: string; categoria?: string }[] = [];
+  page.on("request", (req) => {
+    if (new URL(req.url()).pathname !== "/api/metricas" || req.method() !== "POST") return;
+    try {
+      const cuerpo = req.postDataJSON() as { tipo?: string; categoria?: string };
+      if (cuerpo.tipo === "busqueda") eventos.push(cuerpo);
+    } catch {
+      // Los latidos enviados como beacon no forman parte de esta comprobación.
+    }
+  });
+  await page.route(/\/api\/convocatorias(?:\?.*)?$/, async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ filas: [], relajado: null, prestaciones: [] }),
+    });
+  });
+  await page.goto("/");
+  await page.getByPlaceholder("Busca una ayuda…").pressSequentially("alquiler", { delay: 350 });
+  await expect.poll(() => eventos.length, { timeout: 5_000 }).toBe(1);
+  expect(eventos[0]?.categoria).toBe("vivienda");
+});
+
 test("una respuesta de Encajo viaja en la siguiente petición", async ({ page }) => {
   let perfilSegunda = "";
   let llamadas = 0;
@@ -315,6 +344,8 @@ test("el panel del usuario muestra tiempo, búsquedas e historial con vigencia",
         tiempoRadarSegundos: 1200,
         paginasVistas: 12,
         usosAgente: 2,
+        busquedasTotal: 17,
+        ayudasConsultadasTotal: 23,
         busquedas: [{ texto: "ayuda para alquiler", categoria: "vivienda", resultados: 4, fecha: "2026-08-07T10:00:00.000Z" }],
         ayudasVistas: [{
           codigoBdns: "123456",
@@ -332,15 +363,66 @@ test("el panel del usuario muestra tiempo, búsquedas e historial con vigencia",
   await page.goto("/expedientes");
   await expect(page.getByText("1 h 5 min")).toBeVisible();
   await expect(page.getByText("20 min")).toBeVisible();
+  await expect(page.getByText("17", { exact: true })).toBeVisible();
+  await expect(page.getByText("23", { exact: true })).toBeVisible();
   await expect(page.getByText("ayuda para alquiler")).toBeVisible();
   await expect(page.getByText("Ayuda antigua para el alquiler")).toBeVisible();
   await expect(page.getByText("Plazo cerrado")).toBeVisible();
 });
 
-test("el panel admin exige clave y nunca devuelve secretos del cliente", async ({ page }) => {
-  const metrica = await page.request.post("/api/metricas", {
+test("el panel admin exige clave y nunca devuelve secretos del cliente", async ({ page }, testInfo) => {
+  const movil = testInfo.project.name === "mobile";
+  const visitanteId = movil
+    ? "11111111-1111-4111-8111-111111111112"
+    : "11111111-1111-4111-8111-111111111111";
+  const codigoBdns = movil ? "900002" : "900001";
+  const sinOrigen = await page.request.post("/api/metricas", {
+    data: {
+      visitanteId,
+      sesionId: "22222222-2222-4222-8222-222222222222",
+      tipo: "pagina",
+      pagina: "/",
+    },
+  });
+  expect(sinOrigen.status()).toBe(403);
+
+  const demasiadoGrande = await page.request.post("/api/metricas", {
+    headers: { Origin: "http://127.0.0.1:3102" },
     data: {
       visitanteId: "11111111-1111-4111-8111-111111111111",
+      sesionId: "22222222-2222-4222-8222-222222222222",
+      tipo: "pagina",
+      pagina: "/",
+      relleno: "x".repeat(5_000),
+    },
+  });
+  expect(demasiadoGrande.status()).toBe(413);
+
+  const duracionInvalida = await page.request.post("/api/metricas", {
+    headers: { Origin: "http://127.0.0.1:3102" },
+    data: {
+      visitanteId,
+      sesionId: "22222222-2222-4222-8222-222222222222",
+      tipo: "latido",
+      pagina: "/",
+      duracionSegundos: "mucho",
+    },
+  });
+  expect(duracionInvalida.status()).toBe(400);
+
+  const jsonRoto = await page.request.post("/api/metricas", {
+    headers: {
+      "Content-Type": "application/json",
+      Origin: "http://127.0.0.1:3102",
+    },
+    data: "{",
+  });
+  expect(jsonRoto.status()).toBe(400);
+
+  const metrica = await page.request.post("/api/metricas", {
+    headers: { Origin: "http://127.0.0.1:3102" },
+    data: {
+      visitanteId,
       sesionId: "22222222-2222-4222-8222-222222222222",
       tipo: "agente_usado",
       pagina: "/",
@@ -351,6 +433,17 @@ test("el panel admin exige clave y nunca devuelve secretos del cliente", async (
     },
   });
   expect(metrica.status()).toBe(202);
+  const ayuda = await page.request.post("/api/metricas", {
+    headers: { Origin: "http://127.0.0.1:3102" },
+    data: {
+      visitanteId,
+      sesionId: "22222222-2222-4222-8222-222222222222",
+      tipo: "ayuda_abierta",
+      pagina: "/",
+      codigoBdns,
+    },
+  });
+  expect(ayuda.status()).toBe(202);
 
   await page.goto("/admin");
   await expect(page.getByRole("heading", { name: "Administración" })).toBeVisible();
@@ -367,6 +460,16 @@ test("el panel admin exige clave y nunca devuelve secretos del cliente", async (
   const texto = await respuesta.text();
   expect(texto).not.toContain("sk-no-debe-guardarse");
   expect(texto).not.toContain("dato privado");
+
+  const borrado = await page.request.delete("/api/metricas", {
+    headers: { Origin: "http://127.0.0.1:3102" },
+    data: { visitanteId },
+  });
+  expect(borrado.status()).toBe(200);
+  const despues = await page.request.get("/api/admin/metricas?dias=7");
+  expect(((await despues.json()) as { ayudas: { codigo: string }[] }).ayudas).not.toContainEqual(
+    expect.objectContaining({ codigo: codigoBdns }),
+  );
 });
 
 test("mantenimiento público protegido y cabeceras activas", async ({ page }) => {

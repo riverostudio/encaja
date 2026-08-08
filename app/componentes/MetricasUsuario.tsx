@@ -64,8 +64,8 @@ export default function MetricasUsuario() {
         {[
           [duracion(metricas.tiempoActivoSegundos), "dentro de Encaja"],
           [duracion(metricas.tiempoRadarSegundos), "buscando ayudas"],
-          [String(metricas.busquedas.length), "búsquedas guardadas"],
-          [String(metricas.ayudasVistas.length), "ayudas consultadas"],
+          [String(metricas.busquedasTotal), "búsquedas realizadas"],
+          [String(metricas.ayudasConsultadasTotal), "consultas de ayudas"],
         ].map(([valor, etiqueta]) => (
           <div key={etiqueta} className="rounded-lg border border-[var(--linea)] bg-[var(--lienzo-alto)] p-4">
             <strong className="display cifra block text-[25px] font-normal">{valor}</strong>

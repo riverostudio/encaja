@@ -122,7 +122,6 @@ export default function PaginaAdmin() {
             <input
               className="campo w-full !text-[22px]"
               type="password"
-              inputMode="numeric"
               autoComplete="current-password"
               value={clave}
               onChange={(e) => setClave(e.target.value)}
@@ -186,14 +185,14 @@ export default function PaginaAdmin() {
               void cargar(periodo);
             }}
           >
-            {periodo === 1 ? "Hoy" : periodo === 365 ? "1 año" : `${periodo} días`}
+            {periodo === 1 ? "Últimas 24 h" : periodo === 365 ? "1 año" : `${periodo} días`}
           </button>
         ))}
       </div>
 
       <section className="mt-7 grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-5" aria-label="Resumen">
         {[
-          [datos.resumen.activosAhora, "usando ahora", "var(--bosque)"],
+          [datos.resumen.activosAhora, "navegadores activos", "var(--bosque)"],
           [datos.resumen.visitantes, "visitantes", "var(--tinta)"],
           [datos.resumen.visitantesTotal, "visitantes · 1 año", "var(--tinta)"],
           [datos.resumen.sesiones, "sesiones", "var(--tinta)"],
@@ -258,12 +257,12 @@ export default function PaginaAdmin() {
           </div>
         </section>
         <section>
-          <h2 className="rotulo">Personas usando la app ahora</h2>
+          <h2 className="rotulo">Navegadores usando la app ahora</h2>
           <div className="mt-3">
             {datos.activos.length === 0 ? (
               <p className="nota">Nadie con estadísticas aceptadas en los últimos dos minutos.</p>
             ) : datos.activos.map((activo) => (
-              <div key={activo.sesion} className="fila !grid-cols-[auto_1fr_auto]">
+              <div key={activo.visitante} className="fila !grid-cols-[auto_1fr_auto]">
                 <span className="h-2 w-2 rounded-full bg-[var(--bosque)]" />
                 <span className="text-[13px]">{activo.pagina}</span>
                 <span className="cifra text-[11px] text-[var(--niebla)]">{duracion(activo.segundos)}</span>
@@ -274,7 +273,7 @@ export default function PaginaAdmin() {
       </div>
 
       <section className="mt-12">
-        <h2 className="rotulo">Últimas interacciones anónimas</h2>
+        <h2 className="rotulo">Últimas interacciones seudonimizadas</h2>
         <div className="mt-3 overflow-x-auto rounded-lg border border-[var(--linea)]">
           <table className="w-full min-w-[720px] text-left text-[12px]">
             <thead className="bg-[var(--lienzo-alto)] text-[var(--niebla)]">
@@ -296,7 +295,7 @@ export default function PaginaAdmin() {
       </section>
 
       <p className="nota mt-10 max-w-3xl border-t border-[var(--linea)] pt-6">
-        Solo se cuentan visitantes que aceptaron estadísticas. No se almacenan claves de IA,
+        Solo se cuentan navegadores que aceptaron estadísticas. No se almacenan claves de IA,
         perfiles, códigos postales, textos de búsqueda, mensajes del agente, documentos, IP ni
         datos bancarios. Los identificadores aleatorios se transforman mediante HMAC antes de
         guardarse y los eventos caducan después de 365 días.

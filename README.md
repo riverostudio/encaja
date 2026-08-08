@@ -109,7 +109,7 @@ sin clave. La clave se guarda **en tu navegador** y se transmite cifrada únicam
 solicitar una operación de IA; Encaja no la conserva en el servidor. Perfil,
 entrevistas y expedientes permanecen en ese navegador y se pueden exportar o borrar.
 
-Si el visitante acepta estadísticas anónimas, el servidor registra únicamente eventos
+Si el visitante acepta estadísticas seudonimizadas, el servidor registra únicamente eventos
 permitidos: páginas, categorías generales, funciones usadas, duración y códigos públicos
 BDNS. No recibe textos de búsqueda, mensajes, perfil ni claves de IA. El panel `/admin`
 está protegido por una clave guardada solo como variable de entorno y una cookie

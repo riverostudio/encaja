@@ -7,7 +7,7 @@ export default function Privacidad() {
       <h1 className="display mt-2 text-[34px] leading-tight">
         Aviso legal, privacidad e inteligencia artificial
       </h1>
-      <p className="nota mt-3">Última actualización: 7 de agosto de 2026.</p>
+      <p className="nota mt-3">Última actualización: 8 de agosto de 2026.</p>
 
       <div
         className="mt-7 rounded-lg border p-5 text-[14px] leading-relaxed"
@@ -89,10 +89,18 @@ export default function Privacidad() {
             para construir tu panel privado. Encaja no crea una cuenta ni conserva esos datos
             personales en una base de usuarios. Puedes exportarlos o borrarlos desde Ajustes.
           </p>
+          <p className="mt-3">
+            Este historial local funciona también cuando eliges «Solo necesarias», porque es el
+            que permite mostrar «Mi actividad». No se envía al servidor sin consentimiento y
+            permanece hasta que uses «Borrar mis datos» o elimines los datos del sitio en el
+            navegador.
+          </p>
         </section>
 
         <section>
-          <h2 className="display text-[21px] text-[var(--tinta)]">Estadísticas anónimas y consentimiento</h2>
+          <h2 className="display text-[21px] text-[var(--tinta)]">
+            Estadísticas seudonimizadas y consentimiento
+          </h2>
           <p className="mt-2">
             Solo si eliges «Aceptar estadísticas», Encaja registra páginas visitadas, categorías
             generales de búsqueda, funciones utilizadas, duración de la sesión y códigos públicos
@@ -100,11 +108,33 @@ export default function Privacidad() {
             respuestas, mensajes del orientador, documentos ni claves de inteligencia artificial.
           </p>
           <p className="mt-3">
-            El navegador usa identificadores aleatorios que el servidor transforma mediante HMAC
-            antes de almacenarlos. No se guarda la dirección IP en la base de métricas. Los eventos
-            se conservan como máximo 365 días en Postgres administrado por Neon y conectado a
-            Vercel en región europea. Puedes retirar el consentimiento cuando quieras desde
-            Ajustes; desde ese momento dejan de enviarse eventos nuevos.
+            La base jurídica de este envío es tu consentimiento, que puedes retirar cuando quieras
+            desde Ajustes; desde ese momento dejan de enviarse eventos nuevos. El navegador usa
+            identificadores aleatorios que el servidor transforma mediante HMAC antes de
+            almacenarlos. Son datos seudonimizados —permiten distinguir visitas sin conocer tu
+            identidad—, no datos completamente anónimos. Los eventos se conservan como máximo 365
+            días en Postgres administrado por Neon y conectado a Vercel en la región europea de
+            Frankfurt.
+          </p>
+        </section>
+
+        <section>
+          <h2 className="display text-[21px] text-[var(--tinta)]">
+            Seguridad, proveedores y conservación
+          </h2>
+          <p className="mt-2">
+            Vercel aloja la aplicación y Neon aloja la base de métricas como proveedores técnicos.
+            Aunque Encaja no guarda la IP en esa base, Vercel puede tratarla en registros técnicos
+            y Encaja la usa temporalmente para limitar abusos. Los identificadores de intentos de
+            acceso administrativo se guardan transformados mediante HMAC y se eliminan en un máximo
+            de dos días. La cookie del panel administrativo caduca a las ocho horas.
+          </p>
+          <p className="mt-3">
+            Cuando solicitas expresamente una función de IA, el proveedor que elijas también recibe
+            los datos necesarios para contestar. Estos proveedores actúan con arreglo a sus propias
+            condiciones, garantías y políticas; no se realiza ese envío para las estadísticas de
+            uso. La seguridad del servicio y la prevención de fraude se basan en el interés legítimo
+            de proteger la aplicación y a sus usuarios.
           </p>
         </section>
 
@@ -152,9 +182,21 @@ export default function Privacidad() {
           <h2 className="display text-[21px] text-[var(--tinta)]">Control de tus datos</h2>
           <p className="mt-2">
             Usa «Descargar mis datos» para obtener una copia y «Borrar mis datos» para eliminar
-            perfil, entrevistas, expedientes y clave de este navegador. Borrar los datos del sitio
-            desde las preferencias del navegador produce el mismo efecto. En Ajustes también puedes
-            permitir o impedir en cualquier momento el envío de estadísticas anónimas.
+            perfil, entrevistas, expedientes, clave y actividad de este navegador. Si existen
+            estadísticas seudonimizadas enviadas con ese identificador, Encaja solicita también su
+            eliminación del servidor antes de renovar el identificador. Si la red falla, te lo
+            indica para que puedas reintentarlo. En Ajustes también puedes retirar o volver a dar tu
+            consentimiento.
+          </p>
+          <p className="mt-3">
+            Puedes solicitar acceso, rectificación, supresión, limitación u oposición mediante el
+            canal de incidencias del proyecto, sin publicar allí información personal; se te
+            facilitará un canal privado para continuar. También puedes presentar una reclamación
+            ante la {" "}
+            <a className="enlace" href="https://www.aepd.es/" target="_blank" rel="noreferrer">
+              Agencia Española de Protección de Datos
+            </a>
+            .
           </p>
         </section>
       </div>

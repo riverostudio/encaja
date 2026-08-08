@@ -301,13 +301,15 @@ export function exportarDatosPublicos(): void {
   );
 }
 
-export function borrarDatosPublicos(): void {
+export async function borrarDatosPublicos(): Promise<boolean> {
+  const metricasBorradas = await borrarMetricasLocales();
   localStorage.removeItem(LLAVE_PERFIL);
   localStorage.removeItem(LLAVE_EVALUACIONES);
   localStorage.removeItem(LLAVE_EXPEDIENTES);
   localStorage.removeItem(LLAVE_REGION);
   localStorage.removeItem(LLAVE_RESUMENES);
   localStorage.removeItem("encaja.entrada");
+  localStorage.removeItem("encaja.aviso-legal.v2");
   localStorage.removeItem("encaja.consentimiento-metricas");
-  borrarMetricasLocales();
+  return metricasBorradas;
 }

@@ -61,14 +61,15 @@ export default function AvisoLegalInicial() {
         Aviso inicial
       </p>
       <p className="mt-2 pr-5 text-[13px] leading-relaxed text-[var(--grafito)]">
-        Encaja usa contenido asistido por IA y puede equivocarse. Si aceptas, también enviará
-        estadísticas anónimas de uso, nunca tu perfil, mensajes ni claves de IA.
+        Encaja usa contenido asistido por IA y puede equivocarse. El panel privado guarda tu
+        actividad solo en este navegador. Si aceptas, además enviará estadísticas sin nombre y
+        seudonimizadas, nunca tu perfil, mensajes ni claves de IA.
       </p>
       <div className="mt-4 flex flex-wrap items-center gap-4">
-        <button type="button" className="btn !px-4 !py-2 !text-[12px]" onClick={() => cerrar("si")}>
+        <button type="button" className="btn btn-linea !px-4 !py-2 !text-[12px]" onClick={() => cerrar("si")}>
           Aceptar estadísticas
         </button>
-        <button type="button" className="btn-texto !text-[12px]" onClick={() => cerrar("no")}>
+        <button type="button" className="btn btn-linea !px-4 !py-2 !text-[12px]" onClick={() => cerrar("no")}>
           Solo necesarias
         </button>
         <Link href="/privacidad" className="enlace text-[12px]">

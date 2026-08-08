@@ -39,7 +39,7 @@ async function comprobar() {
   }
   const metricaInvalida = await fetch(`${base}/api/metricas`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", Origin: base },
     body: JSON.stringify({ tipo: "clave_api", valor: "no-debe-aceptarse" }),
   });
   if (metricaInvalida.status !== 400) {

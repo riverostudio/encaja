@@ -38,7 +38,7 @@ export interface ResumenAdmin {
   categorias: { nombre: string; total: number }[];
   ayudas: { codigo: string; total: number }[];
   serie: { dia: string; visitantes: number; sesiones: number; interacciones: number }[];
-  activos: { sesion: string; pagina: string; segundos: number; ultima: string }[];
+  activos: { visitante: string; pagina: string; segundos: number; ultima: string }[];
   recientes: {
     id: string;
     tipo: string;
