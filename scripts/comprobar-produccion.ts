@@ -18,10 +18,20 @@ async function esperarDespliegue(): Promise<void> {
 
 async function comprobar() {
   await esperarDespliegue();
-  for (const ruta of ["/", "/ficha", "/expedientes", "/privacidad", "/admin", "/api/estado", "/api/sync"]) {
+  for (const ruta of ["/", "/ficha", "/plan", "/expedientes", "/privacidad", "/admin", "/api/estado", "/api/sync"]) {
     const r = await fetch(`${base}${ruta}`, { redirect: "manual" });
     if (r.status !== 200) throw new Error(`${ruta}: esperaba 200 y devuelve ${r.status}`);
     console.log(`OK ${r.status} ${ruta}`);
+  }
+  const acompanamiento = await fetch(`${base}/api/acompanamiento`, {
+    headers: { "x-perfil": encodeURIComponent(JSON.stringify({ perfil: "particular", situacion: "desempleado", objetivo: "apuro" })) },
+  });
+  if (!acompanamiento.ok) {
+    throw new Error(`/api/acompanamiento debe responder (200), devuelve ${acompanamiento.status}`);
+  }
+  const plan = (await acompanamiento.json()) as { prestaciones?: unknown[]; documentos?: unknown[]; derivaciones?: unknown[] };
+  if (!plan.prestaciones?.length || !plan.documentos?.length || !plan.derivaciones?.length) {
+    throw new Error("El acompañamiento no incluye ayudas, documentos y derivación humana.");
   }
   const expedientes = await fetch(`${base}/api/expedientes`);
   if (expedientes.status !== 405) {
