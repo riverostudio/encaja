@@ -1,4 +1,6 @@
 #!/usr/bin/env tsx
+export {};
+
 const base = (process.env.ENCAJA_URL ?? "https://usar-encaja.vercel.app").replace(/\/$/, "");
 
 async function esperarDespliegue(): Promise<void> {

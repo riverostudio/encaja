@@ -201,6 +201,33 @@ export const PRESTACIONES: Prestacion[] = [
     pocosIngresos: true,
   },
   {
+    id: "formacion-fundae",
+    titular: "Cursos gratuitos para personas trabajadoras y autónomas",
+    que: "El buscador oficial de FUNDAE reúne formación subvencionada sin coste para mejorar competencias profesionales. La oferta concreta depende del sector, modalidad y fechas disponibles.",
+    quien: "Personas ocupadas, autónomas y también desempleadas; cada curso indica el colectivo al que se dirige y sus condiciones de acceso.",
+    organismo: "FUNDAE · Fundación Estatal para la Formación en el Empleo",
+    url: "https://www.fundae.es/trabajadores",
+    urlSolicitud: "https://intusu.fundae.es/trabajadores/buscador-de-cursos",
+    accion: "Buscar un curso gratuito disponible",
+    plazo: "Oferta abierta y cambiante; comprueba las fechas de cada curso",
+    requisitos: [
+      "Elegir un curso dirigido a tu situación: persona ocupada, autónoma o desempleada.",
+      "Cumplir las condiciones específicas que indique el centro o la acción formativa.",
+      "Contactar o inscribirse mediante el buscador y el centro de formación correspondiente.",
+    ],
+    busca: [
+      "formación gratuita",
+      "cursos trabajadores",
+      "cursos gratuitos",
+      "formación trabajadores",
+      "formación autónomos",
+      "fundae",
+    ],
+    para: ["cuenta_ajena", "autonomo_activo", "desempleado"],
+    pocosIngresos: false,
+    objetivos: ["aprender"],
+  },
+  {
     id: "deduccion-familia-numerosa",
     titular: "La deducción por familia numerosa",
     que: "Una deducción del IRPF que también puede solicitarse como abono anticipado. Puede aprovecharse aunque la declaración no salga a pagar.",
@@ -319,7 +346,7 @@ function cumplePerfil(
 ): boolean {
   const situacion = hechos.get("situacion");
   const ingresos = hechos.get("ingresos");
-  const vaJusto = ingresos === "menos_12000" || ingresos === "12000_18000";
+  const rentaClaramenteAlta = ingresos === "mas_40000";
   const menores = hechos.get("menores_cargo");
   const tieneMenores = Boolean(menores) && menores !== "no";
   const perfil = hechos.get("perfil");
@@ -346,7 +373,11 @@ function cumplePerfil(
   const excepcionRenta = p.admiteCircunstanciasSinRenta
     ? coincideAlguno(circunstancias, p.admiteCircunstanciasSinRenta)
     : false;
-  if (p.pocosIngresos && !vaJusto && !excepcionRenta && p.id !== "beca-mec") return false;
+  // Desconocer la renta significa «por comprobar», no «no cumple». Solo se
+  // descartan estas vías ante el tramo más alto declarado; los umbrales reales
+  // dependen del tamaño y las circunstancias del hogar y se verifican en la
+  // fuente oficial.
+  if (p.pocosIngresos && rentaClaramenteAlta && !excepcionRenta && p.id !== "beca-mec") return false;
   if (p.id === "cuc" && !tieneMenores) return false;
   return true;
 }

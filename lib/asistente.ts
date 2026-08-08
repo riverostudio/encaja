@@ -37,19 +37,33 @@ function normalizar(texto: string): string {
     .toLowerCase();
 }
 
-export function detectarEscenario(texto: string): EscenarioAsistente {
+const PATRONES_ESCENARIO: Array<{
+  escenario: Exclude<EscenarioAsistente, "general">;
+  patron: RegExp;
+}> = [
+  // Lo concreto manda sobre lo genérico. Así, «estudiante con pocos
+  // recursos» conserva las becas y «trabajador despedido» busca desempleo.
+  { escenario: "vivienda", patron: /alquiler|desahuc|vivienda|hipoteca|alojamiento/ },
+  { escenario: "estudiante", patron: /estudiant|universidad|universitari|beca|bachiller|\bfp\b|estudiar/ },
+  { escenario: "autonomo", patron: /autonom|cuenta propia|freelance|negocio propio/ },
+  { escenario: "desempleo", patron: /desemple|sin trabajo|\bparo\b|me han despedido|despedid[oa]|he perdido (?:mi|el) trabajo/ },
+  { escenario: "familia", patron: /familia|hij[oa]|madre|padre|monoparental|numerosa/ },
+  { escenario: "trabajador", patron: /trabajador|cuenta ajena|asalariad|tengo trabajo|emplead/ },
+  { escenario: "profesional", patron: /profesional/ },
+  { escenario: "pocos_recursos", patron: /no puedo pagar|pocos? recursos?|sin ingresos?|no llego|necesidad|vulnerab|exclusion|pobreza/ },
+];
+
+/** Detecta todas las necesidades expresadas, de más concreta a más general. */
+export function detectarEscenarios(texto: string): EscenarioAsistente[] {
   const q = normalizar(texto);
-  if (/no puedo pagar|pocos? recursos?|sin ingresos?|no llego|necesidad|vulnerab|exclusion|pobreza/.test(q)) {
-    return "pocos_recursos";
-  }
-  if (/alquiler|desahuc|vivienda|hipoteca|alojamiento/.test(q)) return "vivienda";
-  if (/estudiant|universidad|beca|bachiller|\bfp\b|estudiar/.test(q)) return "estudiante";
-  if (/autonom|cuenta propia|freelance|negocio propio/.test(q)) return "autonomo";
-  if (/profesional/.test(q)) return "profesional";
-  if (/trabajador|cuenta ajena|asalariad|tengo trabajo|emplead/.test(q)) return "trabajador";
-  if (/desemple|sin trabajo|paro|me han despedido/.test(q)) return "desempleo";
-  if (/familia|hij[oa]|madre|padre|monoparental|numerosa/.test(q)) return "familia";
-  return "general";
+  const detectados = PATRONES_ESCENARIO.filter(({ patron }) => patron.test(q)).map(
+    ({ escenario }) => escenario,
+  );
+  return detectados.length ? detectados : ["general"];
+}
+
+export function detectarEscenario(texto: string): EscenarioAsistente {
+  return detectarEscenarios(texto)[0];
 }
 
 const CONSULTAS: Record<Exclude<EscenarioAsistente, "general">, string> = {
@@ -65,9 +79,51 @@ const CONSULTAS: Record<Exclude<EscenarioAsistente, "general">, string> = {
 };
 
 export function consultaParaAsistente(texto: string): string {
-  const escenario = detectarEscenario(texto);
-  if (escenario !== "general") return CONSULTAS[escenario];
+  const escenarios = detectarEscenarios(texto).filter((e) => e !== "general");
+  if (escenarios.length) {
+    return escenarios.map((e) => CONSULTAS[e]).join("|");
+  }
   return texto.replace(/[|\n\r]/g, " ").trim().slice(0, 240);
+}
+
+function anadirValor(hechos: Map<string, string>, clave: string, valor: string): void {
+  const actuales = (hechos.get(clave) ?? "").split(",").filter(Boolean);
+  if (!actuales.includes(valor)) hechos.set(clave, [...actuales, valor].join(","));
+}
+
+function tramoIngresosExplicito(texto: string): string | null {
+  const q = normalizar(texto).replace(/\s+/g, " ");
+  const match = q.match(
+    /(?:ingres(?:o|os)|gan(?:o|amos|an)|cobr(?:o|amos|an)|entran?|renta)?[^\d]{0,24}(\d{1,3}(?:[.\s]\d{3})+|\d{4,6})(?:[,.]\d{1,2})?\s*(?:€|euros?)(?:\s*(?:al|por)\s+ano)?/,
+  );
+  if (!match) return null;
+  const cantidad = Number(match[1].replace(/[.\s]/g, ""));
+  if (!Number.isFinite(cantidad)) return null;
+  if (cantidad < 12_000) return "menos_12000";
+  if (cantidad < 18_000) return "12000_18000";
+  if (cantidad < 25_000) return "18000_25000";
+  if (cantidad < 40_000) return "25000_40000";
+  return "mas_40000";
+}
+
+function numeroHijosExplicito(texto: string): string | null {
+  const q = normalizar(texto);
+  const match = q.match(/\b(un|una|1|dos|2|tres|3|cuatro|4|cinco|5|seis|6)\s+hij[oa]s?\b/);
+  if (!match) return null;
+  const n = { un: 1, una: 1, dos: 2, tres: 3, cuatro: 4, cinco: 5, seis: 6 }[
+    match[1]
+  ] ?? Number(match[1]);
+  return n >= 3 ? "3+" : String(n);
+}
+
+function personasHogarExplicitas(texto: string): string | null {
+  const q = normalizar(texto);
+  const match = q.match(
+    /\b(?:somos|vivimos|viven)\s+(una|1|dos|2|tres|3|cuatro|4|cinco|5|seis|6)(?:\s+personas?)?(?:\s+en casa)?\b/,
+  );
+  if (!match) return null;
+  const n = { una: 1, dos: 2, tres: 3, cuatro: 4, cinco: 5, seis: 6 }[match[1]] ?? Number(match[1]);
+  return n >= 5 ? "5+" : String(n);
 }
 
 /**
@@ -81,24 +137,47 @@ export function hechosInferidosParaBuscar(
   mensajeActual = "",
 ): Map<string, string> {
   const hechos = new Map(originales);
+  const q = normalizar(mensajeActual);
+  const escenarios = new Set(detectarEscenarios(mensajeActual));
+  escenarios.add(escenario);
   const cpEscrito = mensajeActual.match(/\b((?:0[1-9]|[1-4]\d|5[0-2])\d{3})\b/)?.[1];
   if (cpEscrito) hechos.set("cp", cpEscrito);
   if (
-    ["pocos_recursos", "estudiante", "trabajador", "desempleo", "vivienda", "familia"].includes(
-      escenario,
+    [...escenarios].some((e) =>
+      ["pocos_recursos", "estudiante", "trabajador", "desempleo", "vivienda", "familia"].includes(e),
     ) &&
     !hechos.has("perfil")
   ) {
     hechos.set("perfil", "particular");
   }
-  if (escenario === "pocos_recursos") hechos.set("ingresos", "menos_12000");
-  if (escenario === "estudiante") hechos.set("situacion", "estudiante");
-  if (escenario === "autonomo") {
+  // «Pocos recursos» nunca se transforma en una cifra inventada. Solo se usa
+  // un tramo cuando la persona ha escrito una cantidad de forma explícita.
+  const ingresos = tramoIngresosExplicito(mensajeActual);
+  if (ingresos) hechos.set("ingresos", ingresos);
+  const menores = numeroHijosExplicito(mensajeActual);
+  if (menores) hechos.set("menores_cargo", menores);
+  const personasHogar = personasHogarExplicitas(mensajeActual);
+  if (personasHogar) hechos.set("personas_hogar", personasHogar);
+  if (/familia numerosa|madre numerosa|padre numeroso/.test(q)) {
+    anadirValor(hechos, "circunstancias", "familia_numerosa");
+  }
+  if (/monoparental|madre soltera|padre soltero|madre sola|padre solo/.test(q)) {
+    anadirValor(hechos, "circunstancias", "monoparental");
+  }
+  if (escenarios.has("vivienda")) anadirValor(hechos, "objetivo", "vivienda");
+  if (escenarios.has("familia")) anadirValor(hechos, "objetivo", "familia");
+  if (escenarios.has("estudiante") || /formacion|formarme|curso/.test(q)) {
+    anadirValor(hechos, "objetivo", "aprender");
+  }
+  if (escenarios.has("estudiante")) hechos.set("situacion", "estudiante");
+  if (escenarios.has("autonomo")) {
     hechos.set("perfil", "autonomo");
     hechos.set("situacion", "autonomo_activo");
   }
-  if (escenario === "trabajador") hechos.set("situacion", "cuenta_ajena");
-  if (escenario === "desempleo") hechos.set("situacion", "desempleado");
+  if (escenarios.has("trabajador") && !escenarios.has("desempleo")) {
+    hechos.set("situacion", "cuenta_ajena");
+  }
+  if (escenarios.has("desempleo")) hechos.set("situacion", "desempleado");
   return hechos;
 }
 
@@ -107,17 +186,17 @@ const TERMINOS_DIRECTOS: Record<EscenarioAsistente, string[]> = {
   estudiante: ["beca", "estudios"],
   autonomo: ["cese", "autónomo"],
   profesional: ["formación"],
-  trabajador: ["bono social"],
+  trabajador: ["formación gratuita", "cursos trabajadores"],
   desempleo: ["paro", "subsidio", "desempleo"],
   vivienda: ["alquiler", "bono social"],
-  familia: ["familia", "hijo", "infancia"],
+  familia: ["familia", "hijo", "infancia", "bono social", "ingreso mínimo vital"],
   general: [],
 };
 
 export function terminosDirectosParaAsistente(texto: string): string[] {
-  const escenario = detectarEscenario(texto);
   const propios = texto.trim().length >= 3 ? [texto.trim().slice(0, 240)] : [];
-  return [...propios, ...TERMINOS_DIRECTOS[escenario]];
+  const guiados = detectarEscenarios(texto).flatMap((escenario) => TERMINOS_DIRECTOS[escenario]);
+  return [...new Set([...propios, ...guiados])];
 }
 
 export function recursoDesdePrestacion(p: Prestacion): RecursoAsistente {
@@ -149,7 +228,7 @@ export function preguntasQueFaltan(
     preguntas.push("¿Cuál es tu código postal?");
   }
   if (
-    ["pocos_recursos", "vivienda", "familia", "trabajador"].includes(escenario) &&
+    ["pocos_recursos", "vivienda", "familia"].includes(escenario) &&
     !hechos.has("ingresos")
   ) {
     preguntas.push("¿En qué tramo están aproximadamente los ingresos anuales de tu hogar?");
@@ -192,35 +271,58 @@ export function convocatoriaRelevanteParaEscenario(
   texto: string,
   escenario: EscenarioAsistente,
 ): boolean {
+  return puntuarConvocatoriaParaEscenario(texto, [escenario]) > 0;
+}
+
+const PATRONES_RELEVANCIA: Partial<Record<EscenarioAsistente, RegExp>> = {
+  autonomo: /autonom|autoemple|emprend|pyme|negocio|actividad economica|empresa/,
+  estudiante: /estudiant|universit|beca|estudio|bachiller|formacion profesional|doctorad|tesis|practicas/,
+  trabajador: /concili|\btrabajador|\bemplead|\basalariad|\bcuenta ajena|formacion profesional para el empleo|formacion subvencionada|curso gratuito|transporte.{0,30}laboral|laboral.{0,30}transporte/,
+  pocos_recursos: /vulnerab|exclusion|pobreza|emergencia|renta|ingreso|alquiler|vivienda|necesidad|familia|infancia|comedor|alimento/,
+  desempleo: /desemple|parad[oa]|sin trabajo|insercion laboral|empleabilidad/,
+  vivienda: /alquiler|vivienda|alojamiento|desahuc|hipoteca/,
+  familia: /familia|infancia|hij[oa]|concili|comedor|libros/,
+};
+
+/**
+ * Prioriza convocatorias útiles y penaliza el ruido típico de la BDNS. Las
+ * subvenciones nominativas y los premios no son una vía abierta para alguien
+ * que llega buscando una necesidad crítica.
+ */
+export function puntuarConvocatoriaParaEscenario(
+  texto: string,
+  escenarios: EscenarioAsistente[],
+  mensajeActual = "",
+): number {
   const q = normalizar(texto);
-  if (escenario === "autonomo") {
-    return /autonom|autoemple|emprend|pyme|negocio|actividad economica|empresa/.test(q);
-  }
-  if (escenario === "estudiante") {
-    return /estudiant|universit|beca|estudio|bachiller|formacion profesional|doctorad|tesis|practicas/.test(
+  const peticion = normalizar(mensajeActual);
+  if (
+    /subvencion nominativa|concesion directa (?:a|al)|subvencion (?:directa )?a la entidad|subvencion (?:directa )?a (?:la )?(?:fundacion|asociacion|sociedad|federacion)|aportacion nominativa/.test(
       q,
-    );
+    )
+  ) {
+    return -500;
   }
-  if (escenario === "trabajador") {
+  if (/\bpremios?\b/.test(q) && !/\bpremios?\b|concurso/.test(peticion)) return -300;
+  if (
+    /centros? docentes? (?:espanoles? )?en el exterior|centros? docentes? en el exterior|creacion joven/.test(
+      q,
+    ) &&
+    !/exterior|creacion/.test(peticion)
+  ) {
+    return -250;
+  }
+
+  let puntuacion = 0;
+  for (const [indice, escenario] of escenarios.entries()) {
+    if (escenario === "general" || escenario === "profesional") continue;
     const esSoloOtroPerfil =
       /desemple|parad[oa]|sin trabajo|estudiant|universit|doctorad|beca/.test(q) &&
       !/\btrabajador|\bemplead|\basalariad|\bcuenta ajena/.test(q);
-    return (
-      !esSoloOtroPerfil &&
-      /concili|\btrabajador|\bemplead|\basalariad|\bcuenta ajena|formacion profesional para el empleo|transporte.{0,30}laboral|laboral.{0,30}transporte/.test(
-        q,
-      )
-    );
+    if (escenario === "trabajador" && esSoloOtroPerfil) continue;
+    if (PATRONES_RELEVANCIA[escenario]?.test(q)) puntuacion += Math.max(20, 100 - indice * 15);
   }
-  if (escenario === "pocos_recursos") {
-    return /vulnerab|exclusion|pobreza|emergencia|renta|ingreso|alquiler|vivienda|necesidad|familia|infancia|comedor|alimento/.test(
-      q,
-    );
-  }
-  if (escenario === "desempleo") return /desemple|parad[oa]|sin trabajo|insercion laboral|empleabilidad/.test(q);
-  if (escenario === "vivienda") return /alquiler|vivienda|alojamiento|desahuc|hipoteca/.test(q);
-  if (escenario === "familia") return /familia|infancia|hij[oa]|concili|comedor|libros/.test(q);
-  return escenario !== "profesional";
+  return puntuacion;
 }
 
 export function respuestaGuiada(
@@ -245,69 +347,90 @@ export function respuestaGuiada(
   return `${aclaracion}He encontrado ${tipo}. Te las dejo con sus requisitos conocidos, plazo y acceso oficial.${siguiente}`;
 }
 
-const PATRON_PREGUNTA_NO_AUTORIZADA =
-  /[¿?]|\bpara (?:poder )?afinar\b|\bnecesit(?:o|amos|aría|aríamos) (?:saber|conocer)\b|\b(?:nos|me) falt(?:a|aría)\b|\b(?:dime|cuéntame|indícame|confírmame)\b/i;
-const PATRON_INTERPRETACION_DE_PLAZO =
-  /\bplazo\b|\babiert[ao]s?\b|\bcerrad[ao]s?\b|\bhan? cerrado\b|\bfinaliza[n]?\b|\bdisponible[s]? hasta\b/i;
-
 /**
- * La IA redacta la explicación, pero no decide qué datos pedir. Eliminamos
- * cualquier intento de seguimiento y añadimos únicamente las preguntas que
- * Encaja ha calculado de forma determinista a partir del perfil real.
+ * La IA no redacta hechos: solo ordena IDs que Encaja ya recuperó y validó.
+ * El resultado visible (títulos, requisitos, plazos y enlaces) siempre sale
+ * del catálogo oficial, nunca del texto libre del modelo.
  */
-export function respuestaIaSegura(texto: string, preguntas: string[]): string {
-  const limpio = texto
-    .replace(/\*\*/g, "")
-    .replace(/^#{1,6}\s*/gm, "")
-    .replace(/\[([^\]]+)]\([^)]+\)/g, "$1")
-    .trim();
-  const explicacion = limpio
-    .split(/\n{2,}|(?<=[.!?])\s+(?=[A-ZÁÉÍÓÚ¿])/)
-    .map((parte) => parte.trim())
-    .filter(
-      (parte) =>
-        parte &&
-        !PATRON_PREGUNTA_NO_AUTORIZADA.test(parte) &&
-        !PATRON_INTERPRETACION_DE_PLAZO.test(parte),
-    )
-    .join(" ")
-    .trim()
-    .slice(0, 2_500);
-  if (!explicacion) return "";
-  const seguimiento = preguntas.length
-    ? `\n\nPara afinar y no mezclar ayudas: ${preguntas.join(" ")}`
-    : "";
-  return `${explicacion}${seguimiento}`.slice(0, 3_000);
-}
-
-export function promptConversacional(args: {
-  historial: MensajeAsistente[];
+export function promptRankingRecursos(args: {
+  mensaje: string;
   perfil: string;
   recursos: RecursoAsistente[];
-  preguntas: string[];
 }): string {
-  return `Eres el orientador de Encaja, una aplicación española de ayudas públicas.
+  const catalogo = args.recursos.map((r) => ({
+    id: r.id,
+    titulo: r.titulo,
+    organismo: r.organismo,
+    resumen: r.resumen,
+    requisitos: r.requisitos,
+    plazo: r.plazo,
+  }));
+  return `OBJETIVO
+Ordena las opciones recuperadas por Encaja según su utilidad probable para la necesidad expresada.
 
-Tu objetivo es escuchar a la persona, explicar en lenguaje muy sencillo qué opciones pueden servirle y qué dato falta para afinar.
+CRITERIOS DE ÉXITO
+- Devuelve solo IDs existentes en CATÁLOGO, sin inventar ni modificar ninguno.
+- Prioriza primero prestaciones o vías directas y después convocatorias claramente relacionadas.
+- No decidas que la persona cumple requisitos: faltan comprobaciones oficiales.
+- No deduzcas ingresos, convivencia, cotizaciones, edad, discapacidad ni ninguna circunstancia no escrita.
+- No crees explicaciones, requisitos, cuantías, fechas, enlaces ni nombres de ayudas.
+- Si una opción no guarda relación clara, omítela.
+- Máximo 5 IDs, sin duplicados.
 
-REGLAS OBLIGATORIAS:
-- Usa únicamente los recursos del CATÁLOGO RECUPERADO de esta petición. No inventes ayudas, cuantías, requisitos, plazos ni enlaces.
-- Habla de "posible ayuda" hasta que se hayan comprobado todos los requisitos oficiales.
-- Si una convocatoria está cerrada, dilo claramente y no invites a solicitarla ahora.
-- Los botones y enlaces los dibuja la interfaz: no escribas URLs.
-- No pidas DNI, cuenta bancaria, contraseña, clave API ni otros datos sensibles.
-- Responde en español claro, cálido y directo, con un máximo de 130 palabras.
-- Escribe texto plano: no uses Markdown, asteriscos, títulos ni enlaces.
-- No hagas preguntas ni menciones datos que falten. La aplicación añadirá después, de forma segura, las preguntas necesarias.
-- No interpretes ni resumas fechas o estados de plazo. Las tarjetas de Encaja los muestran de forma calculada.
+SALIDA JSON EXACTA
+{"ids":["id-existente"]}
 
-PERFIL CONOCIDO: ${args.perfil}
+NECESIDAD ESCRITA: ${JSON.stringify(args.mensaje)}
+PERFIL CONOCIDO: ${JSON.stringify(args.perfil)}
+CATÁLOGO: ${JSON.stringify(catalogo)}`;
+}
 
-CATÁLOGO RECUPERADO:
-${JSON.stringify(args.recursos)}
+function extraerObjetoJson(texto: string): unknown {
+  const limpio = texto.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "").trim();
+  const inicio = limpio.indexOf("{");
+  const fin = limpio.lastIndexOf("}");
+  if (inicio < 0 || fin <= inicio) return null;
+  try {
+    return JSON.parse(limpio.slice(inicio, fin + 1));
+  } catch {
+    return null;
+  }
+}
 
-CONVERSACIÓN:
-${args.historial.map((m) => `${m.rol.toUpperCase()}: ${m.texto}`).join("\n")}
+/** Rechaza IDs inventados, duplicados y cualquier forma distinta del JSON esperado. */
+export function parsearRankingRecursos(
+  texto: string,
+  recursos: RecursoAsistente[],
+): string[] {
+  const dato = extraerObjetoJson(texto);
+  if (!dato || typeof dato !== "object" || !Array.isArray((dato as { ids?: unknown }).ids)) {
+    return [];
+  }
+  const permitidos = new Set(recursos.map((r) => r.id));
+  return [
+    ...new Set(
+      (dato as { ids: unknown[] }).ids.filter(
+        (id): id is string => typeof id === "string" && permitidos.has(id),
+      ),
+    ),
+  ].slice(0, 5);
+}
 
-Escribe solo la respuesta para la persona.`;
+export function ordenarRecursosPorRanking(
+  recursos: RecursoAsistente[],
+  ids: string[],
+): RecursoAsistente[] {
+  if (!ids.length) return recursos;
+  const posicion = new Map(ids.map((id, indice) => [id, indice]));
+  return recursos
+    .map((recurso, indice) => ({ recurso, indice }))
+    .sort((a, b) => {
+      const pa = posicion.get(a.recurso.id);
+      const pb = posicion.get(b.recurso.id);
+      if (pa != null && pb != null) return pa - pb;
+      if (pa != null) return -1;
+      if (pb != null) return 1;
+      return a.indice - b.indice;
+    })
+    .map(({ recurso }) => recurso);
 }

@@ -8,8 +8,8 @@ describe("catálogo de prestaciones", () => {
     for (const p of PRESTACIONES) {
       expect(p.url).toMatch(/^https:\/\//);
       expect(p.urlSolicitud).toMatch(/^https:\/\//);
-      expect(p.url).toMatch(/\.gob\.es|seg-social\.es|sepe\.es|imserso\.es|madrid\.es|comunidad\.madrid/);
-      expect(p.urlSolicitud).toMatch(/\.gob\.es|seg-social\.es|sepe\.es|imserso\.es|madrid\.es|comunidad\.madrid/);
+      expect(p.url).toMatch(/\.gob\.es|seg-social\.es|sepe\.es|imserso\.es|madrid\.es|comunidad\.madrid|fundae\.es/);
+      expect(p.urlSolicitud).toMatch(/\.gob\.es|seg-social\.es|sepe\.es|imserso\.es|madrid\.es|comunidad\.madrid|fundae\.es/);
       expect(p.accion.length).toBeGreaterThan(8);
       expect(p.plazo.length).toBeGreaterThan(8);
       expect(p.requisitos.length).toBeGreaterThanOrEqual(3);
@@ -30,6 +30,7 @@ describe("catálogo de prestaciones", () => {
     expect(ids).toContain("deduccion-familia-numerosa");
     expect(ids).toContain("deduccion-ascendiente-dos-hijos");
     expect(ids).toContain("emergencia-alquiler-madrid");
+    expect(ids).toContain("formacion-fundae");
   });
 });
 
@@ -79,6 +80,22 @@ describe("buscarPrestaciones", () => {
     ).map((p) => p.id);
     expect(ids).toContain("paro");
     expect(ids).not.toContain("cese-actividad");
+  });
+
+  it("no descarta el subsidio cuando todavía no conoce la renta", () => {
+    const ids = buscarPrestaciones(
+      "subsidio",
+      h({ perfil: "particular", situacion: "desempleado" }),
+    ).map((p) => p.id);
+    expect(ids).toContain("subsidio");
+  });
+
+  it("ofrece formación oficial a una persona trabajadora", () => {
+    const ids = buscarPrestaciones(
+      "formación gratuita",
+      h({ perfil: "particular", situacion: "cuenta_ajena", objetivo: "aprender" }),
+    ).map((p) => p.id);
+    expect(ids).toContain("formacion-fundae");
   });
 
   it("pone la coincidencia familiar exacta antes que las genéricas", () => {

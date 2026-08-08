@@ -1,15 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import {
   consultaParaAsistente,
-  convocatoriaRelevanteParaEscenario,
   detectarEscenario,
+  detectarEscenarios,
   hechosInferidosParaBuscar,
+  ordenarRecursosPorRanking,
+  parsearRankingRecursos,
   preguntasQueFaltan,
+  promptRankingRecursos,
   profesionalNecesitaAclaracion,
-  promptConversacional,
+  puntuarConvocatoriaParaEscenario,
   recursoDesdePrestacion,
   respuestaGuiada,
-  respuestaIaSegura,
   terminosDirectosParaAsistente,
   type MensajeAsistente,
   type RecursoAsistente,
@@ -22,7 +24,7 @@ import { credencialesDe, esPublico, hechosDe, idDeSesion } from "@/lib/sesion";
 import { errorJson, getRepo, buscarRadar, type ConvocatoriaConPlazo } from "@/lib/servidor";
 import { generar, hayClave } from "@/lib/ia";
 import { urlFichaBdns } from "@/lib/expediente";
-import { resolverCP } from "@/lib/territorio";
+import { CCAAS, normalizar as normalizarTerritorio, resolverCP } from "@/lib/territorio";
 
 export const dynamic = "force-dynamic";
 
@@ -54,7 +56,11 @@ function recursoDesdeConvocatoria(c: ConvocatoriaConPlazo): RecursoAsistente {
   const ficha = urlFichaBdns(c.codigoBdns);
   const sede = urlAbsoluta(c.sede);
   const bases = urlAbsoluta(c.urlBases);
-  const urlSolicitud = sede ?? bases ?? ficha;
+  const destino = sede ?? bases;
+  // Evita enviar a una persona vulnerable por un enlace sin cifrar. Las
+  // fuentes públicas antiguas aún publican http; para esos casos preferimos
+  // su variante https y conservamos siempre la ficha BDNS como información.
+  const urlSolicitud = destino ? destino.replace(/^http:\/\//i, "https://") : ficha;
   const accion = sede
     ? "Ir a la sede oficial para solicitar"
     : bases
@@ -84,7 +90,10 @@ function textoRelevancia(c: ConvocatoriaConPlazo): string {
     c.resumen?.aQuien,
     c.llano.que,
     c.llano.quien,
+    c.nivel2,
+    c.nivel3,
     c.beneficiarios.join(" "),
+    c.regiones.join(" "),
   ]
     .filter(Boolean)
     .join(" ");
@@ -92,6 +101,55 @@ function textoRelevancia(c: ConvocatoriaConPlazo): string {
 
 function unicos<T extends { id: string }>(items: T[]): T[] {
   return [...new Map(items.map((x) => [x.id, x])).values()];
+}
+
+function compatibleConTerritorio(
+  texto: string,
+  zona: { ccaa: string; provincia: string; municipio: string } | null,
+): boolean {
+  if (!zona) return true;
+  const actual = normalizarTerritorio(zona.ccaa);
+  const contenido = ` ${normalizarTerritorio(texto)} `;
+  const mencionaOtraCcaa = CCAAS.some((c) => {
+    const otra = normalizarTerritorio(c.nombre);
+    return otra !== actual && otra.length >= 5 && contenido.includes(` ${otra} `);
+  });
+  if (mencionaOtraCcaa) return false;
+  const pareceLocal = /\bAYUNTAMIENTO\b|\bDIPUTACION\b|\bCABILDO\b|\bCONSELL INSULAR\b|CONSORCIO DE LA CIUDAD|\bMUNICIPIO DE\b/.test(
+    contenido,
+  );
+  if (!pareceLocal) return true;
+  const municipio = normalizarTerritorio(zona.municipio);
+  const provincia = normalizarTerritorio(zona.provincia);
+  return contenido.includes(` ${municipio} `) || contenido.includes(` ${provincia} `);
+}
+
+function tituloCompatibleConNecesidad(
+  titulo: string,
+  escenarios: ReturnType<typeof detectarEscenarios>,
+  mensaje: string,
+): boolean {
+  const t = normalizarTerritorio(titulo);
+  const q = normalizarTerritorio(mensaje);
+  if (escenarios.includes("estudiante") && /UNIVERSIT/.test(q)) {
+    if (/COMEDOR|LIBROS|MATERIAL ESCOLAR|CENTRO DOCENTE/.test(t)) return false;
+    return /UNIVERSIT|BECA|MATRICULA|EDUCACION SUPERIOR|GRADO|MASTER|PRACTICAS/.test(t);
+  }
+  if (escenarios.includes("autonomo")) {
+    return /AUTONOM|AUTOEMPLE|EMPREND|PYME|EMPRESA|NEGOCIO|CONTRAT/.test(t);
+  }
+  if (escenarios.includes("trabajador") && /FORMACION|CURSO/.test(q)) {
+    return /FORMACION|CURSO|COMPETEN|CUALIFIC/.test(t);
+  }
+  if (escenarios[0] === "vivienda") {
+    return /ALQUILER|VIVIENDA|DESAHUC|HIPOTECA|EMERGENCIA|REHABILITACION/.test(t);
+  }
+  if (escenarios.includes("familia")) {
+    return /FAMIL|HIJ|INFAN|CONCILI|COMEDOR|LIBROS|MATERIAL ESCOLAR|VIVIENDA|RENTA|NACIMIENTO/.test(
+      t,
+    );
+  }
+  return true;
 }
 
 export async function POST(req: NextRequest) {
@@ -108,6 +166,7 @@ export async function POST(req: NextRequest) {
     const repo = getRepo();
     const hechosOriginales = hechosDe(req) ?? repo.getHechos(idDeSesion(req));
     const escenario = detectarEscenario(ultimo);
+    const escenarios = detectarEscenarios(ultimo);
     const hechosBusqueda = hechosInferidosParaBuscar(hechosOriginales, escenario, ultimo);
     const cp = hechosBusqueda.get("cp");
     const zona = cp ? resolverCP(cp) : null;
@@ -121,21 +180,40 @@ export async function POST(req: NextRequest) {
       hechos: hechosBusqueda,
     });
 
-    const directas = unicos(
-      terminosDirectosParaAsistente(ultimo).flatMap((termino) => buscarPrestaciones(termino, hechosBusqueda)),
-    )
-      .slice(0, 4)
-      .map(recursoDesdePrestacion);
     const necesitaAclararProfesional =
       escenario === "profesional" && profesionalNecesitaAclaracion(hechosOriginales, ultimo);
+    const directas = necesitaAclararProfesional
+      ? []
+      : unicos(
+          terminosDirectosParaAsistente(ultimo).flatMap((termino) =>
+            buscarPrestaciones(termino, hechosBusqueda),
+          ),
+        )
+          .slice(0, 5)
+          .map(recursoDesdePrestacion);
     const convocatorias = necesitaAclararProfesional
       ? []
       : filasRadar
-          .filter((fila) => convocatoriaRelevanteParaEscenario(textoRelevancia(fila), escenario))
+          .map((fila, indice) => ({
+            fila,
+            indice,
+            puntuacion: puntuarConvocatoriaParaEscenario(
+              textoRelevancia(fila),
+              escenarios,
+              ultimo,
+            ),
+          }))
+          .filter(
+            ({ fila, puntuacion }) =>
+              puntuacion > 0 &&
+              compatibleConTerritorio(textoRelevancia(fila), zona) &&
+              tituloCompatibleConNecesidad(fila.titulo, escenarios, ultimo),
+          )
+          .sort((a, b) => b.puntuacion - a.puntuacion || a.indice - b.indice)
           .slice(0, 5)
-          .map(recursoDesdeConvocatoria);
-    const recursos = [...directas, ...convocatorias].slice(0, 7);
-    const preguntas = preguntasQueFaltan(hechosOriginales, escenario, ultimo);
+          .map(({ fila }) => recursoDesdeConvocatoria(fila));
+    let recursos = [...directas, ...convocatorias].slice(0, 7);
+    const preguntas = preguntasQueFaltan(hechosBusqueda, escenario, ultimo);
 
     const credenciales = credencialesDe(req);
     const puedeUsarIa = Boolean(credenciales) || (!esPublico() && hayClave(repo));
@@ -143,13 +221,25 @@ export async function POST(req: NextRequest) {
     let modo: "ia" | "guiado" = "guiado";
     if (puedeUsarIa && !necesitaAclararProfesional) {
       try {
-        const respuestaIa = respuestaIaSegura(await generar(
-          repo,
-          [{ texto: promptConversacional({ historial, perfil: resumenPerfil(hechosOriginales), recursos, preguntas }) }],
-          { credenciales },
-        ), preguntas);
-        if (respuestaIa) {
-          respuesta = respuestaIa;
+        const ranking = parsearRankingRecursos(
+          await generar(
+            repo,
+            [
+              {
+                texto: promptRankingRecursos({
+                  mensaje: ultimo,
+                  perfil: resumenPerfil(hechosBusqueda),
+                  recursos,
+                }),
+              },
+            ],
+            { credenciales, esperaJson: true },
+          ),
+          recursos,
+        );
+        if (ranking.length) {
+          recursos = ordenarRecursosPorRanking(recursos, ranking);
+          respuesta = respuestaGuiada(escenario, recursos, preguntas);
           modo = "ia";
         }
       } catch {

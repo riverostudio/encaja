@@ -30,7 +30,7 @@ export const PROVEEDORES: FichaProveedor[] = [
     id: "gemini",
     nombre: "Gemini",
     quien: "Google",
-    modeloDefecto: "gemini-3.5-flash",
+    modeloDefecto: "gemini-3.6-flash",
     leePdf: true,
     dondeSacarla: "https://aistudio.google.com/apikey",
     pista: "Tiene plan gratuito. Es el que mejor encaja aquí: lee los PDF de las bases.",
@@ -60,7 +60,7 @@ export const PROVEEDORES: FichaProveedor[] = [
     id: "openai",
     nombre: "GPT",
     quien: "OpenAI",
-    modeloDefecto: "gpt-5.6-luna",
+    modeloDefecto: "gpt-5.6-terra",
     leePdf: true,
     dondeSacarla: "https://platform.openai.com/api-keys",
     pista: "De pago. Lee directamente los PDF de las bases mediante la Responses API.",
@@ -161,7 +161,9 @@ async function llamarGemini({ clave, modelo, partes, esperaJson }: Peticion): Pr
   );
   const cuerpo: Record<string, unknown> = { contents: [{ role: "user", parts }] };
   if (esperaJson) {
-    cuerpo.generationConfig = { responseMimeType: "application/json", temperature: 0.1 };
+    // Los modelos Gemini actuales gestionan el muestreo internamente; forzar
+    // temperature/topP/topK está obsoleto. Solo pedimos el formato necesario.
+    cuerpo.generationConfig = { responseMimeType: "application/json" };
   }
   const r = await fetch(
     `https://generativelanguage.googleapis.com/v1beta/models/${modelo}:generateContent`,

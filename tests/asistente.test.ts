@@ -3,11 +3,14 @@ import {
   consultaParaAsistente,
   convocatoriaRelevanteParaEscenario,
   detectarEscenario,
+  detectarEscenarios,
   hechosInferidosParaBuscar,
+  ordenarRecursosPorRanking,
+  parsearRankingRecursos,
   preguntasQueFaltan,
+  puntuarConvocatoriaParaEscenario,
   profesionalNecesitaAclaracion,
   respuestaGuiada,
-  respuestaIaSegura,
 } from "../lib/asistente";
 
 const h = (datos: Record<string, string> = {}) => new Map(Object.entries(datos));
@@ -35,7 +38,27 @@ describe("orientación del asistente", () => {
   it("una necesidad personal se filtra como persona aunque la ficha esté vacía", () => {
     const inferido = hechosInferidosParaBuscar(h(), "pocos_recursos");
     expect(inferido.get("perfil")).toBe("particular");
-    expect(inferido.get("ingresos")).toBe("menos_12000");
+    expect(inferido.has("ingresos")).toBe(false);
+  });
+
+  it("conserva varias necesidades y da prioridad a la más concreta", () => {
+    expect(detectarEscenarios("Soy universitario y tengo pocos recursos")).toEqual([
+      "estudiante",
+      "pocos_recursos",
+    ]);
+    expect(detectarEscenario("Trabajo, pero me han despedido")).toBe("desempleo");
+  });
+
+  it("solo extrae renta y circunstancias que la persona ha escrito", () => {
+    const hechos = hechosInferidosParaBuscar(
+      h(),
+      "familia",
+      "Somos familia numerosa, tenemos tres hijos e ingresamos 22.000 euros al año en el 28013",
+    );
+    expect(hechos.get("ingresos")).toBe("18000_25000");
+    expect(hechos.get("menores_cargo")).toBe("3+");
+    expect(hechos.get("circunstancias")).toBe("familia_numerosa");
+    expect(hechos.get("cp")).toBe("28013");
   });
 
   it("la necesidad expresada ahora prevalece en la búsqueda sin reescribir el perfil", () => {
@@ -94,6 +117,25 @@ describe("orientación del asistente", () => {
     ).toBe(true);
   });
 
+  it("penaliza premios y subvenciones nominativas en búsquedas críticas", () => {
+    expect(
+      puntuarConvocatoriaParaEscenario(
+        "Concesión directa a la Fundación Ejemplo para un proyecto empresarial",
+        ["autonomo"],
+      ),
+    ).toBeLessThan(0);
+    expect(
+      puntuarConvocatoriaParaEscenario("Premio de creación joven para estudiantes", ["estudiante"]),
+    ).toBeLessThan(0);
+    expect(
+      puntuarConvocatoriaParaEscenario(
+        "Premio de creación joven para estudiantes",
+        ["estudiante"],
+        "Busco un premio de creación",
+      ),
+    ).toBeGreaterThan(0);
+  });
+
   it("no presenta un resultado como concesión segura", () => {
     const texto = respuestaGuiada(
       "estudiante",
@@ -117,28 +159,42 @@ describe("orientación del asistente", () => {
     expect(texto).toContain("Revisa los requisitos");
   });
 
-  it("descarta preguntas inventadas por la IA y solo añade las autorizadas", () => {
-    const texto = respuestaIaSegura(
-      "El IMV es una posible ayuda para hogares vulnerables. Para poder afinar, nos faltaría conocer tu provincia y si eres titular de la luz. ¿Tienes contrato?",
-      ["¿Qué estudias: Bachillerato, FP, universidad u otra enseñanza?"],
+  it("la IA solo puede ordenar IDs que ya están en el catálogo", () => {
+    const recursos = [
+      {
+        id: "imv",
+        tipo: "via_directa" as const,
+        titulo: "Ingreso Mínimo Vital",
+        organismo: "Seguridad Social",
+        resumen: "Renta para hogares vulnerables",
+        requisitos: ["Comprobar renta"],
+        plazo: "Abierto",
+        urlInfo: "https://example.test/imv",
+        urlSolicitud: "https://example.test/imv",
+        accion: "Comprobar",
+      },
+      {
+        id: "bono-social",
+        tipo: "via_directa" as const,
+        titulo: "Bono social",
+        organismo: "MITECO",
+        resumen: "Descuento eléctrico",
+        requisitos: ["Comprobar vulnerabilidad"],
+        plazo: "Abierto",
+        urlInfo: "https://example.test/bono",
+        urlSolicitud: "https://example.test/bono",
+        accion: "Comprobar",
+      },
+    ];
+    const ids = parsearRankingRecursos(
+      '```json\n{"ids":["inventada","bono-social","bono-social","imv"]}\n```',
+      recursos,
     );
-    expect(texto).toContain("El IMV es una posible ayuda");
-    expect(texto).not.toContain("provincia");
-    expect(texto).not.toContain("contrato");
-    expect(texto).toContain("¿Qué estudias: Bachillerato, FP, universidad u otra enseñanza?");
-  });
-
-  it("deja fechas y estados de plazo a las tarjetas calculadas por Encaja", () => {
-    const texto = respuestaIaSegura(
-      "La beca puede ayudarte con la matrícula. Otras convocatorias ya han cerrado. El plazo finaliza el 1 de octubre.",
-      [],
-    );
-    expect(texto).toBe("La beca puede ayudarte con la matrícula.");
-  });
-
-  it("no añade seguimiento cuando el perfil ya contiene lo necesario", () => {
-    expect(respuestaIaSegura("Hay dos posibles ayudas. ¿Dónde vives?", [])).toBe(
-      "Hay dos posibles ayudas.",
-    );
+    expect(ids).toEqual(["bono-social", "imv"]);
+    expect(ordenarRecursosPorRanking(recursos, ids).map((r) => r.id)).toEqual([
+      "bono-social",
+      "imv",
+    ]);
+    expect(parsearRankingRecursos('{"ayuda":"inventada"}', recursos)).toEqual([]);
   });
 });
