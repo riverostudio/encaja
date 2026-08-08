@@ -173,7 +173,7 @@ test("el asistente conversa, muestra requisitos y lleva la búsqueda al radar", 
   await page.getByRole("button", { name: "Soy estudiante" }).click();
 
   const asistente = page.getByRole("dialog", { name: "Asistente para buscar ayudas" });
-  await expect(asistente.getByText("Orientador de Encaja · IA")).toBeVisible();
+  await expect(asistente.getByText("Orientador de Encaja · GUIADO")).toBeVisible();
   await expect(asistente.getByRole("link", { name: "Privacidad y uso de IA" })).toHaveAttribute(
     "href",
     "/privacidad",

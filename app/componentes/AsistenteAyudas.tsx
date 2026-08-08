@@ -117,6 +117,8 @@ export default function AsistenteAyudas() {
     }
   }
 
+  const modoActual = [...mensajes].reverse().find((mensaje) => mensaje.modo)?.modo;
+
   return (
     <>
       {abierto && (
@@ -128,7 +130,10 @@ export default function AsistenteAyudas() {
         >
           <header className="chat-cabecera">
             <div>
-              <p className="rotulo">Orientador de Encaja · IA</p>
+              <p className="rotulo">
+                Orientador de Encaja
+                {modoActual === "ia" ? " · IA" : modoActual === "guiado" ? " · GUIADO" : ""}
+              </p>
               <p className="display mt-0.5 text-[18px]">¿Qué ayuda necesitas?</p>
             </div>
             <button className="chat-cerrar" onClick={() => setAbierto(false)} aria-label="Cerrar asistente">
