@@ -54,6 +54,16 @@ async function pedir(url: string, fetchFn: FetchFn, binario = false): Promise<un
 export function urlAbsoluta(u: string | null | undefined): string | null {
   const limpio = u?.trim();
   if (!limpio) return null;
+
+  // Algún organismo publica el subdominio separado con una arroba
+  // ("https://sede@calahorra.es") en vez de un punto. El navegador lo
+  // interpreta como credenciales HTTP y termina en el dominio equivocado.
+  const arrobaComoPunto = limpio.match(
+    /^(https?):\/\/([a-z0-9-]+)@([a-z0-9.-]+\.[a-z]{2,})([/?#].*)?$/i,
+  );
+  if (arrobaComoPunto) {
+    return `${arrobaComoPunto[1]}://${arrobaComoPunto[2]}.${arrobaComoPunto[3]}${arrobaComoPunto[4] ?? ""}`;
+  }
   if (/^https?:\/\//i.test(limpio)) return limpio;
 
   // A veces el organismo pega algo delante ("Inmahttps://cindi.gva.es/…").

@@ -107,6 +107,12 @@ describe("urlAbsoluta con la basura que publican los organismos", () => {
     );
   });
 
+  it("repara una arroba usada por error en lugar del punto del subdominio", () => {
+    expect(urlAbsoluta("https://sede@calahorra.es/sta/Relec/CatalogBrowse")).toBe(
+      "https://sede.calahorra.es/sta/Relec/CatalogBrowse",
+    );
+  });
+
   it("no convierte en enlace lo que no es un dominio", () => {
     expect(urlAbsoluta("pendiente de publicar")).toBeNull();
     expect(urlAbsoluta("ver bases")).toBeNull();

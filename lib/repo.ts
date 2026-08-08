@@ -1,4 +1,5 @@
 import type Database from "better-sqlite3";
+import { urlAbsoluta } from "./bdns";
 import type { Convocatoria, Evaluacion, Expediente, Hecho } from "./tipos";
 
 export interface FiltrosBusqueda {
@@ -56,8 +57,10 @@ function aConvocatoria(f: FilaDb): Convocatoria {
     fechaFinSol: f.fecha_fin_sol,
     abiertaFlag: f.abierta_flag === null ? null : Boolean(f.abierta_flag),
     presupuesto: f.presupuesto,
-    urlBases: f.url_bases,
-    sede: f.sede,
+    // Vuelve a sanear también lo ya persistido: así una corrección del
+    // normalizador arregla el catálogo publicado sin esperar al próximo sync.
+    urlBases: urlAbsoluta(f.url_bases),
+    sede: urlAbsoluta(f.sede),
     finalidad: f.finalidad,
     beneficiarios: JSON.parse(f.beneficiarios),
     instrumentos: JSON.parse(f.instrumentos),
