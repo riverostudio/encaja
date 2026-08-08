@@ -108,10 +108,7 @@ export default function DetalleAyuda({
     setCreandoExp(true);
     const eraNuevo = !d?.expediente;
     if (APP_PUBLICA && d) {
-      crearExpedientePublico(
-        { ...d.conv, resumen: resumen ?? d.conv.resumen },
-        d.urlFicha,
-      );
+      crearExpedientePublico({ ...d.conv, resumen: resumen ?? d.conv.resumen });
       if (eraNuevo) registrarExpedienteCreado(codigo);
       router.push(`/expedientes/${codigo}`);
       setCreandoExp(false);

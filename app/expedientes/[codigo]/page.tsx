@@ -30,7 +30,7 @@ interface Datos {
   condiciones: Condicion[];
   veredicto: VeredictoUi | null;
   dondeSolicitar: string;
-  esSedeDirecta: boolean;
+  destinoSolicitud: "sede" | "bases" | "ficha";
   error?: string;
 }
 
@@ -324,9 +324,11 @@ export default function PaginaExpediente({ params }: { params: Promise<{ codigo:
             </ul>
 
             <p className="nota mt-5">
-              {datos.esSedeDirecta
+              {datos.destinoSolicitud === "sede"
                 ? "Te llevo a la sede electrónica del organismo. Muchas sedes abren por su portada: si no aterrizas en el trámite, búscalo por el nombre de la convocatoria en su catálogo."
-                : "Esta convocatoria no publica enlace a su sede, así que te llevo a las bases oficiales: ahí viene dónde y cómo se presenta."}{" "}
+                : datos.destinoSolicitud === "bases"
+                  ? "Esta convocatoria no publica enlace a su sede, así que te llevo a las bases oficiales: ahí viene dónde y cómo se presenta."
+                  : "Esta convocatoria no publica un enlace web seguro a la sede o a las bases. Te llevo a su ficha oficial de la BDNS, con el organismo y los documentos publicados."}{" "}
               La solicitud la firmas y la envías tú; esta app no presenta nada en tu nombre.
             </p>
 
@@ -341,7 +343,11 @@ export default function PaginaExpediente({ params }: { params: Promise<{ codigo:
                   void patch({ estado: "preparacion" });
                 }}
               >
-                {datos.esSedeDirecta ? "Ir a la sede electrónica ↗" : "Ir a las bases oficiales ↗"}
+                {datos.destinoSolicitud === "sede"
+                  ? "Ir a la sede electrónica ↗"
+                  : datos.destinoSolicitud === "bases"
+                    ? "Ir a las bases oficiales ↗"
+                    : "Ir a la ficha oficial BDNS ↗"}
               </a>
               {conv && (
                 <a className="btn btn-linea" href={conv.urlFicha} target="_blank" rel="noreferrer">

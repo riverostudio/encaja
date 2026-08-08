@@ -37,6 +37,7 @@ export async function GET(
   if (!e) return NextResponse.json({ error: "No existe el expediente" }, { status: 404 });
   const conv = repo.getConvocatoria(codigo);
   const evaluacion = repo.getEvaluacion(codigo, perfil);
+  const destinoSolicitud = conv?.sede ? "sede" : conv?.urlBases ? "bases" : "ficha";
   const requisitos: Requisito[] = evaluacion?.requisitosJson
     ? (JSON.parse(evaluacion.requisitosJson) as Requisito[])
     : [];
@@ -55,9 +56,9 @@ export async function GET(
     // Todo lo que hay que cumplir, no solo lo que hay que aportar.
     condiciones: requisitos.filter((r) => r.tipo !== "documento"),
     veredicto: evaluacion?.dictamen ?? null,
-    // Dónde se presenta: sede si consta; si no, las bases lo dicen.
+    // Dónde se presenta: sede, bases o, como alternativa segura, ficha BDNS.
     dondeSolicitar: conv?.sede ?? conv?.urlBases ?? urlFichaBdns(codigo),
-    esSedeDirecta: Boolean(conv?.sede) });
+    destinoSolicitud });
 }
 
 export async function PATCH(

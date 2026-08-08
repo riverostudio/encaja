@@ -5,6 +5,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { Document, HeadingLevel, Packer, Paragraph, TextRun } from "docx";
 import type { Convocatoria, ItemChecklist, Requisito } from "./tipos";
+import { urlAbsoluta } from "./url-oficial";
 
 export function urlFichaBdns(codigoBdns: string): string {
   return `https://www.infosubvenciones.es/bdnstrans/GE/es/convocatoria/${codigoBdns}`;
@@ -31,6 +32,8 @@ export function montarChecklist(requisitos: Requisito[]): ItemChecklist[] {
 /** Crea (idempotente) la carpeta del expediente con su FUENTE.md. */
 export function crearCarpetaExpediente(baseDir: string, conv: Convocatoria): string {
   const dir = path.join(baseDir, `${conv.codigoBdns}-${slug(conv.titulo)}`);
+  const urlBases = urlAbsoluta(conv.urlBases);
+  const sede = urlAbsoluta(conv.sede);
   fs.mkdirSync(dir, { recursive: true });
   const fuente = [
     `# Fuentes oficiales — convocatoria ${conv.codigoBdns}`,
@@ -39,8 +42,8 @@ export function crearCarpetaExpediente(baseDir: string, conv: Convocatoria): str
     "",
     `- Órgano: ${[conv.nivel3, conv.nivel2].filter(Boolean).join(" · ")} (${conv.nivel1})`,
     `- Ficha oficial BDNS: ${urlFichaBdns(conv.codigoBdns)}`,
-    conv.urlBases ? `- Bases reguladoras: ${conv.urlBases}` : null,
-    conv.sede ? `- Sede electrónica: ${conv.sede}` : null,
+    urlBases ? `- Bases reguladoras: ${urlBases}` : null,
+    sede ? `- Sede electrónica: ${sede}` : null,
     `- Plazo de solicitud: ${conv.fechaInicioSol ?? "ver bases"} → ${conv.fechaFinSol ?? "ver bases"}`,
     "",
     "> Verifica siempre contra la fuente oficial: los datos de la BDNS son dinámicos.",
@@ -59,6 +62,8 @@ export function escribirInstrucciones(
   requisitos: Requisito[],
 ): string {
   const docs = montarChecklist(requisitos);
+  const sede = urlAbsoluta(conv.sede);
+  const urlBases = urlAbsoluta(conv.urlBases);
   const texto = [
     `# Cómo presentar la solicitud — ${conv.codigoBdns}`,
     "",
@@ -72,9 +77,11 @@ export function escribirInstrucciones(
     "",
     "## 2 · Dónde se presenta",
     "",
-    conv.sede
-      ? `Sede electrónica del órgano convocante: ${conv.sede}`
-      : `Las bases indican el lugar de presentación (normalmente la sede electrónica de ${conv.nivel3 ?? conv.nivel2}). Enlace a las bases en FUENTE.md.`,
+    sede
+      ? `Sede electrónica del órgano convocante: ${sede}`
+      : urlBases
+        ? `Las bases indican el lugar de presentación (normalmente la sede electrónica de ${conv.nivel3 ?? conv.nivel2}). Enlace a las bases en FUENTE.md.`
+        : `La fuente no publica un enlace web seguro a la sede o a las bases. Usa la ficha oficial BDNS de FUENTE.md para localizar el organismo y los documentos.`,
     "",
     "## 3 · Presenta y guarda el justificante",
     "",

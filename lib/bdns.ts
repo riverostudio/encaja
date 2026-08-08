@@ -2,6 +2,9 @@
 // Subvenciones y Ayudas Públicas). Sin clave. Reutilización sujeta a su aviso
 // legal: siempre enlazamos la fuente y sincronizamos de forma incremental.
 import type { Convocatoria } from "./tipos";
+import { urlAbsoluta } from "./url-oficial";
+
+export { urlAbsoluta } from "./url-oficial";
 
 export const BASE = "https://www.infosubvenciones.es/bdnstrans/api";
 const UA = "radar-ayudas-local/1.0 (uso personal)";
@@ -44,47 +47,6 @@ async function pedir(url: string, fetchFn: FetchFn, binario = false): Promise<un
   } finally {
     clearTimeout(timer);
   }
-}
-
-/**
- * La BDNS publica muchos enlaces sin protocolo ("ujiapps.uji.es/..."). En un
- * href del navegador eso se toma como ruta relativa y lleva a ninguna parte,
- * así que se les pone https:// al guardarlos.
- */
-export function urlAbsoluta(u: string | null | undefined): string | null {
-  const limpio = u?.trim();
-  if (!limpio) return null;
-
-  // Algún organismo publica el subdominio separado con una arroba
-  // ("https://sede@calahorra.es") en vez de un punto. El navegador lo
-  // interpreta como credenciales HTTP y termina en el dominio equivocado.
-  const arrobaComoPunto = limpio.match(
-    /^(https?):\/\/([a-z0-9-]+)@([a-z0-9.-]+\.[a-z]{2,})([/?#].*)?$/i,
-  );
-  if (arrobaComoPunto) {
-    return `${arrobaComoPunto[1]}://${arrobaComoPunto[2]}.${arrobaComoPunto[3]}${arrobaComoPunto[4] ?? ""}`;
-  }
-  if (/^https?:\/\//i.test(limpio)) return limpio;
-
-  // A veces el organismo pega algo delante ("Inmahttps://cindi.gva.es/…").
-  // Si dentro hay una URL de verdad, se rescata.
-  const dentro = limpio.match(/https?:\/\/\S+/i);
-  if (dentro) return dentro[0];
-
-  // Protocolo mal escrito: "ttps://…", "ttp://…" (se comieron la hache).
-  const mutilado = limpio.match(/^t?tps?:\/\/(.+)$/i);
-  if (mutilado) return `https://${mutilado[1]}`;
-
-  // Basura publicada por el propio organismo: rutas de su ordenador.
-  if (/^[a-z]:\\/i.test(limpio) || limpio.includes("\\")) return null;
-
-  // Protocolos que no son web (mailto:, ftp:…) se dejan como están.
-  if (/^[a-z][a-z0-9+.-]*:/i.test(limpio)) return limpio;
-
-  // Sin un punto no es un dominio: no se inventa un enlace.
-  const sinBarras = limpio.replace(/^\/+/, "");
-  if (!/^[^\s/]+\.[^\s/]{2,}/.test(sinBarras)) return null;
-  return `https://${sinBarras}`;
 }
 
 function aFechaBdns(iso: string): string {

@@ -1,6 +1,6 @@
 import type Database from "better-sqlite3";
-import { urlAbsoluta } from "./bdns";
 import type { Convocatoria, Evaluacion, Expediente, Hecho } from "./tipos";
+import { urlAbsoluta } from "./url-oficial";
 
 export interface FiltrosBusqueda {
   texto?: string;

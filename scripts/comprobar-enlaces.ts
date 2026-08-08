@@ -1,7 +1,50 @@
 #!/usr/bin/env tsx
+import fs from "node:fs";
+import Database from "better-sqlite3";
 import { PRESTACIONES } from "../lib/prestaciones";
+import { urlAbsoluta } from "../lib/url-oficial";
+
+function comprobarCatalogo() {
+  const ruta = "data/radar-publico.db";
+  if (!fs.existsSync(ruta)) return;
+  const db = new Database(ruta, { readonly: true });
+  try {
+    const filas = db
+      .prepare(
+        `SELECT codigo_bdns AS codigo, url_bases AS url FROM convocatorias WHERE url_bases IS NOT NULL
+         UNION ALL
+         SELECT codigo_bdns AS codigo, sede AS url FROM convocatorias WHERE sede IS NOT NULL`,
+      )
+      .all() as Array<{ codigo: string; url: string }>;
+    let validos = 0;
+    let fallback = 0;
+    for (const fila of filas) {
+      const limpia = urlAbsoluta(fila.url);
+      if (!limpia) {
+        fallback++;
+        continue;
+      }
+      const url = new URL(limpia);
+      if (
+        !["http:", "https:"].includes(url.protocol) ||
+        url.username ||
+        url.password ||
+        /[\s\\]/.test(limpia)
+      ) {
+        throw new Error(`Enlace inseguro en BDNS ${fila.codigo}: ${limpia}`);
+      }
+      validos++;
+    }
+    console.log(
+      `OK catálogo: ${validos.toLocaleString("es-ES")} enlaces web seguros · ${fallback.toLocaleString("es-ES")} usan fallback BDNS`,
+    );
+  } finally {
+    db.close();
+  }
+}
 
 async function comprobar() {
+  comprobarCatalogo();
   let rotos = 0;
   for (const prestacion of PRESTACIONES) {
     const enlaces = [

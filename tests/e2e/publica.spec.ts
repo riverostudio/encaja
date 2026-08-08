@@ -304,6 +304,8 @@ test("los expedientes públicos se leen solo desde este navegador", async ({ pag
       sectores: [],
       regiones: ["ES"],
       fondos: [],
+      urlBases: "javascript:alert(1)",
+      sede: "https://generalitat_en_red@gva.es",
       rangoFechas: "5 ago — 30 sep",
       plazo: { estado: "abierta", dias: 56 },
       llano: { que: "Ayuda de prueba", quien: "personas", consigues: "apoyo" },
@@ -316,7 +318,7 @@ test("los expedientes públicos se leen solo desde este navegador", async ({ pag
           estado: "interesa",
           checklist: [],
           conv,
-          urlFicha: "https://www.infosubvenciones.es/bdnstrans/GE/es/convocatoria/999999",
+          urlFicha: "file:///C:/ficha.html",
           creadoAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
         },
@@ -327,6 +329,73 @@ test("los expedientes públicos se leen solo desde este navegador", async ({ pag
   await page.goto("/expedientes");
   await expect(page.getByText("Ayuda de prueba")).toBeVisible();
   await expect(page.getByRole("heading", { name: "Mi actividad" })).toBeVisible();
+  await page.goto("/expedientes/999999");
+  await page.getByRole("button", { name: "Quiero aplicar" }).click();
+  const ficha = "https://www.infosubvenciones.es/bdnstrans/GE/es/convocatoria/999999";
+  await expect(page.getByRole("link", { name: "Ir a la ficha oficial BDNS ↗" })).toHaveAttribute(
+    "href",
+    ficha,
+  );
+  await expect(page.getByRole("link", { name: "Ver la ficha oficial ↗" })).toHaveAttribute(
+    "href",
+    ficha,
+  );
+  const migrado = await page.evaluate(() => JSON.parse(localStorage.getItem("encaja.expedientes")!));
+  expect(migrado["999999"].conv.sede).toBeNull();
+  expect(migrado["999999"].conv.urlBases).toBeNull();
+  expect(migrado["999999"].urlFicha).toBe(ficha);
+});
+
+test("un expediente antiguo sigue abriendo aunque su migración no pueda escribirse", async ({ page }) => {
+  await page.goto("/");
+  await page.evaluate(() => {
+    localStorage.setItem(
+      "encaja.expedientes",
+      JSON.stringify({
+        "888888": {
+          codigoBdns: "888888",
+          estado: "interesa",
+          checklist: [],
+          conv: {
+            codigoBdns: "888888",
+            titulo: "Expediente con almacenamiento lleno",
+            nivel1: "ESTADO",
+            nivel2: "Ministerio",
+            fechaRegistro: "2026-08-05",
+            mrr: false,
+            beneficiarios: [],
+            instrumentos: [],
+            sectores: [],
+            regiones: ["ES"],
+            fondos: [],
+            sede: "javascript:alert(1)",
+            rangoFechas: "5 ago — 30 sep",
+            plazo: { estado: "abierta", dias: 56 },
+            llano: { que: "Ayuda", quien: "personas", consigues: "apoyo" },
+          },
+          urlFicha: "https://dominio-ajeno.example/falsa",
+          creadoAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        },
+      }),
+    );
+  });
+  await page.addInitScript(() => {
+    const original = Storage.prototype.setItem;
+    Storage.prototype.setItem = function (clave: string, valor: string) {
+      if (clave === "encaja.expedientes") throw new DOMException("Sin espacio", "QuotaExceededError");
+      return original.call(this, clave, valor);
+    };
+  });
+  await entrarSinClave(page);
+  await page.goto("/expedientes");
+  await expect(page.getByRole("link", { name: /Ayuda Ministerio/ })).toBeVisible();
+  await page.goto("/expedientes/888888");
+  await page.getByRole("button", { name: "Quiero aplicar" }).click();
+  await expect(page.getByRole("link", { name: "Ir a la ficha oficial BDNS ↗" })).toHaveAttribute(
+    "href",
+    "https://www.infosubvenciones.es/bdnstrans/GE/es/convocatoria/888888",
+  );
 });
 
 test("el panel del usuario muestra tiempo, búsquedas e historial con vigencia", async ({ page }) => {

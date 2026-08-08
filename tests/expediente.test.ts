@@ -64,6 +64,18 @@ describe("crearCarpetaExpediente", () => {
     const d2 = crearCarpetaExpediente(base, conv);
     expect(d1).toBe(d2);
   });
+
+  it("no copia enlaces inseguros a los archivos locales", () => {
+    const dir = crearCarpetaExpediente(base, {
+      ...conv,
+      urlBases: "javascript:alert(1)",
+      sede: "https://usuario:clave@ejemplo.es",
+    });
+    const fuente = fs.readFileSync(path.join(dir, "FUENTE.md"), "utf8");
+    expect(fuente).not.toContain("javascript:");
+    expect(fuente).not.toContain("usuario:clave");
+    expect(fuente).toContain("infosubvenciones.es");
+  });
 });
 
 describe("escribirInstrucciones", () => {

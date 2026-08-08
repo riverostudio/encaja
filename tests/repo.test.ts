@@ -58,6 +58,18 @@ describe("repo", () => {
     expect(c?.beneficiarios[0]).toContain("PYME");
   });
 
+  it("sanea enlaces antiguos cada vez que lee SQLite", () => {
+    repo.upsertDetalle(
+      fila({
+        urlBases: "https:/sede.gva.es/tramite",
+        sede: "https://generalitat_en_red@gva.es",
+      }),
+    );
+    const c = repo.getConvocatoria("923287");
+    expect(c?.urlBases).toBe("https://sede.gva.es/tramite");
+    expect(c?.sede).toBeNull();
+  });
+
   it("hechos: set sobrescribe y get devuelve", () => {
     repo.setHecho(1, "tipo_actividad", "autonomo", "manual");
     repo.setHecho(1, "tipo_actividad", "pyme", "entrevista 923287");

@@ -79,10 +79,21 @@ describe("urlAbsoluta", () => {
   it("no toca los que ya lo llevan", () => {
     expect(urlAbsoluta("https://boe.es/x")).toBe("https://boe.es/x");
     expect(urlAbsoluta("http://sepe.es/y")).toBe("http://sepe.es/y");
+    expect(urlAbsoluta("HTTP://sede.gva.es:8443/tramite?q=1#documentos")).toBe(
+      "http://sede.gva.es:8443/tramite?q=1#documentos",
+    );
+    expect(urlAbsoluta("https://guareña.es/ayudas")).toBe(
+      "https://xn--guarea-0wa.es/ayudas",
+    );
+    expect(urlAbsoluta("https://museoreinasofia.sede.gob.es./tramite")).toBe(
+      "https://museoreinasofia.sede.gob.es/tramite",
+    );
   });
 
-  it("respeta otros protocolos", () => {
-    expect(urlAbsoluta("mailto:ayudas@gva.es")).toBe("mailto:ayudas@gva.es");
+  it("descarta protocolos que no son web", () => {
+    expect(urlAbsoluta("mailto:ayudas@gva.es")).toBeNull();
+    expect(urlAbsoluta("file:///C:/bases.pdf")).toBeNull();
+    expect(urlAbsoluta("javascript:alert(1)")).toBeNull();
   });
 
   it("vacío es null, no «https://»", () => {
@@ -113,9 +124,53 @@ describe("urlAbsoluta con la basura que publican los organismos", () => {
     );
   });
 
+  it("descarta correos o credenciales pegados como si fueran una URL", () => {
+    expect(urlAbsoluta("https://generalitat_en_red@gva.es")).toBeNull();
+    expect(urlAbsoluta("https://usuario:clave@ejemplo.es/tramite")).toBeNull();
+    expect(urlAbsoluta("usuario@ejemplo.es")).toBeNull();
+  });
+
+  it("rescata una única URL entre prosa, pero no elige entre varias", () => {
+    expect(urlAbsoluta("Consulte https://gva.es/tramite).")).toBe(
+      "https://gva.es/tramite",
+    );
+    expect(
+      urlAbsoluta("https://Aplicación AURA: use https://mptmd.sede.gob.es/"),
+    ).toBe("https://mptmd.sede.gob.es/");
+    expect(urlAbsoluta("https://gva.es/a https://sede.gva.es/b")).toBeNull();
+    expect(urlAbsoluta("Consulte https://www.boe.es/eli/es/res/2026/04/17/(2)."))
+      .toBe("https://www.boe.es/eli/es/res/2026/04/17/(2)");
+  });
+
+  it("conserva puntuación que forma parte de una URL completa", () => {
+    expect(urlAbsoluta("https://www.boe.es/eli/es/res/2026/04/17/(2)")).toBe(
+      "https://www.boe.es/eli/es/res/2026/04/17/(2)",
+    );
+    expect(urlAbsoluta("https://ejemplo.es/ruta;parametro")).toBe(
+      "https://ejemplo.es/ruta;parametro",
+    );
+  });
+
+  it("descarta destinos locales, IP y dominios de loopback dinámico", () => {
+    expect(urlAbsoluta("http://localhost:3000")).toBeNull();
+    expect(urlAbsoluta("http://127.0.0.1/admin")).toBeNull();
+    expect(urlAbsoluta("http://[::1]/admin")).toBeNull();
+    expect(urlAbsoluta("https://127.0.0.1.nip.io/admin")).toBeNull();
+  });
+
+  it("limita el tamaño y es idempotente", () => {
+    expect(urlAbsoluta(`https://gva.es/${"a".repeat(5_000)}`)).toBeNull();
+    const unaVez = urlAbsoluta("HTTPS:/guareña.es/trámite?q=sí#documentos");
+    expect(unaVez).toBeTruthy();
+    expect(urlAbsoluta(unaVez)).toBe(unaVez);
+  });
+
   it("no convierte en enlace lo que no es un dominio", () => {
     expect(urlAbsoluta("pendiente de publicar")).toBeNull();
     expect(urlAbsoluta("ver bases")).toBeNull();
+    expect(urlAbsoluta("https://Pendiente de publicación")).toBeNull();
+    expect(urlAbsoluta("https://01")).toBeNull();
+    expect(urlAbsoluta("https://xxx")).toBeNull();
   });
 
   it("un dominio de verdad sí", () => {
@@ -127,5 +182,16 @@ describe("protocolos mutilados", () => {
   it("repara «ttps://» al que le falta la hache", () => {
     expect(urlAbsoluta("ttps://www.boe.es/x.pdf")).toBe("https://www.boe.es/x.pdf");
     expect(urlAbsoluta("ttp://gva.es/y")).toBe("https://gva.es/y");
+  });
+
+  it("repara otras erratas inequívocas y valida después el dominio", () => {
+    expect(urlAbsoluta("htpps://sede.gva.es/x")).toBe("https://sede.gva.es/x");
+    expect(urlAbsoluta("httos://sede.gva.es/x")).toBe("https://sede.gva.es/x");
+    expect(urlAbsoluta("hhtp://sede.gva.es/x")).toBe("https://sede.gva.es/x");
+    expect(urlAbsoluta("https:/sede.gva.es/x")).toBe("https://sede.gva.es/x");
+    expect(urlAbsoluta("https:sede.gva.es/x")).toBe("https://sede.gva.es/x");
+    expect(urlAbsoluta("htps://sede.gva.es/x")).toBe("https://sede.gva.es/x");
+    expect(urlAbsoluta("httpps://sede.gva.es/x")).toBe("https://sede.gva.es/x");
+    expect(urlAbsoluta("htpps://pendiente")).toBeNull();
   });
 });

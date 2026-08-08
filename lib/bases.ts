@@ -5,6 +5,7 @@ import type { Convocatoria, Requisito } from "./tipos";
 import { descargarBases } from "./bdns";
 import { generar, hayClave, type CredencialesIA } from "./ia";
 import { PROMPT_EXTRACCION, parsearRequisitos } from "./requisitos";
+import { descargarTextoWebSeguro } from "./web-segura";
 
 export type MotivoSinBases = "sin_clave" | "sin_documento" | "ilegible";
 
@@ -39,8 +40,8 @@ export async function obtenerRequisitos(
   if (bases?.tipo === "pdf") {
     partes.push({ pdf: bases.datos as Buffer });
   } else if (bases?.tipo === "url") {
-    const r = await fetch(bases.datos as string, { redirect: "follow" }).catch(() => null);
-    const html = r && r.ok ? await r.text() : "";
+    const r = await descargarTextoWebSeguro(bases.datos as string).catch(() => null);
+    const html = r?.texto ?? "";
     const plano = html.replace(/<script[\s\S]*?<\/script>/gi, "").replace(/<[^>]+>/g, " ");
     if (plano.trim().length < 200) return { requisitos: [], motivo: "sin_documento" };
     partes.push({

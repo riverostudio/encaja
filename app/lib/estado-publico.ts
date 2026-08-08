@@ -9,6 +9,7 @@ import type {
 } from "../componentes/tipos-ui";
 import { borrarMetricasLocales, leerMetricasLocales } from "./metricas-cliente";
 import { estadoPlazo, formatoRango } from "@/lib/plazos";
+import { urlAbsoluta } from "@/lib/url-oficial";
 
 const LLAVE_PERFIL = "encaja.perfil";
 const LLAVE_EVALUACIONES = "encaja.evaluaciones";
@@ -143,44 +144,81 @@ export function guardarResumenPublico(codigo: string, resumen: ResumenIaUi): voi
   guardar(LLAVE_RESUMENES, todos);
 }
 
+function urlFichaSegura(codigo: string): string {
+  if (!/^\d{1,20}$/.test(codigo)) return "https://www.infosubvenciones.es/";
+  return `https://www.infosubvenciones.es/bdnstrans/GE/es/convocatoria/${codigo}`;
+}
+
+function sanearExpediente(expediente: ExpedientePublico): ExpedientePublico {
+  return {
+    ...expediente,
+    conv: {
+      ...expediente.conv,
+      urlBases: urlAbsoluta(expediente.conv.urlBases),
+      sede: urlAbsoluta(expediente.conv.sede),
+    },
+    // La ficha BDNS es determinista: no se confía en un dominio guardado.
+    urlFicha: urlFichaSegura(expediente.codigoBdns),
+  };
+}
+
 function expedientes(): Record<string, ExpedientePublico> {
-  return leer<Record<string, ExpedientePublico>>(LLAVE_EXPEDIENTES, {});
+  const guardados = leer<Record<string, ExpedientePublico>>(LLAVE_EXPEDIENTES, {});
+  const saneados = Object.fromEntries(
+    Object.entries(guardados).map(([codigo, expediente]) => [codigo, sanearExpediente(expediente)]),
+  );
+  // Migra también los expedientes creados antes de endurecer el saneado.
+  if (JSON.stringify(saneados) !== JSON.stringify(guardados)) {
+    try {
+      guardar(LLAVE_EXPEDIENTES, saneados);
+    } catch {
+      // Si localStorage está lleno, la vista segura sigue funcionando aunque
+      // la migración tenga que volver a intentarse en la próxima lectura.
+    }
+  }
+  return saneados;
 }
 
 export function getExpedientePublico(codigo: string): ExpedientePublico | null {
   return expedientes()[codigo] ?? null;
 }
 
-export function crearExpedientePublico(conv: ConvUi, urlFicha: string): ExpedientePublico {
+export function crearExpedientePublico(conv: ConvUi): ExpedientePublico {
   const todos = expedientes();
-  const previo = todos[conv.codigoBdns];
-  const requisitos = getEvaluacionPublica(conv.codigoBdns)?.requisitos ?? [];
+  const convSegura = {
+    ...conv,
+    urlBases: urlAbsoluta(conv.urlBases),
+    sede: urlAbsoluta(conv.sede),
+  };
+  const fichaSegura = urlFichaSegura(conv.codigoBdns);
+  const previo = todos[convSegura.codigoBdns];
+  const requisitos = getEvaluacionPublica(convSegura.codigoBdns)?.requisitos ?? [];
   if (previo) {
-    previo.conv = conv;
-    previo.urlFicha = urlFicha;
+    previo.conv = convSegura;
+    previo.urlFicha = fichaSegura;
     for (const requisito of requisitos.filter((r) => r.tipo === "documento")) {
       if (!previo.checklist.some((i) => i.id === requisito.id)) {
         previo.checklist.push({ id: requisito.id, texto: requisito.literal, estado: "pendiente" });
       }
     }
     previo.updatedAt = new Date().toISOString();
-    todos[conv.codigoBdns] = previo;
+    todos[convSegura.codigoBdns] = previo;
     guardar(LLAVE_EXPEDIENTES, todos);
     return previo;
   }
   const ahora = new Date().toISOString();
   const expediente: ExpedientePublico = {
-    codigoBdns: conv.codigoBdns,
+    codigoBdns: convSegura.codigoBdns,
     estado: "interesa",
     checklist: requisitos
       .filter((r) => r.tipo === "documento")
       .map((r) => ({ id: r.id, texto: r.literal, estado: "pendiente" })),
-    conv,
-    urlFicha,
+    conv: convSegura,
+    urlFicha: fichaSegura,
     creadoAt: ahora,
     updatedAt: ahora,
   };
-  todos[conv.codigoBdns] = expediente;
+  todos[convSegura.codigoBdns] = expediente;
   guardar(LLAVE_EXPEDIENTES, todos);
   return expediente;
 }
@@ -217,6 +255,11 @@ export function datosExpedientePublico(codigo: string) {
   const expediente = getExpedientePublico(codigo);
   if (!expediente) return null;
   const evaluacion = getEvaluacionPublica(codigo);
+  const destinoSolicitud = expediente.conv.sede
+    ? "sede"
+    : expediente.conv.urlBases
+      ? "bases"
+      : "ficha";
   return {
     expediente: {
       codigoBdns: expediente.codigoBdns,
@@ -234,7 +277,7 @@ export function datosExpedientePublico(codigo: string) {
     veredicto: evaluacion?.dictamen ?? null,
     dondeSolicitar:
       expediente.conv.sede ?? expediente.conv.urlBases ?? expediente.urlFicha,
-    esSedeDirecta: Boolean(expediente.conv.sede),
+    destinoSolicitud,
   };
 }
 
