@@ -6,6 +6,19 @@ const nextConfig: NextConfig = {
   outputFileTracingIncludes: {
     "/*": ["./data/radar-publico.db"],
   },
+  // La base local contiene el perfil privado y nunca debe entrar en una
+  // función, aunque el trazador detecte la ruta alternativa de desarrollo.
+  outputFileTracingExcludes: {
+    "/*": [
+      "./data/radar.db",
+      "./data/radar.db-shm",
+      "./data/radar.db-wal",
+      "./docs/**/*",
+      "./expedientes/**/*",
+      "./tests/**/*",
+      "./web/**/*",
+    ],
+  },
   async headers() {
     const seguridad = [
       { key: "X-Content-Type-Options", value: "nosniff" },
